@@ -18,10 +18,15 @@
     "monthlyIncome": "Pemasukan Bulan Ini",
     "monthlyExpense": "Pengeluaran Bulan Ini",
     "netSavings": "Tabungan Bersih (Savings)",
-    "savingsRate": "Rasio Tabungan"
+    "savingsRate": "Rasio Tabungan",
+    "allWalletsActive": "● Saldo Aktif Semua Dompet",
+    "cashflowIn": "Arus Kas Masuk",
+    "cashflowOut": "Pengeluaran Bulan Ini",
+    "ratio": "Rasio:"
   },
   "wallets": {
     "title": "Daftar Dompet & Rekening",
+    "subtitle": "Total {count} dompet aktif terdaftar",
     "addWallet": "Tambah Dompet",
     "addWalletTitle": "Tambah Dompet Baru",
     "addWalletDesc": "Daftarkan instrumen keuangan baru",
@@ -66,6 +71,8 @@
   },
   "transactions": {
     "title": "Riwayat Transaksi",
+    "subtitle": "Daftar transaksi masuk, keluar, dan transfer multi-dompet",
+    "colId": "ID",
     "addTransaction": "Catat Transaksi",
     "recordNew": "Catat Transaksi Baru",
     "recordDesc": "Catat pemasukan atau pengeluaran",
@@ -102,18 +109,29 @@
   },
   "budgets": {
     "title": "Target Batas Budget Bulanan",
+    "subtitle": "Pantau batas pengeluaran per kategori bulan berjalan",
     "addBudget": "Atur Budget",
+    "editBudget": "Edit Target Budget",
+    "addDesc": "Tentukan batas maksimal pengeluaran kategori",
+    "editDesc": "Ubah nominal batas pengeluaran kategori",
+    "monthlyLimit": "Target Batas Bulanan",
+    "activeTargets": "Daftar Target Aktif",
     "spent": "Terpakai",
     "limit": "Batas Maksimal",
     "remaining": "Sisa",
     "statusSafe": "Aman",
     "statusWarning": "Perhatian (>75%)",
     "statusOver": "Overbudget (>100%)",
-    "empty": "Belum ada batas budget yang diatur."
+    "empty": "Belum ada batas budget yang diatur.",
+    "setNow": "Atur batas budget sekarang",
+    "deleteConfirm": "Yakin ingin menghapus target budget ini?",
+    "limitError": "Batas budget harus lebih dari 0."
   },
   "charts": {
     "cashflowTitle": "Arus Kas Bulanan (Pemasukan vs Pengeluaran)",
+    "cashflowSubtitle": "Perbandingan tren arus kas 6 bulan terakhir",
     "distributionTitle": "Komposisi Aset per Dompet",
+    "distributionSubtitle": "Proporsi saldo tiap instrumen dompet & rekening",
     "income": "Pemasukan",
     "expense": "Pengeluaran"
   },

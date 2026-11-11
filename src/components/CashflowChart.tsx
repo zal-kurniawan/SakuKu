@@ -65,7 +65,7 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ data }) => {
           {t('charts.cashflowTitle')}
         </h3>
         <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
-          Perbandingan tren arus kas 6 bulan terakhir
+          {t('charts.cashflowSubtitle') || 'Perbandingan tren arus kas 6 bulan terakhir'}
         </p>
       </div>
 

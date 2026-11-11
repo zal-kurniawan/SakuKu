@@ -8,10 +8,15 @@ export async function DELETE(
 ) {
   try {
     const user = await getActiveUser();
+    const txId = parseInt(params.id, 10);
+
+    if (isNaN(txId)) {
+      return NextResponse.json({ error: 'ID transaksi tidak valid' }, { status: 400 });
+    }
 
     // Find transaction to revert balance
     const tx = await prisma.transaction.findFirst({
-      where: { id: params.id, userId: user.id },
+      where: { id: txId, userId: user.id },
       include: { wallet: true, destinationWallet: true },
     });
 
@@ -42,7 +47,7 @@ export async function DELETE(
     }
 
     await prisma.transaction.delete({
-      where: { id: params.id },
+      where: { id: txId },
     });
 
     return NextResponse.json({ success: true });

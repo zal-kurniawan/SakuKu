@@ -107,9 +107,9 @@ export default function DashboardPage() {
   };
 
   // Transaction Actions
-  const handleDeleteTransaction = async (id: string) => {
+  const handleDeleteTransaction = async (id: string | number) => {
     // Optimistic instant UI update
-    setTransactions((prev) => prev.filter((tx) => tx.id !== id));
+    setTransactions((prev) => prev.filter((tx) => String(tx.id) !== String(id)));
     try {
       const res = await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
       if (res.ok) await fetchData();

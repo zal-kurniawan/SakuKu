@@ -72,7 +72,9 @@ export const WalletList: React.FC<WalletListProps> = ({
             {t('wallets.title')}
           </h2>
           <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
-            Total {wallets.length} dompet aktif terdaftar
+            {t('wallets.subtitle')
+              ? t('wallets.subtitle').replace('{count}', String(wallets.length))
+              : `Total ${wallets.length} dompet aktif terdaftar`}
           </p>
         </div>
         <div className="flex items-center space-x-2">

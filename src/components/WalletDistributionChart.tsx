@@ -73,7 +73,7 @@ export const WalletDistributionChart: React.FC<WalletDistributionChartProps> = (
           {t('charts.distributionTitle')}
         </h3>
         <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
-          Proporsi saldo tiap instrumen dompet & rekening
+          {t('charts.distributionSubtitle') || 'Proporsi saldo tiap instrumen dompet & rekening'}
         </p>
       </div>
 

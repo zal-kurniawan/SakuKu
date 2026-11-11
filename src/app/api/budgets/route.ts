@@ -101,3 +101,70 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+export async function PUT(req: Request) {
+  try {
+    const user = await getActiveUser();
+    const body = await req.json();
+    const { id, monthlyLimit, category } = body;
+
+    if (!monthlyLimit || parseFloat(monthlyLimit) <= 0) {
+      return NextResponse.json({ error: 'Batas bulanan harus lebih dari 0' }, { status: 400 });
+    }
+
+    if (id) {
+      const updated = await prisma.budgetLimit.update({
+        where: { id, userId: user.id },
+        data: { monthlyLimit: parseFloat(monthlyLimit) },
+      });
+      return NextResponse.json(updated);
+    } else if (category) {
+      const now = new Date();
+      const month = now.getMonth() + 1;
+      const year = now.getFullYear();
+      const updated = await prisma.budgetLimit.update({
+        where: {
+          userId_category_month_year: {
+            userId: user.id,
+            category,
+            month,
+            year,
+          },
+        },
+        data: { monthlyLimit: parseFloat(monthlyLimit) },
+      });
+      return NextResponse.json(updated);
+    }
+
+    return NextResponse.json({ error: 'ID atau kategori budget diperlukan' }, { status: 400 });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const user = await getActiveUser();
+    const { searchParams } = new URL(req.url);
+    let id = searchParams.get('id');
+
+    if (!id) {
+      try {
+        const body = await req.json();
+        id = body.id;
+      } catch {}
+    }
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID budget diperlukan' }, { status: 400 });
+    }
+
+    await prisma.budgetLimit.delete({
+      where: { id, userId: user.id },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}

@@ -32,6 +32,25 @@ export interface ParsedCommand {
   lineNumber?: number;
 }
 
+export interface ParsedDelete {
+  kind: 'DELETE';
+  transactionId: number;
+  raw: string;
+  lineNumber?: number;
+}
+
+export interface ParsedUpdate {
+  kind: 'UPDATE';
+  transactionId: number;
+  title: string;
+  walletName: string;
+  type: 'INCOME' | 'EXPENSE';
+  amount: number;
+  category: string;
+  raw: string;
+  lineNumber?: number;
+}
+
 export interface ParsedUnknown {
   kind: 'UNKNOWN';
   raw: string;
@@ -43,6 +62,8 @@ export type ParseResult =
   | ParsedTransaction
   | ParsedTransfer
   | ParsedCommand
+  | ParsedDelete
+  | ParsedUpdate
   | ParsedUnknown;
 
 /**
@@ -110,7 +131,14 @@ export function inferCategory(title: string, type: 'INCOME' | 'EXPENSE'): string
     t.includes('sarapan') ||
     t.includes('resto') ||
     t.includes('snack') ||
-    t.includes('cafe')
+    t.includes('cafe') ||
+    t.includes('teh') ||
+    t.includes('jus') ||
+    t.includes('susu') ||
+    t.includes('bakso') ||
+    t.includes('mie') ||
+    t.includes('nasi') ||
+    t.includes('ayam')
   ) {
     return 'Makanan & Minuman';
   }
@@ -118,8 +146,8 @@ export function inferCategory(title: string, type: 'INCOME' | 'EXPENSE'): string
     t.includes('bensin') ||
     t.includes('gojek') ||
     t.includes('grab') ||
-    t.includes('toll') ||
-    t.includes('tol') ||
+    /\btol\b/i.test(t) ||
+    /\btoll\b/i.test(t) ||
     t.includes('parkir') ||
     t.includes('ojol') ||
     t.includes('transport') ||
@@ -297,6 +325,127 @@ export function parseSingleLine(line: string, lineNumber?: number): ParseResult 
         toWalletName,
         amount,
         notes,
+        raw: trimmed,
+        lineNumber,
+      };
+    }
+
+    // Delete syntax: hapus | ID or delete | ID (e.g., hapus | 105 or delete | #105)
+    if (
+      action === 'hapus' ||
+      action === 'delete' ||
+      action === 'del' ||
+      action === 'batal'
+    ) {
+      if (parts.length < 2) {
+        return {
+          kind: 'UNKNOWN',
+          raw: trimmed,
+          reason: 'Format hapus tidak lengkap. Gunakan: hapus | ID (contoh: hapus | 105)',
+          lineNumber,
+        };
+      }
+
+      const rawId = parts[1].replace(/[^0-9]/g, '');
+      const txId = parseInt(rawId, 10);
+      if (isNaN(txId) || txId <= 0) {
+        return {
+          kind: 'UNKNOWN',
+          raw: trimmed,
+          reason: `ID transaksi "${parts[1]}" tidak valid. Harus berupa nomor ID numerik (contoh: hapus | 105)`,
+          lineNumber,
+        };
+      }
+
+      return {
+        kind: 'DELETE',
+        transactionId: txId,
+        raw: trimmed,
+        lineNumber,
+      };
+    }
+
+    // Update syntax: update | ID | TITLE | WALLET | TYPE | AMOUNT | [CATEGORY]
+    if (
+      action === 'update' ||
+      action === 'edit' ||
+      action === 'ubah'
+    ) {
+      if (parts.length < 6) {
+        return {
+          kind: 'UNKNOWN',
+          raw: trimmed,
+          reason: 'Format update tidak lengkap. Gunakan: update | ID | JUDUL | DOMPET | TYPE | NOMINAL | [KATEGORI]',
+          lineNumber,
+        };
+      }
+
+      const rawId = parts[1].replace(/[^0-9]/g, '');
+      const txId = parseInt(rawId, 10);
+      if (isNaN(txId) || txId <= 0) {
+        return {
+          kind: 'UNKNOWN',
+          raw: trimmed,
+          reason: `ID transaksi "${parts[1]}" tidak valid. Harus berupa nomor ID numerik (contoh: update | 105 | ...)`,
+          lineNumber,
+        };
+      }
+
+      const title = parts[2];
+      const walletName = parts[3];
+      const rawType = parts[4].toLowerCase();
+      const amount = parseAmount(parts[5]);
+
+      let type: 'INCOME' | 'EXPENSE';
+      if (
+        rawType === 'expense' ||
+        rawType === 'pengeluaran' ||
+        rawType === 'out' ||
+        rawType === 'keluar' ||
+        rawType === 'exp' ||
+        rawType === '-'
+      ) {
+        type = 'EXPENSE';
+      } else if (
+        rawType === 'income' ||
+        rawType === 'pemasukan' ||
+        rawType === 'in' ||
+        rawType === 'masuk' ||
+        rawType === 'inc' ||
+        rawType === '+'
+      ) {
+        type = 'INCOME';
+      } else {
+        return {
+          kind: 'UNKNOWN',
+          raw: trimmed,
+          reason: `Tipe transaksi "${parts[4]}" tidak dikenal. Gunakan "expense" atau "income".`,
+          lineNumber,
+        };
+      }
+
+      if (!amount || amount <= 0) {
+        return {
+          kind: 'UNKNOWN',
+          raw: trimmed,
+          reason: `Nominal transaksi "${parts[5]}" tidak valid. Contoh: 35k, 50000, 2.5jt`,
+          lineNumber,
+        };
+      }
+
+      const category =
+        parts.length > 6 && parts[6].trim().length > 0
+          ? parts[6].trim()
+          : inferCategory(title, type);
+
+      return {
+        kind: 'UPDATE',
+        transactionId: txId,
+        title,
+        walletName,
+        type,
+        amount,
+        category,
         raw: trimmed,
         lineNumber,
       };

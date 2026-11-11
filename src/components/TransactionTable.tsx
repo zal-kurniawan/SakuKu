@@ -21,7 +21,7 @@ import {
 import { WalletItem } from './WalletList';
 
 export interface TransactionItem {
-  id: string;
+  id: number | string;
   title: string;
   amount: number;
   type: 'INCOME' | 'EXPENSE' | 'TRANSFER';
@@ -38,7 +38,7 @@ export interface TransactionItem {
 interface TransactionTableProps {
   transactions: TransactionItem[];
   wallets: WalletItem[];
-  onDelete: (id: string) => void;
+  onDelete: (id: string | number) => void;
   onRefresh: () => void;
 }
 
@@ -111,7 +111,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
             {t('transactions.title')}
           </h3>
           <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
-            Daftar transaksi masuk, keluar, dan transfer multi-dompet
+            {t('transactions.subtitle') || 'Daftar transaksi masuk, keluar, dan transfer multi-dompet'}
           </p>
         </div>
 
@@ -197,15 +197,20 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
             >
               {/* Row 1: Title & Amount */}
               <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-bold text-gray-900 dark:text-white text-sm truncate">
-                    {tx.title}
-                  </h4>
-                  {tx.notes && (
-                    <p className="text-[11px] text-gray-400 dark:text-gray-500 italic truncate mt-0.5">
-                      {tx.notes}
-                    </p>
-                  )}
+                <div className="flex items-start gap-1.5 min-w-0">
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded font-mono text-[10px] font-bold bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-900/40 flex-shrink-0 mt-0.5">
+                    #{tx.id}
+                  </span>
+                  <div className="min-w-0">
+                    <h4 className="font-bold text-gray-900 dark:text-white text-sm truncate">
+                      {tx.title}
+                    </h4>
+                    {tx.notes && (
+                      <p className="text-[11px] text-gray-400 dark:text-gray-500 italic truncate mt-0.5">
+                        {tx.notes}
+                      </p>
+                    )}
+                  </div>
                 </div>
                 <div className="text-right flex-shrink-0">
                   <span
@@ -299,6 +304,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
         <table className="w-full text-left text-xs">
           <thead className="bg-gray-50 dark:bg-gray-900/80 text-gray-500 dark:text-gray-400 uppercase text-[10px] font-semibold tracking-wider">
             <tr>
+              <th className="px-4 py-3">{t('transactions.colId') || 'ID'}</th>
               <th className="px-4 py-3">{t('transactions.colDate')}</th>
               <th className="px-4 py-3">{t('transactions.colTitle')}</th>
               <th className="px-4 py-3">{t('transactions.colCategory')}</th>
@@ -319,6 +325,13 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                   key={tx.id}
                   className="hover:bg-gray-50/70 dark:hover:bg-gray-900/40 transition"
                 >
+                  {/* ID */}
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-md font-mono text-[11px] font-bold bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-900/40">
+                      #{tx.id}
+                    </span>
+                  </td>
+
                   {/* Date */}
                   <td className="px-4 py-3 whitespace-nowrap text-gray-500 dark:text-gray-400">
                     {new Date(tx.date).toLocaleDateString('id-ID', {
@@ -426,7 +439,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
 
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
+                <td colSpan={8} className="px-4 py-8 text-center text-gray-400">
                   {t('transactions.empty')}
                 </td>
               </tr>

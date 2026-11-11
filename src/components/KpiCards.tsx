@@ -42,7 +42,7 @@ export const KpiCards: React.FC<KpiCardsProps> = ({ stats }) => {
             {formatCurrency(stats.totalNetWorth, locale)}
           </h3>
           <p className="mt-1 text-[10px] sm:text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1 truncate font-medium">
-            <span>● Saldo Aktif Semua Dompet</span>
+            <span>{t('kpi.allWalletsActive') || '● Saldo Aktif Semua Dompet'}</span>
           </p>
         </div>
       </div>
@@ -63,7 +63,7 @@ export const KpiCards: React.FC<KpiCardsProps> = ({ stats }) => {
           </h3>
           <p className="mt-1 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 truncate font-medium">
             <TrendingUp className="w-3 h-3 text-emerald-500 flex-shrink-0" />
-            <span className="truncate">Arus Kas Masuk</span>
+            <span className="truncate">{t('kpi.cashflowIn') || 'Arus Kas Masuk'}</span>
           </p>
         </div>
       </div>
@@ -84,7 +84,7 @@ export const KpiCards: React.FC<KpiCardsProps> = ({ stats }) => {
           </h3>
           <p className="mt-1 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 truncate font-medium">
             <TrendingDown className="w-3 h-3 text-rose-500 flex-shrink-0" />
-            <span className="truncate">Pengeluaran Bulan Ini</span>
+            <span className="truncate">{t('kpi.cashflowOut') || 'Pengeluaran Bulan Ini'}</span>
           </p>
         </div>
       </div>
@@ -110,7 +110,7 @@ export const KpiCards: React.FC<KpiCardsProps> = ({ stats }) => {
             {formatCurrency(stats.netSavings, locale)}
           </h3>
           <div className="mt-1 flex items-center justify-between text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium">
-            <span>Rasio:</span>
+            <span>{t('kpi.ratio') || 'Rasio:'}</span>
             <span
               className={`font-bold ${
                 stats.savingsRate >= 20
