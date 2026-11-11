@@ -148,5 +148,22 @@
     "all": "All",
     "cancel": "Cancel",
     "save": "Save"
+  },
+  "dialog": {
+    "deleteWalletTitle": "Delete Wallet?",
+    "deleteWalletDesc": "Delete this wallet along with all its transactions? This action cannot be undone.",
+    "deleteTxTitle": "Delete Transaction?",
+    "deleteTxDesc": "This transaction will be deleted and the wallet balance will be reverted.",
+    "deleteBudgetTitle": "Delete Budget Limit?",
+    "deleteBudgetDesc": "Remove the monthly budget limit for this category?",
+    "disconnectWaTitle": "Disconnect WhatsApp?",
+    "disconnectWaDesc": "Are you sure you want to disconnect WhatsApp? You will need to scan a new QR code to reconnect.",
+    "disconnect": "Disconnect",
+    "walletDeleted": "Wallet successfully deleted",
+    "walletDeleteFailed": "Failed to delete wallet",
+    "txDeleted": "Transaction successfully deleted",
+    "txDeleteFailed": "Failed to delete transaction",
+    "budgetDeleted": "Budget target successfully deleted",
+    "budgetDeleteFailed": "Failed to delete budget target"
   }
 }

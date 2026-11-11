@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import { useTranslation } from '@/context/LanguageContext';
+import { useConfirm } from '@/context/ConfirmContext';
+import { useToast } from '@/context/ToastContext';
 import { formatCurrency } from '@/lib/utils';
 import {
   AlertTriangle,
@@ -49,6 +51,8 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
   onRefresh,
 }) => {
   const { t, locale } = useTranslation();
+  const confirm = useConfirm();
+  const toast = useToast();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [category, setCategory] = useState(COMMON_CATEGORIES[0]);
@@ -73,17 +77,24 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
   };
 
   const handleDeleteBudget = async (id: string, categoryName: string) => {
-    const confirmMsg =
-      t('budgets.deleteConfirm') || `Yakin ingin menghapus target budget ${categoryName}?`;
-    if (!confirm(confirmMsg)) return;
+    const isConfirmed = await confirm({
+      title: t('dialog.deleteBudgetTitle'),
+      message: `${t('dialog.deleteBudgetDesc')} (${categoryName})`,
+      confirmText: t('common.delete'),
+      cancelText: t('common.cancel'),
+      variant: 'danger',
+      icon: 'trash',
+    });
+    if (!isConfirmed) return;
 
     setLoading(true);
     try {
       const res = await fetch(`/api/budgets/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Gagal menghapus target budget.');
+      if (!res.ok) throw new Error(t('dialog.budgetDeleteFailed'));
+      toast.success(t('dialog.budgetDeleted'));
       onRefresh();
     } catch (err: any) {
-      alert(err.message || 'Gagal menghapus target budget.');
+      toast.error(err.message || t('dialog.budgetDeleteFailed'));
     } finally {
       setLoading(false);
     }
@@ -134,6 +145,7 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
       setModalOpen(false);
       setEditingId(null);
       setMonthlyLimit('');
+      toast.success(t('common.success'));
       onRefresh();
     } catch (err: any) {
       setError(err.message);

@@ -13,9 +13,13 @@ import { BudgetLimitCard, BudgetItem } from '@/components/BudgetLimitCard';
 import { TransactionTable, TransactionItem } from '@/components/TransactionTable';
 import { BotGuideModal } from '@/components/BotGuideModal';
 import { useTranslation } from '@/context/LanguageContext';
+import { useConfirm } from '@/context/ConfirmContext';
+import { useToast } from '@/context/ToastContext';
 
 export default function DashboardPage() {
   const { t } = useTranslation();
+  const confirm = useConfirm();
+  const toast = useToast();
 
   // State
   const [stats, setStats] = useState({
@@ -85,18 +89,30 @@ export default function DashboardPage() {
   };
 
   const handleDeleteWallet = async (id: string) => {
-    if (!confirm('Hapus dompet ini beserta seluruh transaksinya?')) return;
+    const isConfirmed = await confirm({
+      title: t('dialog.deleteWalletTitle'),
+      message: t('dialog.deleteWalletDesc'),
+      confirmText: t('common.delete'),
+      cancelText: t('common.cancel'),
+      variant: 'danger',
+      icon: 'trash',
+    });
+    if (!isConfirmed) return;
+
     // Optimistic instant UI update (re-renders KPI and Chart immediately)
     setWallets((prev) => prev.filter((w) => w.id !== id));
     try {
       const res = await fetch(`/api/wallets/${id}`, { method: 'DELETE' });
       if (res.ok) {
+        toast.success(t('dialog.walletDeleted'));
         await fetchData();
       } else {
+        toast.error(t('dialog.walletDeleteFailed'));
         await fetchData();
       }
     } catch (err) {
       console.error(err);
+      toast.error(t('dialog.walletDeleteFailed'));
       await fetchData();
     }
   };
@@ -112,9 +128,16 @@ export default function DashboardPage() {
     setTransactions((prev) => prev.filter((tx) => String(tx.id) !== String(id)));
     try {
       const res = await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
-      if (res.ok) await fetchData();
+      if (res.ok) {
+        toast.success(t('dialog.txDeleted'));
+        await fetchData();
+      } else {
+        toast.error(t('dialog.txDeleteFailed'));
+        await fetchData();
+      }
     } catch (err) {
       console.error(err);
+      toast.error(t('dialog.txDeleteFailed'));
       await fetchData();
     }
   };

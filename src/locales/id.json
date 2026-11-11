@@ -148,5 +148,22 @@
     "all": "Semua",
     "cancel": "Batal",
     "save": "Simpan"
+  },
+  "dialog": {
+    "deleteWalletTitle": "Hapus Dompet?",
+    "deleteWalletDesc": "Hapus dompet ini beserta seluruh transaksinya? Tindakan ini tidak dapat dibatalkan.",
+    "deleteTxTitle": "Hapus Transaksi?",
+    "deleteTxDesc": "Transaksi ini akan dihapus dan saldo dompet akan disesuaikan kembali.",
+    "deleteBudgetTitle": "Hapus Target Budget?",
+    "deleteBudgetDesc": "Hapus batas anggaran bulanan untuk kategori ini?",
+    "disconnectWaTitle": "Putuskan Tautan WhatsApp?",
+    "disconnectWaDesc": "Apakah Anda yakin ingin memutuskan tautan WhatsApp? Anda harus scan QR baru untuk menghubungkannya kembali.",
+    "disconnect": "Putuskan Tautan",
+    "walletDeleted": "Dompet berhasil dihapus",
+    "walletDeleteFailed": "Gagal menghapus dompet",
+    "txDeleted": "Transaksi berhasil dihapus",
+    "txDeleteFailed": "Gagal menghapus transaksi",
+    "budgetDeleted": "Target budget berhasil dihapus",
+    "budgetDeleteFailed": "Gagal menghapus target budget"
   }
 }

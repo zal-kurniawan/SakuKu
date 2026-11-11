@@ -2,6 +2,9 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useTranslation } from '@/context/LanguageContext';
+import { useConfirm } from '@/context/ConfirmContext';
+import { useToast } from '@/context/ToastContext';
 import {
   QrCode,
   CheckCircle2,
@@ -29,6 +32,9 @@ interface BotQRResponse {
 }
 
 export default function AdminQRPage() {
+  const { t } = useTranslation();
+  const confirm = useConfirm();
+  const toast = useToast();
   const [data, setData] = useState<BotQRResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [secretKey, setSecretKey] = useState('');
@@ -94,9 +100,15 @@ export default function AdminQRPage() {
   };
 
   const handleResetSession = async () => {
-    if (!confirm('Apakah Anda yakin ingin memutuskan tautan WhatsApp? Anda harus scan QR baru untuk menghubungkannya kembali.')) {
-      return;
-    }
+    const isConfirmed = await confirm({
+      title: t('dialog.disconnectWaTitle'),
+      message: t('dialog.disconnectWaDesc'),
+      confirmText: t('dialog.disconnect'),
+      cancelText: t('common.cancel'),
+      variant: 'danger',
+      icon: 'alert',
+    });
+    if (!isConfirmed) return;
 
     setResetting(true);
     setMessage(null);
@@ -113,13 +125,18 @@ export default function AdminQRPage() {
 
       const resData = await res.json();
       if (res.ok) {
-        setMessage({ type: 'success', text: resData.message || 'Sesi WhatsApp berhasil direset.' });
+        const successMsg = resData.message || 'Sesi WhatsApp berhasil direset.';
+        setMessage({ type: 'success', text: successMsg });
+        toast.success(successMsg);
         fetchBotStatus();
       } else {
-        setMessage({ type: 'error', text: resData.error || 'Gagal mereset sesi.' });
+        const errMsg = resData.error || 'Gagal mereset sesi.';
+        setMessage({ type: 'error', text: errMsg });
+        toast.error(errMsg);
       }
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message });
+      toast.error(err.message);
     } finally {
       setResetting(false);
     }

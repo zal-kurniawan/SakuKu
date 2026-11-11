@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { LanguageProvider } from '@/context/LanguageContext';
+import { ConfirmProvider } from '@/context/ConfirmContext';
+import { ToastProvider } from '@/context/ToastContext';
 
 export const metadata: Metadata = {
   title: 'SakuKu - Personal Multi-Wallet Finance Tracker & WhatsApp Bot',
@@ -18,7 +20,11 @@ export default function RootLayout({
     <html lang="id" suppressHydrationWarning>
       <body className="antialiased min-h-screen bg-white dark:bg-gray-950">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <LanguageProvider>{children}</LanguageProvider>
+          <LanguageProvider>
+            <ConfirmProvider>
+              <ToastProvider>{children}</ToastProvider>
+            </ConfirmProvider>
+          </LanguageProvider>
         </ThemeProvider>
       </body>
     </html>

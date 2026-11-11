@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useTranslation } from '@/context/LanguageContext';
+import { useConfirm } from '@/context/ConfirmContext';
 import { formatCurrency } from '@/lib/utils';
 import {
   Download,
@@ -61,6 +62,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   onDelete,
 }) => {
   const { t, locale } = useTranslation();
+  const confirm = useConfirm();
 
   const [search, setSearch] = useState('');
   const [selectedWallet, setSelectedWallet] = useState('all');
@@ -69,6 +71,20 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleDelete = async (id: string | number) => {
+    const isConfirmed = await confirm({
+      title: t('dialog.deleteTxTitle'),
+      message: t('dialog.deleteTxDesc'),
+      confirmText: t('common.delete'),
+      cancelText: t('common.cancel'),
+      variant: 'danger',
+      icon: 'trash',
+    });
+    if (isConfirmed) {
+      onDelete(id);
+    }
+  };
 
   const filtered = transactions.filter((tx) => {
     const matchesSearch =
@@ -277,11 +293,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                 </div>
 
                 <button
-                  onClick={() => {
-                    if (confirm(t('transactions.deleteConfirm'))) {
-                      onDelete(tx.id);
-                    }
-                  }}
+                  onClick={() => handleDelete(tx.id)}
                   title="Hapus"
                   className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition min-h-[34px] min-w-[34px] flex items-center justify-center"
                 >
@@ -422,11 +434,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                   {/* Actions */}
                   <td className="px-4 py-3 whitespace-nowrap text-right">
                     <button
-                      onClick={() => {
-                        if (confirm(t('transactions.deleteConfirm'))) {
-                          onDelete(tx.id);
-                        }
-                      }}
+                      onClick={() => handleDelete(tx.id)}
                       title="Hapus"
                       className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition min-h-[34px] min-w-[34px]"
                     >
