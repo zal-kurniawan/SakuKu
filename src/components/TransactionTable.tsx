@@ -437,20 +437,19 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
 
       {/* Pagination Controls */}
       {totalItems > 0 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-gray-100 dark:border-gray-800/80 text-xs text-gray-500 dark:text-gray-400">
-          {/* Rows Per Page & Counter */}
-          <div className="flex flex-wrap items-center justify-between sm:justify-start w-full sm:w-auto gap-3">
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] sm:text-xs">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-gray-100 dark:border-gray-800 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+          {/* Top/Left Section: Rows Per Page & Item Range Counter */}
+          <div className="flex items-center justify-between w-full sm:w-auto gap-4">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs sm:text-sm font-medium">
                 {locale === 'id' ? 'Baris:' : 'Rows:'}
               </span>
               <div className="relative">
                 <select
                   value={rowsPerPage}
                   onChange={(e) => setRowsPerPage(Number(e.target.value))}
-                  className="appearance-none pl-2.5 pr-7 py-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer min-h-[34px]"
+                  className="appearance-none bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg pl-2.5 pr-7 py-1 text-xs font-semibold text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer h-8"
                 >
-                  <option value={5}>5</option>
                   <option value={10}>10</option>
                   <option value={25}>25</option>
                   <option value={50}>50</option>
@@ -460,18 +459,44 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
               </div>
             </div>
 
-            <span className="text-[11px] sm:text-xs font-medium">
+            <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
               {startIndex + 1}–{endIndex} dari {totalItems}
             </span>
           </div>
 
-          {/* Navigation Controls */}
-          <div className="flex items-center justify-center w-full sm:w-auto gap-1">
+          {/* Bottom/Right Section: Adaptive Page Navigation */}
+          {/* A. Mobile Compact View (< 640px / sm) */}
+          <div className="flex sm:hidden items-center justify-between w-full pt-1">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={validCurrentPage === 1}
+              className="h-8 px-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              <span>{locale === 'id' ? 'Sebelumnya' : 'Prev'}</span>
+            </button>
+
+            <span className="text-xs font-bold text-gray-800 dark:text-gray-200">
+              Hal {validCurrentPage} / {totalPages}
+            </span>
+
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={validCurrentPage === totalPages}
+              className="h-8 px-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1"
+            >
+              <span>{locale === 'id' ? 'Berikutnya' : 'Next'}</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* B. Tablet & Desktop Full View (>= 640px / sm) */}
+          <div className="hidden sm:flex items-center gap-1">
             {/* First Page */}
             <button
               onClick={() => setCurrentPage(1)}
               disabled={validCurrentPage === 1}
-              className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition text-gray-600 dark:text-gray-300 min-h-[36px] min-w-[36px] flex items-center justify-center"
+              className="h-9 w-9 p-0 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition text-gray-600 dark:text-gray-300 flex items-center justify-center"
               title={locale === 'id' ? 'Halaman Pertama' : 'First Page'}
             >
               <ChevronsLeft className="w-4 h-4" />
@@ -481,7 +506,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={validCurrentPage === 1}
-              className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition text-gray-600 dark:text-gray-300 min-h-[36px] min-w-[36px] flex items-center justify-center"
+              className="h-9 w-9 p-0 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition text-gray-600 dark:text-gray-300 flex items-center justify-center"
               title={locale === 'id' ? 'Sebelumnya' : 'Previous Page'}
             >
               <ChevronLeft className="w-4 h-4" />
@@ -492,16 +517,16 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
               {getPageNumbers(validCurrentPage, totalPages).map((p, idx) =>
                 p === '...' ? (
                   <span key={`ellipsis-${idx}`} className="px-1 text-gray-400">
-                    ..
+                    ...
                   </span>
                 ) : (
                   <button
                     key={`page-${p}`}
                     onClick={() => setCurrentPage(Number(p))}
-                    className={`min-w-[32px] h-8 px-2 rounded-lg font-medium transition text-xs flex items-center justify-center ${
+                    className={`min-w-[36px] h-9 px-2 rounded-lg font-semibold transition text-xs sm:text-sm flex items-center justify-center ${
                       validCurrentPage === p
-                        ? 'bg-blue-600 text-white shadow-xs font-semibold'
-                        : 'border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
                     }`}
                   >
                     {p}
@@ -514,7 +539,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={validCurrentPage === totalPages}
-              className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition text-gray-600 dark:text-gray-300 min-h-[36px] min-w-[36px] flex items-center justify-center"
+              className="h-9 w-9 p-0 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition text-gray-600 dark:text-gray-300 flex items-center justify-center"
               title={locale === 'id' ? 'Selanjutnya' : 'Next Page'}
             >
               <ChevronRight className="w-4 h-4" />
@@ -524,7 +549,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
             <button
               onClick={() => setCurrentPage(totalPages)}
               disabled={validCurrentPage === totalPages}
-              className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition text-gray-600 dark:text-gray-300 min-h-[36px] min-w-[36px] flex items-center justify-center"
+              className="h-9 w-9 p-0 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition text-gray-600 dark:text-gray-300 flex items-center justify-center"
               title={locale === 'id' ? 'Halaman Terakhir' : 'Last Page'}
             >
               <ChevronsRight className="w-4 h-4" />

@@ -13,7 +13,6 @@ import {
   BookOpen,
   ArrowRightLeft,
   PlusCircle,
-  FileSpreadsheet,
   Menu,
   X,
   Plus,
@@ -110,16 +109,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               <ArrowRightLeft className="w-3.5 h-3.5" />
               <span>{t('wallets.transfer')}</span>
             </button>
-
-            {/* Excel Bulk Import */}
-            <Link
-              href="/import"
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 transition shadow-xs min-h-[38px]"
-              title="Import Excel"
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span>{t('nav.importExcel')}</span>
-            </Link>
 
             {/* Bot Guide */}
             <button
@@ -252,16 +241,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <ArrowRightLeft className="w-5 h-5 text-blue-500" />
                   <span>{t('wallets.transfer')}</span>
                 </button>
-
-                {/* Import Excel */}
-                <Link
-                  href="/import"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="w-full min-h-[46px] px-4 py-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-semibold text-sm flex items-center gap-3 transition active:scale-98"
-                >
-                  <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
-                  <span>{t('nav.importExcel')}</span>
-                </Link>
 
                 {/* Status Bot WhatsApp */}
                 <Link

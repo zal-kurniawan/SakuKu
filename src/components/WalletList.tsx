@@ -75,15 +75,7 @@ export const WalletList: React.FC<WalletListProps> = ({
             Total {wallets.length} dompet aktif terdaftar
           </p>
         </div>
-        <div className="flex items-center space-x-1.5 sm:space-x-2">
-          <button
-            onClick={() => onTransfer()}
-            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-semibold border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition active:scale-95 min-h-[36px]"
-          >
-            <ArrowRightLeft className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">{t('wallets.transfer')}</span>
-            <span className="sm:hidden">Transfer</span>
-          </button>
+        <div className="flex items-center space-x-2">
           <button
             onClick={onAddWallet}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition active:scale-95 min-h-[36px]"
