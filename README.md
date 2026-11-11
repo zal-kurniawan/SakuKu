@@ -184,8 +184,8 @@ cd /Users/rizalkurniawan/Documents/Apps/SakuKu
 Buka file `.env` dan masukkan nomor WhatsApp Anda:
 ```env
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/finance_tracker?schema=public"
-MY_PHONE_NUMBER="6281234567890"
-DEFAULT_USER_NAME="Rizal Kurniawan"
+MY_PHONE_NUMBER="YOUR_NUMBER"
+DEFAULT_USER_NAME="YOUR_NAME"
 TIMEZONE="Asia/Jakarta"
 ```
 
