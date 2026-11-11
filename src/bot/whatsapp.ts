@@ -20,9 +20,31 @@ let sock: WASocket | null = null;
 let botStatus: 'DISCONNECTED' | 'SCANNING_QR' | 'CONNECTED' = 'DISCONNECTED';
 // Cache recent message IDs sent by bot to avoid processing own echo in self-chat
 const botSentMessageIds = new Set<string>();
+// Owner's WhatsApp LID (Linked Device Identifier) - strictly whitelisted for self-chat
+let cachedOwnerLid: string = '87943783936108';
 
 export function getBotStatus() {
   return botStatus;
+}
+
+/**
+ * Returns the owner's WhatsApp LID (cleaned from device suffix)
+ */
+export function getOwnerLid(): string {
+  if (sock?.user?.lid) {
+    cachedOwnerLid = sock.user.lid.split('@')[0].split(':')[0];
+  }
+  return cachedOwnerLid;
+}
+
+/**
+ * Verifies if an incoming JID matches the owner's specific LID
+ */
+export function isOwnerLid(jid: string): boolean {
+  if (!jid.endsWith('@lid')) return false;
+  const remoteLid = jid.split('@')[0].split(':')[0];
+  const ownerLid = getOwnerLid();
+  return Boolean(ownerLid && remoteLid === ownerLid);
 }
 
 /**
@@ -88,8 +110,9 @@ export function isWhitelisted(remoteJid: string): boolean {
   }
 
   // Handle WhatsApp Multi-Device LID (Linked Device Identifier, e.g. for "Message Yourself")
+  // ONLY allow if it strictly matches the OWNER's LID! Never allow other contacts' LIDs!
   if (remoteJid.endsWith('@lid')) {
-    return true;
+    return isOwnerLid(remoteJid);
   }
 
   const normalizedAllowed = normalizePhoneNumber(allowed);
@@ -165,10 +188,14 @@ export async function startWhatsAppBot(): Promise<WASocket> {
       botStatus = 'CONNECTED';
       await setDbLiveQR(null);
       const userPhone = sock?.user?.id?.split(':')[0]?.split('@')[0];
+      if (sock?.user?.lid) {
+        cachedOwnerLid = sock.user.lid.split('@')[0].split(':')[0];
+      }
       await setDbBotStatus('CONNECTED', { phone: userPhone, name: 'SakuKu' });
       console.log('\n==========================================================');
       console.log('✅ [SAKUKU BOT] WhatsApp Bot BERHASIL TERHUBUNG!');
       console.log(`👤 Whitelist aktif untuk pemilik: ${process.env.MY_PHONE_NUMBER}`);
+      console.log(`🔑 Owner LID aktif: ${cachedOwnerLid}`);
       console.log('==========================================================\n');
 
       // Update WhatsApp profile name to "SakuKu" automatically
@@ -227,24 +254,22 @@ async function processIncomingMessage(msg: WAMessage) {
     const remotePhone = normalizePhoneNumber(remoteJid);
     const botUserPhone = sock?.user?.id ? normalizePhoneNumber(sock.user.id) : allowedPhone;
 
-    // If message is sent from me (fromMe: true), check if it's sent to self or someone else
-    if (msg.key.fromMe) {
-      const isSelfChat =
-        remoteJid.endsWith('@lid') ||
-        remotePhone === allowedPhone ||
-        remotePhone === botUserPhone;
+    // Check if this chat is strictly the owner's personal self-chat ("Message Yourself")
+    const isOwnerConversation =
+      isOwnerLid(remoteJid) ||
+      remotePhone === allowedPhone ||
+      remotePhone === botUserPhone;
 
-      if (!isSelfChat) {
-        // User is texting someone else, do not trigger bot
+    // If message is sent from me (fromMe: true), ONLY allow if it's sent to self (Message Yourself)
+    // If user is texting someone else (e.g. Nisa, friends, family), NEVER TRIGGER BOT!
+    if (msg.key.fromMe) {
+      if (!isOwnerConversation) {
         return;
       }
     }
 
-    // Security whitelist check
+    // Security whitelist check (for messages received from outside or synced)
     if (!isWhitelisted(remoteJid)) {
-      console.log(
-        `🛡️ [WHITELIST BLOCKED] Pesan diabaikan dari non-whitelisted sender: ${remoteJid}`
-      );
       return;
     }
 
