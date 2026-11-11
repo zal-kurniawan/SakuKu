@@ -4,11 +4,12 @@
 # Memory Footprint: < 150MB
 # ==========================================
 
-FROM node:20-slim AS builder
+FROM node:22-slim AS builder
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+# Install native build tools (python3, make, g++, openssl) required for node-gyp native addons
+RUN apt-get update && apt-get install -y openssl python3 make g++ && rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
 COPY prisma ./prisma/
@@ -23,7 +24,7 @@ RUN npx prisma generate
 # ==========================================
 # Runner Stage
 # ==========================================
-FROM node:20-slim AS runner
+FROM node:22-slim AS runner
 
 WORKDIR /app
 
