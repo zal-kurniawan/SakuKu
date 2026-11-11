@@ -47,6 +47,18 @@ tf | bca | gopay | 50k | top up`,
       desc: 'Memindahkan saldo antar dompet secara atomik tanpa selisih.',
     },
     {
+      title: 'Hapus Transaksi (Delete)',
+      syntax: 'hapus | ID atau delete | ID',
+      example: 'hapus | 105',
+      desc: 'Menghapus data transaksi dan mengembalikan (rollback) saldo dompet secara atomik.',
+    },
+    {
+      title: 'Perbarui Transaksi (Update)',
+      syntax: 'update | ID | JUDUL | DOMPET | TYPE | NOMINAL | [KATEGORI]',
+      example: 'update | 105 | makan siang padang | bca | expense | 45k | Makanan & Minuman',
+      desc: 'Memperbarui rincian transaksi dan menyesuaikan saldo dompet lama dan baru secara atomik.',
+    },
+    {
       title: 'Cek Total Kekayaan & Saldo',
       syntax: '/saldo atau /dompet',
       example: '/saldo',

@@ -368,7 +368,7 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
                     type="number"
                     value={monthlyLimit}
                     onChange={(e) => setMonthlyLimit(e.target.value)}
-                    placeholder="Contoh: 1500000"
+                    placeholder={t('budgets.limitPlaceholder') || 'Contoh: 1500000'}
                     required
                     min="1"
                     className="w-full px-3.5 py-2.5 rounded-xl text-sm font-semibold border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"

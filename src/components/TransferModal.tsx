@@ -107,7 +107,9 @@ export const TransferModal: React.FC<TransferModalProps> = ({
               <h3 className="text-base font-bold text-gray-900 dark:text-white">
                 {t('transfer.modalTitle') || 'Transfer Saldo Antar Dompet'}
               </h3>
-              <p className="text-[11px] text-gray-400">Pindah saldo antar instrumen dompet</p>
+              <p className="text-[11px] text-gray-400">
+                {t('transfer.modalDesc') || 'Pindah saldo antar instrumen dompet'}
+              </p>
             </div>
           </div>
           <button
@@ -175,7 +177,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
             {/* Amount */}
             <div>
               <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                {t('transfer.amount') || 'Nominal Transfer'} (Rp) *
+                {t('transfer.amount') || 'Nominal Transfer (Rp)'} *
               </label>
               <input
                 type="number"
@@ -188,7 +190,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
               />
               {selectedFromWallet && (
                 <p className="mt-1.5 text-[11px] text-gray-500">
-                  Saldo tersedia:{' '}
+                  {t('transfer.availableBalance') || 'Saldo tersedia'}:{' '}
                   <span className="font-bold text-gray-700 dark:text-gray-300">
                     {formatCurrency(selectedFromWallet.balance, locale)}
                   </span>
@@ -199,7 +201,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
             {/* Notes */}
             <div>
               <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                {t('transfer.notes') || 'Catatan'} (Opsional)
+                {t('transfer.notes') || 'Catatan (Opsional)'}
               </label>
               <input
                 type="text"
