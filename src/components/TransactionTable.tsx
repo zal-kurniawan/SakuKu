@@ -7,10 +7,7 @@ import { formatCurrency } from '@/lib/utils';
 import {
   Download,
   Search,
-  Filter,
   Trash2,
-  ArrowUpRight,
-  ArrowDownLeft,
   ArrowRightLeft,
   Smartphone,
   Globe,
@@ -106,85 +103,199 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   };
 
   return (
-    <div className="p-5 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm space-y-4">
+    <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-xs sm:shadow-sm space-y-4">
       {/* Header & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h3 className="text-base font-bold text-gray-900 dark:text-white">
+          <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
             {t('transactions.title')}
           </h3>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+          <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
             Daftar transaksi masuk, keluar, dan transfer multi-dompet
           </p>
         </div>
 
-        <div className="flex items-center space-x-2 self-start sm:self-auto">
+        <div className="flex items-center space-x-2 self-stretch sm:self-auto">
           <Link
             href="/import"
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 transition shadow-xs"
+            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 transition min-h-[38px]"
           >
-            <FileSpreadsheet className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            <FileSpreadsheet className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
             <span>Import Excel</span>
           </Link>
           <button
             onClick={handleExportCsv}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition"
+            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition min-h-[38px]"
           >
-            <Download className="w-4 h-4" />
+            <Download className="w-3.5 h-3.5" />
             <span>{t('transactions.exportCsv')}</span>
           </button>
         </div>
       </div>
 
-      {/* Filter Toolbar */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+      {/* Filter Toolbar: Responsive Stack on Mobile, Row on Tablet/Desktop */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 pt-1">
         {/* Search */}
-        <div className="relative">
-          <Search className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
+        <div className="relative flex-1 w-full">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t('transactions.search')}
-            className="w-full pl-9 pr-3 py-2 rounded-xl text-xs border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-9 pr-3 py-2.5 rounded-xl text-xs sm:text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[42px]"
           />
         </div>
 
-        {/* Filter Wallet */}
-        <div className="relative inline-block w-full">
-          <select
-            value={selectedWallet}
-            onChange={(e) => setSelectedWallet(e.target.value)}
-            className="appearance-none w-full pl-3 pr-9 py-2 rounded-xl text-xs border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer truncate"
-          >
-            <option value="all">{t('transactions.filterWallet')}</option>
-            {wallets.map((w) => (
-              <option key={w.id} value={w.id}>
-                {w.name}
-              </option>
-            ))}
-          </select>
-          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
-        </div>
+        {/* Filters Group for Mobile/Tablet */}
+        <div className="grid grid-cols-2 sm:flex sm:items-center gap-2.5">
+          {/* Filter Wallet */}
+          <div className="relative inline-block w-full sm:w-[160px] md:w-[180px]">
+            <select
+              value={selectedWallet}
+              onChange={(e) => setSelectedWallet(e.target.value)}
+              className="appearance-none w-full pl-3 pr-9 py-2.5 rounded-xl text-xs sm:text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer truncate min-h-[42px]"
+            >
+              <option value="all">{t('transactions.filterWallet')}</option>
+              {wallets.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
+          </div>
 
-        {/* Filter Type */}
-        <div className="relative inline-block w-full">
-          <select
-            value={selectedType}
-            onChange={(e) => setSelectedType(e.target.value)}
-            className="appearance-none w-full pl-3 pr-9 py-2 rounded-xl text-xs border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer truncate"
-          >
-            <option value="all">{t('transactions.filterType')}</option>
-            <option value="INCOME">{t('transactions.income')}</option>
-            <option value="EXPENSE">{t('transactions.expense')}</option>
-            <option value="TRANSFER">{t('transactions.typeTransfer')}</option>
-          </select>
-          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
+          {/* Filter Type */}
+          <div className="relative inline-block w-full sm:w-[140px] md:w-[160px]">
+            <select
+              value={selectedType}
+              onChange={(e) => setSelectedType(e.target.value)}
+              className="appearance-none w-full pl-3 pr-9 py-2.5 rounded-xl text-xs sm:text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer truncate min-h-[42px]"
+            >
+              <option value="all">{t('transactions.filterType')}</option>
+              <option value="INCOME">{t('transactions.income')}</option>
+              <option value="EXPENSE">{t('transactions.expense')}</option>
+              <option value="TRANSFER">{t('transactions.typeTransfer')}</option>
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
+          </div>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto rounded-xl border border-gray-100 dark:border-gray-700">
+      {/* 1. Mobile Card View (< 640px / sm) */}
+      <div className="block sm:hidden space-y-2.5">
+        {paginatedItems.map((tx) => {
+          const isIncome = tx.type === 'INCOME';
+          const isExpense = tx.type === 'EXPENSE';
+          const isTransfer = tx.type === 'TRANSFER';
+
+          return (
+            <div
+              key={`mobile-${tx.id}`}
+              className="p-3.5 rounded-xl bg-gray-50/80 dark:bg-gray-900/60 border border-gray-100 dark:border-gray-800 space-y-2.5"
+            >
+              {/* Row 1: Title & Amount */}
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-bold text-gray-900 dark:text-white text-sm truncate">
+                    {tx.title}
+                  </h4>
+                  {tx.notes && (
+                    <p className="text-[11px] text-gray-400 dark:text-gray-500 italic truncate mt-0.5">
+                      {tx.notes}
+                    </p>
+                  )}
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <span
+                    className={`text-sm font-black tracking-tight ${
+                      isIncome
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : isExpense
+                        ? 'text-rose-600 dark:text-rose-400'
+                        : 'text-blue-600 dark:text-blue-400'
+                    }`}
+                  >
+                    {isIncome && '+'}
+                    {isExpense && '-'}
+                    {formatCurrency(tx.amount, locale)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Row 2: Badges (Category + Wallet) */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-gray-200/70 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                  {tx.category}
+                </span>
+
+                {isTransfer ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border border-blue-200 dark:border-blue-900/60 text-blue-700 dark:text-blue-300 bg-blue-50/50 dark:bg-blue-950/40">
+                    <span>{tx.wallet.name}</span>
+                    <ArrowRightLeft className="w-2.5 h-2.5 text-blue-500" />
+                    <span>{tx.destinationWallet?.name || 'Tujuan'}</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800">
+                    <span
+                      className="w-1.5 h-1.5 rounded-full inline-block"
+                      style={{ backgroundColor: tx.wallet.colorCode || '#3B82F6' }}
+                    />
+                    <span>{tx.wallet.name}</span>
+                  </span>
+                )}
+              </div>
+
+              {/* Row 3: Date, Source, and Delete Action */}
+              <div className="flex items-center justify-between pt-2 border-t border-gray-200/50 dark:border-gray-800 text-[11px] text-gray-500 dark:text-gray-400">
+                <div className="flex items-center gap-2">
+                  <span>
+                    {new Date(tx.date).toLocaleDateString('id-ID', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                    })}
+                  </span>
+                  <span>•</span>
+                  <span className="inline-flex items-center gap-0.5 text-[10px] font-medium">
+                    {tx.source === 'WHATSAPP' ? (
+                      <span className="text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-0.5">
+                        <Smartphone className="w-3 h-3" /> WA
+                      </span>
+                    ) : (
+                      <span className="text-blue-600 dark:text-blue-400 inline-flex items-center gap-0.5">
+                        <Globe className="w-3 h-3" /> Web
+                      </span>
+                    )}
+                  </span>
+                </div>
+
+                <button
+                  onClick={() => {
+                    if (confirm(t('transactions.deleteConfirm'))) {
+                      onDelete(tx.id);
+                    }
+                  }}
+                  title="Hapus"
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition min-h-[34px] min-w-[34px] flex items-center justify-center"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          );
+        })}
+
+        {filtered.length === 0 && (
+          <div className="p-8 text-center rounded-xl border border-dashed border-gray-200 dark:border-gray-700 text-gray-400 text-xs">
+            {t('transactions.empty')}
+          </div>
+        )}
+      </div>
+
+      {/* 2. Desktop & Tablet Safe Horizontal Scroll Table (>= 640px / sm) */}
+      <div className="hidden sm:block overflow-x-auto rounded-xl border border-gray-100 dark:border-gray-700">
         <table className="w-full text-left text-xs">
           <thead className="bg-gray-50 dark:bg-gray-900/80 text-gray-500 dark:text-gray-400 uppercase text-[10px] font-semibold tracking-wider">
             <tr>
@@ -304,7 +415,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                         }
                       }}
                       title="Hapus"
-                      className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition"
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition min-h-[34px] min-w-[34px]"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -328,14 +439,16 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
       {totalItems > 0 && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-gray-100 dark:border-gray-800/80 text-xs text-gray-500 dark:text-gray-400">
           {/* Rows Per Page & Counter */}
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center justify-between sm:justify-start w-full sm:w-auto gap-3">
             <div className="flex items-center gap-2">
-              <span>{locale === 'id' ? 'Baris per halaman:' : 'Rows per page:'}</span>
+              <span className="text-[11px] sm:text-xs">
+                {locale === 'id' ? 'Baris:' : 'Rows:'}
+              </span>
               <div className="relative">
                 <select
                   value={rowsPerPage}
                   onChange={(e) => setRowsPerPage(Number(e.target.value))}
-                  className="appearance-none pl-2.5 pr-7 py-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                  className="appearance-none pl-2.5 pr-7 py-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer min-h-[34px]"
                 >
                   <option value={5}>5</option>
                   <option value={10}>10</option>
@@ -347,22 +460,18 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
               </div>
             </div>
 
-            <span className="hidden sm:inline text-gray-300 dark:text-gray-700">|</span>
-
-            <span>
-              {locale === 'id'
-                ? `Menampilkan ${startIndex + 1}–${endIndex} dari ${totalItems} transaksi`
-                : `Showing ${startIndex + 1}–${endIndex} of ${totalItems} transactions`}
+            <span className="text-[11px] sm:text-xs font-medium">
+              {startIndex + 1}–{endIndex} dari {totalItems}
             </span>
           </div>
 
           {/* Navigation Controls */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center justify-center w-full sm:w-auto gap-1">
             {/* First Page */}
             <button
               onClick={() => setCurrentPage(1)}
               disabled={validCurrentPage === 1}
-              className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition text-gray-600 dark:text-gray-300"
+              className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition text-gray-600 dark:text-gray-300 min-h-[36px] min-w-[36px] flex items-center justify-center"
               title={locale === 'id' ? 'Halaman Pertama' : 'First Page'}
             >
               <ChevronsLeft className="w-4 h-4" />
@@ -372,7 +481,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={validCurrentPage === 1}
-              className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition text-gray-600 dark:text-gray-300"
+              className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition text-gray-600 dark:text-gray-300 min-h-[36px] min-w-[36px] flex items-center justify-center"
               title={locale === 'id' ? 'Sebelumnya' : 'Previous Page'}
             >
               <ChevronLeft className="w-4 h-4" />
@@ -382,14 +491,14 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
             <div className="flex items-center gap-1 px-1">
               {getPageNumbers(validCurrentPage, totalPages).map((p, idx) =>
                 p === '...' ? (
-                  <span key={`ellipsis-${idx}`} className="px-1.5 text-gray-400">
-                    ...
+                  <span key={`ellipsis-${idx}`} className="px-1 text-gray-400">
+                    ..
                   </span>
                 ) : (
                   <button
                     key={`page-${p}`}
                     onClick={() => setCurrentPage(Number(p))}
-                    className={`min-w-[28px] h-7 px-2 rounded-lg font-medium transition text-xs ${
+                    className={`min-w-[32px] h-8 px-2 rounded-lg font-medium transition text-xs flex items-center justify-center ${
                       validCurrentPage === p
                         ? 'bg-blue-600 text-white shadow-xs font-semibold'
                         : 'border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
@@ -405,7 +514,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={validCurrentPage === totalPages}
-              className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition text-gray-600 dark:text-gray-300"
+              className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition text-gray-600 dark:text-gray-300 min-h-[36px] min-w-[36px] flex items-center justify-center"
               title={locale === 'id' ? 'Selanjutnya' : 'Next Page'}
             >
               <ChevronRight className="w-4 h-4" />
@@ -415,7 +524,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
             <button
               onClick={() => setCurrentPage(totalPages)}
               disabled={validCurrentPage === totalPages}
-              className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition text-gray-600 dark:text-gray-300"
+              className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition text-gray-600 dark:text-gray-300 min-h-[36px] min-w-[36px] flex items-center justify-center"
               title={locale === 'id' ? 'Halaman Terakhir' : 'Last Page'}
             >
               <ChevronsRight className="w-4 h-4" />
@@ -426,4 +535,3 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
     </div>
   );
 };
-

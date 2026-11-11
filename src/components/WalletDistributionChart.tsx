@@ -35,7 +35,7 @@ export const WalletDistributionChart: React.FC<WalletDistributionChartProps> = (
 
   if (!mounted) {
     return (
-      <div className="h-72 flex items-center justify-center text-xs text-gray-400">
+      <div className="h-64 sm:h-80 flex items-center justify-center text-xs text-gray-400">
         Memuat grafik...
       </div>
     );
@@ -52,10 +52,10 @@ export const WalletDistributionChart: React.FC<WalletDistributionChartProps> = (
         <div className="p-2.5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-lg text-xs">
           <p className="font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
             <span
-              className="w-2.5 h-2.5 rounded-full inline-block"
+              className="w-2.5 h-2.5 rounded-full inline-block flex-shrink-0"
               style={{ backgroundColor: item.color }}
             />
-            {item.name}
+            <span className="truncate">{item.name}</span>
           </p>
           <p className="mt-1 font-semibold text-gray-700 dark:text-gray-300">
             {formatCurrency(item.value, locale)} ({pct}%)
@@ -67,17 +67,17 @@ export const WalletDistributionChart: React.FC<WalletDistributionChartProps> = (
   };
 
   return (
-    <div className="p-5 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm">
-      <div className="mb-4">
-        <h3 className="text-base font-bold text-gray-900 dark:text-white">
+    <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-xs sm:shadow-sm">
+      <div className="mb-3 sm:mb-4">
+        <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
           {t('charts.distributionTitle')}
         </h3>
-        <p className="text-xs text-gray-500 dark:text-gray-400">
+        <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
           Proporsi saldo tiap instrumen dompet & rekening
         </p>
       </div>
 
-      <div className="h-72 w-full flex items-center justify-center">
+      <div className="h-64 sm:h-80 w-full flex items-center justify-center">
         {filteredData.length === 0 ? (
           <div className="flex flex-col items-center justify-center text-center p-4">
             <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800/80 flex items-center justify-center text-gray-400 mb-2">
@@ -96,10 +96,10 @@ export const WalletDistributionChart: React.FC<WalletDistributionChartProps> = (
               <Pie
                 data={filteredData}
                 cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={95}
-                paddingAngle={4}
+                cy="46%"
+                innerRadius={50}
+                outerRadius={82}
+                paddingAngle={3}
                 dataKey="value"
               >
                 {filteredData.map((entry, index) => (
@@ -112,8 +112,11 @@ export const WalletDistributionChart: React.FC<WalletDistributionChartProps> = (
               </Pie>
               <Tooltip content={<CustomTooltip />} />
               <Legend
-                wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
-                formatter={(val) => <span className="text-xs font-medium">{val}</span>}
+                verticalAlign="bottom"
+                align="center"
+                layout="horizontal"
+                wrapperStyle={{ fontSize: '10px', paddingTop: '6px' }}
+                formatter={(val) => <span className="text-[11px] font-medium text-gray-700 dark:text-gray-300">{val}</span>}
               />
             </PieChart>
           </ResponsiveContainer>

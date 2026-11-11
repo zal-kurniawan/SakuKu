@@ -101,173 +101,198 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl bg-white dark:bg-gray-800 p-6 shadow-xl border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in-95 duration-150">
-        <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-700">
-          <div className="flex items-center space-x-2">
-            <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400">
-              <PlusCircle className="w-4 h-4" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs">
+      <div className="w-[94vw] sm:max-w-lg max-h-[90vh] sm:max-h-[85vh] flex flex-col rounded-2xl bg-white dark:bg-gray-800 shadow-2xl border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in-95 duration-150 overflow-hidden">
+        {/* Modal Header (Fixed at top) */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
+          <div className="flex items-center space-x-2.5">
+            <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400">
+              <PlusCircle className="w-5 h-5" />
             </div>
-            <h3 className="text-base font-bold text-gray-900 dark:text-white">
-              {t('transactions.modalAddTitle')}
-            </h3>
+            <div>
+              <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                {t('transactions.modalAddTitle')}
+              </h3>
+              <p className="text-[11px] text-gray-400">Catat pemasukan atau pengeluaran</p>
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+            className="p-1.5 rounded-xl text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition min-h-[38px] min-w-[38px] flex items-center justify-center"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {error && (
-          <div className="mt-3 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-xs text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-          {/* Type Toggle */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-              {t('transactions.formType')}
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setType('EXPENSE');
-                  setCategory(CATEGORIES_EXPENSE[0]);
-                }}
-                className={`py-2 px-3 rounded-xl text-xs font-semibold border text-center transition ${
-                  type === 'EXPENSE'
-                    ? 'border-rose-500 bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300'
-                    : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'
-                }`}
-              >
-                🔴 {t('transactions.expense')}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setType('INCOME');
-                  setCategory(CATEGORIES_INCOME[0]);
-                }}
-                className={`py-2 px-3 rounded-xl text-xs font-semibold border text-center transition ${
-                  type === 'INCOME'
-                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'
-                    : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'
-                }`}
-              >
-                🟢 {t('transactions.income')}
-              </button>
+        {/* Modal Scrollable Body */}
+        <div className="overflow-y-auto p-4 sm:p-6 space-y-4 flex-1">
+          {error && (
+            <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-xs text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800">
+              {error}
             </div>
-          </div>
+          )}
 
-          {/* Title */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-              {t('transactions.formTitle')}
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder={t('transactions.formTitlePlaceholder')}
-              required
-              className="w-full px-3.5 py-2 rounded-xl text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          {/* Amount & Wallet */}
-          <div className="grid grid-cols-2 gap-3">
+          <form onSubmit={handleSubmit} id="add-tx-form" className="space-y-4">
+            {/* Type Toggle Buttons */}
             <div>
-              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                {t('transactions.formAmount')} (Rp)
+              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                {t('transactions.formType')}
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setType('EXPENSE');
+                    setCategory(CATEGORIES_EXPENSE[0]);
+                  }}
+                  className={`min-h-[44px] py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                    type === 'EXPENSE'
+                      ? 'bg-rose-600 text-white shadow-xs'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200'
+                  }`}
+                >
+                  <span>🔴</span> {t('transactions.expense')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setType('INCOME');
+                    setCategory(CATEGORIES_INCOME[0]);
+                  }}
+                  className={`min-h-[44px] py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                    type === 'INCOME'
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200'
+                  }`}
+                >
+                  <span>🟢</span> {t('transactions.income')}
+                </button>
+              </div>
+            </div>
+
+            {/* Title */}
+            <div>
+              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                {t('transactions.formTitle')} *
+              </label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Contoh: Makan Siang, Bensin, Gaji"
+                required
+                className="w-full px-3.5 py-2.5 rounded-xl text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
+              />
+            </div>
+
+            {/* Amount */}
+            <div>
+              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                {t('transactions.formAmount')} (Rp) *
               </label>
               <input
                 type="number"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0"
+                min="1"
                 required
-                className="w-full px-3.5 py-2 rounded-xl text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3.5 py-2.5 rounded-xl text-sm font-semibold border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
               />
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                {t('transactions.colWallet')}
-              </label>
-              <div className="relative">
-                <select
-                  value={walletId}
-                  onChange={(e) => setWalletId(e.target.value)}
-                  className="appearance-none w-full pl-3.5 pr-9 py-2 rounded-xl text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                >
-                  {wallets.map((w) => (
-                    <option key={w.id} value={w.id}>
-                      {w.name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
-              </div>
-            </div>
-          </div>
 
-          {/* Category & Date */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                {t('transactions.formCategory')}
-              </label>
-              <div className="relative">
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="appearance-none w-full pl-3.5 pr-9 py-2 rounded-xl text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                >
-                  {currentCategories.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
+            {/* Wallet Selection & Category (Responsive 2 Cols) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Wallet */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                  {t('transactions.formWallet')}
+                </label>
+                <div className="relative">
+                  <select
+                    value={walletId}
+                    onChange={(e) => setWalletId(e.target.value)}
+                    className="appearance-none w-full pl-3.5 pr-9 py-2.5 rounded-xl text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer min-h-[44px]"
+                  >
+                    {wallets.map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.name}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                </div>
+              </div>
+
+              {/* Category */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                  {t('transactions.formCategory')}
+                </label>
+                <div className="relative">
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="appearance-none w-full pl-3.5 pr-9 py-2.5 rounded-xl text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer min-h-[44px]"
+                  >
+                    {currentCategories.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                </div>
               </div>
             </div>
+
+            {/* Date */}
             <div>
-              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                 {t('transactions.formDate')}
               </label>
               <input
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3.5 py-2.5 rounded-xl text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
               />
             </div>
-          </div>
 
-          {/* Actions */}
-          <div className="pt-3 flex items-center justify-end space-x-2 border-t border-gray-100 dark:border-gray-700">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={loading}
-              className="px-4 py-2 rounded-xl text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-            >
-              {t('wallets.cancel')}
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-4 py-2 rounded-xl text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition disabled:opacity-50"
-            >
-              {loading ? t('common.loading') : t('wallets.save')}
-            </button>
-          </div>
-        </form>
+            {/* Notes */}
+            <div>
+              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                {t('transactions.formNotes')} (Opsional)
+              </label>
+              <input
+                type="text"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Catatan tambahan..."
+                className="w-full px-3.5 py-2.5 rounded-xl text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
+              />
+            </div>
+          </form>
+        </div>
+
+        {/* Modal Footer (Fixed at bottom) */}
+        <div className="px-5 py-3.5 border-t border-gray-100 dark:border-gray-700 flex items-center justify-end space-x-2 flex-shrink-0 bg-gray-50/60 dark:bg-gray-900/40">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2.5 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition min-h-[42px]"
+          >
+            {t('transactions.cancel')}
+          </button>
+          <button
+            type="submit"
+            form="add-tx-form"
+            disabled={loading}
+            className="px-5 py-2.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 active:scale-98 text-white shadow-sm transition min-h-[42px] flex items-center justify-center gap-1.5"
+          >
+            {loading ? t('common.loading') : t('transactions.save')}
+          </button>
+        </div>
       </div>
     </div>
   );

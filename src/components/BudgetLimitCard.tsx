@@ -166,7 +166,7 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
               </div>
 
               {/* Stats detail */}
-              <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400 pt-0.5">
+              <div className="flex flex-wrap items-center justify-between gap-1 text-[11px] text-gray-500 dark:text-gray-400 pt-0.5">
                 <span>
                   {t('budgets.spent')}:{' '}
                   <strong className="text-gray-900 dark:text-white">
@@ -211,28 +211,28 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
 
       {/* Modal Add Budget */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-gray-800 p-5 shadow-xl border border-gray-100 dark:border-gray-700">
-            <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs">
+          <div className="w-[94vw] sm:max-w-md max-h-[90vh] flex flex-col rounded-2xl bg-white dark:bg-gray-800 p-5 sm:p-6 shadow-2xl border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in-95 duration-150 overflow-hidden">
+            <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white mb-3">
               {t('budgets.addBudget')}
             </h3>
 
             {error && (
-              <div className="mb-3 p-2 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-xs text-rose-600">
+              <div className="mb-3 p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-xs text-rose-600">
                 {error}
               </div>
             )}
 
-            <form onSubmit={handleSaveBudget} className="space-y-3">
+            <form onSubmit={handleSaveBudget} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                   Kategori
                 </label>
                 <div className="relative">
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="appearance-none w-full pl-3 pr-9 py-2 rounded-xl text-xs border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                    className="appearance-none w-full pl-3.5 pr-9 py-2.5 rounded-xl text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer min-h-[44px]"
                   >
                     {COMMON_CATEGORIES.map((c) => (
                       <option key={c} value={c}>
@@ -245,7 +245,7 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                   Target Batas Bulanan (Rp)
                 </label>
                 <input
@@ -254,7 +254,8 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
                   onChange={(e) => setMonthlyLimit(e.target.value)}
                   placeholder="Contoh: 1500000"
                   required
-                  className="w-full px-3 py-2 rounded-xl text-xs border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                  min="1"
+                  className="w-full px-3.5 py-2.5 rounded-xl text-sm font-semibold border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
                 />
               </div>
 
@@ -262,14 +263,14 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="px-3 py-1.5 rounded-lg text-xs text-gray-500 hover:bg-gray-100"
+                  className="px-4 py-2.5 rounded-xl text-xs font-semibold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 min-h-[42px]"
                 >
                   {t('wallets.cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white"
+                  className="px-5 py-2.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white min-h-[42px]"
                 >
                   {loading ? t('common.loading') : t('wallets.save')}
                 </button>

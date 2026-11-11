@@ -146,10 +146,15 @@ export default function DashboardPage() {
           onTransfer={handleOpenTransfer}
         />
 
-        {/* Charts & Budget Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Charts Section: 1 col on mobile/tablet, 2 cols on desktop */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          <CashflowChart data={stats.cashflowHistory} />
+          <WalletDistributionChart data={liveWalletDistribution} />
+        </div>
+
+        {/* Transactions & Budget Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           <div className="lg:col-span-2 space-y-6">
-            <CashflowChart data={stats.cashflowHistory} />
             <TransactionTable
               transactions={transactions}
               wallets={wallets}
@@ -159,7 +164,6 @@ export default function DashboardPage() {
           </div>
 
           <div className="space-y-6">
-            <WalletDistributionChart data={liveWalletDistribution} />
             <BudgetLimitCard budgets={budgets} onRefresh={fetchData} />
           </div>
         </div>

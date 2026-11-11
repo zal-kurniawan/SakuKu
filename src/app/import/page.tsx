@@ -268,60 +268,60 @@ export default function ImportPage() {
         {previewData && !commitSuccess && (
           <div className="space-y-6 animate-in fade-in duration-200">
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
               {/* Total Valid */}
-              <div className="p-4 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm">
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-xs sm:shadow-sm">
                 <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                  <span>Total Transaksi Valid</span>
-                  <Layers className="w-4 h-4 text-blue-500" />
+                  <span className="truncate">Transaksi Valid</span>
+                  <Layers className="w-4 h-4 text-blue-500 flex-shrink-0" />
                 </div>
-                <div className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">
+                <div className="mt-2 text-lg sm:text-2xl font-black text-gray-900 dark:text-white truncate">
                   {previewData.summary.validTransactions.toLocaleString('id-ID')}
                 </div>
-                <div className="text-[11px] text-gray-400 mt-0.5">
-                  Dari total {previewData.summary.totalRows} baris di Excel
+                <div className="text-[10px] sm:text-[11px] text-gray-400 mt-0.5 truncate">
+                  Dari total {previewData.summary.totalRows} baris
                 </div>
               </div>
 
               {/* Total Income */}
-              <div className="p-4 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm">
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-xs sm:shadow-sm">
                 <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                  <span>Total Pemasukan</span>
-                  <TrendingUp className="w-4 h-4 text-emerald-500" />
+                  <span className="truncate">Total Pemasukan</span>
+                  <TrendingUp className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                 </div>
-                <div className="mt-2 text-xl font-bold text-emerald-600 dark:text-emerald-400">
+                <div className="mt-2 text-base sm:text-xl font-black text-emerald-600 dark:text-emerald-400 truncate">
                   +{formatCurrency(previewData.summary.incomeTotal, locale)}
                 </div>
-                <div className="text-[11px] text-gray-400 mt-0.5">
+                <div className="text-[10px] sm:text-[11px] text-gray-400 mt-0.5 truncate">
                   {previewData.summary.incomeCount} transaksi masuk
                 </div>
               </div>
 
               {/* Total Expense */}
-              <div className="p-4 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm">
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-xs sm:shadow-sm">
                 <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                  <span>Total Pengeluaran</span>
-                  <TrendingDown className="w-4 h-4 text-rose-500" />
+                  <span className="truncate">Total Pengeluaran</span>
+                  <TrendingDown className="w-4 h-4 text-rose-500 flex-shrink-0" />
                 </div>
-                <div className="mt-2 text-xl font-bold text-rose-600 dark:text-rose-400">
+                <div className="mt-2 text-base sm:text-xl font-black text-rose-600 dark:text-rose-400 truncate">
                   -{formatCurrency(previewData.summary.expenseTotal, locale)}
                 </div>
-                <div className="text-[11px] text-gray-400 mt-0.5">
+                <div className="text-[10px] sm:text-[11px] text-gray-400 mt-0.5 truncate">
                   {previewData.summary.expenseCount} transaksi keluar
                 </div>
               </div>
 
               {/* Transfers */}
-              <div className="p-4 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm">
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-xs sm:shadow-sm">
                 <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                  <span>Transfer Dipasangkan</span>
-                  <ArrowRightLeft className="w-4 h-4 text-violet-500" />
+                  <span className="truncate">Transfer Dipasangkan</span>
+                  <ArrowRightLeft className="w-4 h-4 text-violet-500 flex-shrink-0" />
                 </div>
-                <div className="mt-2 text-xl font-bold text-violet-600 dark:text-violet-400">
+                <div className="mt-2 text-base sm:text-xl font-black text-violet-600 dark:text-violet-400 truncate">
                   {formatCurrency(previewData.summary.transferTotal, locale)}
                 </div>
-                <div className="text-[11px] text-gray-400 mt-0.5">
-                  {previewData.summary.transferCount} mutasi antar-dompet
+                <div className="text-[10px] sm:text-[11px] text-gray-400 mt-0.5 truncate">
+                  {previewData.summary.transferCount} mutasi dompet
                 </div>
               </div>
             </div>
@@ -501,7 +501,7 @@ export default function ImportPage() {
                   </div>
                 )}
 
-                <div className="flex items-center justify-end space-x-3">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:space-x-3">
                   <button
                     type="button"
                     onClick={() => {
@@ -509,7 +509,7 @@ export default function ImportPage() {
                       setPreviewData(null);
                     }}
                     disabled={committing}
-                    className="px-4 py-2.5 rounded-xl text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                    className="px-4 py-2.5 rounded-xl text-xs font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition min-h-[42px] order-2 sm:order-1"
                   >
                     Batal / Ganti Berkas
                   </button>
@@ -517,7 +517,7 @@ export default function ImportPage() {
                     type="button"
                     onClick={handleCommit}
                     disabled={committing}
-                    className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/20 transition disabled:opacity-50"
+                    className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/20 transition disabled:opacity-50 min-h-[42px] order-1 sm:order-2"
                   >
                     {committing ? (
                       <>
