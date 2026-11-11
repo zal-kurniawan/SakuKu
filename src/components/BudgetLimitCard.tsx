@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from '@/context/LanguageContext';
 import { formatCurrency } from '@/lib/utils';
-import { AlertTriangle, AlertOctagon, CheckCircle2, Plus, Target } from 'lucide-react';
+import { AlertTriangle, AlertOctagon, CheckCircle2, Plus, Target, ChevronDown } from 'lucide-react';
 
 export interface BudgetItem {
   id: string;
@@ -228,17 +228,20 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                   Kategori
                 </label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl text-xs border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
-                >
-                  {COMMON_CATEGORIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="appearance-none w-full pl-3 pr-9 py-2 rounded-xl text-xs border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  >
+                    {COMMON_CATEGORIES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
+                </div>
               </div>
 
               <div>

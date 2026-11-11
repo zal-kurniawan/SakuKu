@@ -66,6 +66,18 @@ export default function DashboardPage() {
     fetchData();
   }, [fetchData]);
 
+  // Live Single Source of Truth metrics derived directly from `wallets`:
+  const liveNetWorth = wallets.reduce((acc, w) => acc + (w.balance || 0), 0);
+
+  const liveWalletDistribution = wallets
+    .filter((w) => (w.balance || 0) > 0)
+    .map((w) => ({
+      name: w.name,
+      value: w.balance,
+      color: w.colorCode || '#3B82F6',
+      type: w.type,
+    }));
+
   // Wallet Actions
   const handleEditWallet = (wallet: WalletItem) => {
     setWalletToEdit(wallet);
@@ -74,11 +86,18 @@ export default function DashboardPage() {
 
   const handleDeleteWallet = async (id: string) => {
     if (!confirm('Hapus dompet ini beserta seluruh transaksinya?')) return;
+    // Optimistic instant UI update (re-renders KPI and Chart immediately)
+    setWallets((prev) => prev.filter((w) => w.id !== id));
     try {
       const res = await fetch(`/api/wallets/${id}`, { method: 'DELETE' });
-      if (res.ok) fetchData();
+      if (res.ok) {
+        await fetchData();
+      } else {
+        await fetchData();
+      }
     } catch (err) {
       console.error(err);
+      await fetchData();
     }
   };
 
@@ -89,11 +108,14 @@ export default function DashboardPage() {
 
   // Transaction Actions
   const handleDeleteTransaction = async (id: string) => {
+    // Optimistic instant UI update
+    setTransactions((prev) => prev.filter((tx) => tx.id !== id));
     try {
       const res = await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
-      if (res.ok) fetchData();
+      if (res.ok) await fetchData();
     } catch (err) {
       console.error(err);
+      await fetchData();
     }
   };
 
@@ -108,13 +130,13 @@ export default function DashboardPage() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        {/* KPI Cards */}
-        <KpiCards stats={stats} />
+        {/* KPI Cards (Always in sync with liveNetWorth) */}
+        <KpiCards stats={{ ...stats, totalNetWorth: liveNetWorth }} />
 
         {/* Wallets Grid */}
         <WalletList
           wallets={wallets}
-          totalNetWorth={stats.totalNetWorth}
+          totalNetWorth={liveNetWorth}
           onAddWallet={() => {
             setWalletToEdit(null);
             setIsAddWalletOpen(true);
@@ -137,7 +159,7 @@ export default function DashboardPage() {
           </div>
 
           <div className="space-y-6">
-            <WalletDistributionChart data={stats.walletDistribution} />
+            <WalletDistributionChart data={liveWalletDistribution} />
             <BudgetLimitCard budgets={budgets} onRefresh={fetchData} />
           </div>
         </div>

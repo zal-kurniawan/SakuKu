@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from '@/context/LanguageContext';
 import { formatCurrency } from '@/lib/utils';
-import { X, ArrowRightLeft } from 'lucide-react';
+import { X, ArrowRightLeft, ChevronDown } from 'lucide-react';
 import { WalletItem } from './WalletList';
 
 interface TransferModalProps {
@@ -133,17 +133,20 @@ export const TransferModal: React.FC<TransferModalProps> = ({
                 </span>
               )}
             </div>
-            <select
-              value={fromWalletId}
-              onChange={(e) => setFromWalletId(e.target.value)}
-              className="w-full px-3.5 py-2 rounded-xl text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {wallets.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name} ({formatCurrency(w.balance, locale)})
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={fromWalletId}
+                onChange={(e) => setFromWalletId(e.target.value)}
+                className="appearance-none w-full pl-3.5 pr-9 py-2 rounded-xl text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              >
+                {wallets.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.name} ({formatCurrency(w.balance, locale)})
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
+            </div>
           </div>
 
           {/* To Wallet */}
@@ -158,17 +161,20 @@ export const TransferModal: React.FC<TransferModalProps> = ({
                 </span>
               )}
             </div>
-            <select
-              value={toWalletId}
-              onChange={(e) => setToWalletId(e.target.value)}
-              className="w-full px-3.5 py-2 rounded-xl text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {wallets.map((w) => (
-                <option key={w.id} value={w.id} disabled={w.id === fromWalletId}>
-                  {w.name} ({formatCurrency(w.balance, locale)})
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={toWalletId}
+                onChange={(e) => setToWalletId(e.target.value)}
+                className="appearance-none w-full pl-3.5 pr-9 py-2 rounded-xl text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              >
+                {wallets.map((w) => (
+                  <option key={w.id} value={w.id} disabled={w.id === fromWalletId}>
+                    {w.name} ({formatCurrency(w.balance, locale)})
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
+            </div>
           </div>
 
           {/* Amount */}

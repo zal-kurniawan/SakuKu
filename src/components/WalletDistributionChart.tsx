@@ -79,10 +79,20 @@ export const WalletDistributionChart: React.FC<WalletDistributionChartProps> = (
 
       <div className="h-72 w-full flex items-center justify-center">
         {filteredData.length === 0 ? (
-          <p className="text-xs text-gray-400">Belum ada saldo terisi.</p>
+          <div className="flex flex-col items-center justify-center text-center p-4">
+            <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800/80 flex items-center justify-center text-gray-400 mb-2">
+              <span className="text-xl">💳</span>
+            </div>
+            <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+              Belum ada saldo pada dompet aktif
+            </p>
+            <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">
+              Tambahkan saldo pada dompet untuk melihat proporsi aset.
+            </p>
+          </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
+            <PieChart key={filteredData.map((d) => `${d.name}-${d.value}`).join(',')}>
               <Pie
                 data={filteredData}
                 cx="50%"
@@ -94,7 +104,7 @@ export const WalletDistributionChart: React.FC<WalletDistributionChartProps> = (
               >
                 {filteredData.map((entry, index) => (
                   <Cell
-                    key={`cell-${index}`}
+                    key={`cell-${entry.name}-${index}`}
                     fill={entry.color || '#3B82F6'}
                     stroke="none"
                   />
@@ -103,7 +113,7 @@ export const WalletDistributionChart: React.FC<WalletDistributionChartProps> = (
               <Tooltip content={<CustomTooltip />} />
               <Legend
                 wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
-                formatter={(val) => <span className="text-xs">{val}</span>}
+                formatter={(val) => <span className="text-xs font-medium">{val}</span>}
               />
             </PieChart>
           </ResponsiveContainer>

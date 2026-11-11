@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getActiveUser } from '@/lib/current-user';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET() {
   try {
     const user = await getActiveUser();
@@ -68,13 +71,15 @@ export async function GET() {
       });
     }
 
-    // 4. Wallet Distribution for Pie Chart
-    const walletDistribution = wallets.map((w) => ({
-      name: w.name,
-      value: Math.max(0, w.balance),
-      color: w.colorCode,
-      type: w.type,
-    }));
+    // 4. Wallet Distribution for Pie Chart (Only active wallets with balance > 0)
+    const walletDistribution = wallets
+      .filter((w) => w.balance > 0)
+      .map((w) => ({
+        name: w.name,
+        value: w.balance,
+        color: w.colorCode,
+        type: w.type,
+      }));
 
     return NextResponse.json({
       totalNetWorth,

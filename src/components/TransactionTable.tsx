@@ -15,6 +15,7 @@ import {
   Smartphone,
   Globe,
   FileSpreadsheet,
+  ChevronDown,
 } from 'lucide-react';
 import { WalletItem } from './WalletList';
 
@@ -116,11 +117,11 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
         </div>
 
         {/* Filter Wallet */}
-        <div>
+        <div className="relative inline-block w-full">
           <select
             value={selectedWallet}
             onChange={(e) => setSelectedWallet(e.target.value)}
-            className="w-full px-3 py-2 rounded-xl text-xs border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="appearance-none w-full pl-3 pr-9 py-2 rounded-xl text-xs border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer truncate"
           >
             <option value="all">{t('transactions.filterWallet')}</option>
             {wallets.map((w) => (
@@ -129,20 +130,22 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
               </option>
             ))}
           </select>
+          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
         </div>
 
         {/* Filter Type */}
-        <div>
+        <div className="relative inline-block w-full">
           <select
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
-            className="w-full px-3 py-2 rounded-xl text-xs border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="appearance-none w-full pl-3 pr-9 py-2 rounded-xl text-xs border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer truncate"
           >
             <option value="all">{t('transactions.filterType')}</option>
             <option value="INCOME">{t('transactions.income')}</option>
             <option value="EXPENSE">{t('transactions.expense')}</option>
             <option value="TRANSFER">{t('transactions.typeTransfer')}</option>
           </select>
+          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
         </div>
       </div>
 
