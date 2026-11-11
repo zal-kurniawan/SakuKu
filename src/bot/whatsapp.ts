@@ -18,9 +18,34 @@ import {
 
 let sock: WASocket | null = null;
 let botStatus: 'DISCONNECTED' | 'SCANNING_QR' | 'CONNECTED' = 'DISCONNECTED';
+// Cache recent message IDs sent by bot to avoid processing own echo in self-chat
+const botSentMessageIds = new Set<string>();
 
 export function getBotStatus() {
   return botStatus;
+}
+
+/**
+ * Extracts text content from Baileys message object
+ */
+function extractMessageContent(msg: WAMessage): string {
+  const m = msg.message;
+  if (!m) return '';
+
+  return (
+    m.conversation ||
+    m.extendedTextMessage?.text ||
+    m.imageMessage?.caption ||
+    m.ephemeralMessage?.message?.conversation ||
+    m.ephemeralMessage?.message?.extendedTextMessage?.text ||
+    m.ephemeralMessage?.message?.imageMessage?.caption ||
+    m.viewOnceMessage?.message?.conversation ||
+    m.viewOnceMessage?.message?.extendedTextMessage?.text ||
+    m.viewOnceMessageV2?.message?.conversation ||
+    m.viewOnceMessageV2?.message?.extendedTextMessage?.text ||
+    m.documentWithCaptionMessage?.message?.documentMessage?.caption ||
+    ''
+  );
 }
 
 /**
@@ -28,11 +53,23 @@ export function getBotStatus() {
  * Example: '081234567890' -> '6281234567890'
  */
 export function normalizePhoneNumber(raw: string): string {
-  let cleaned = raw.replace(/[^0-9]/g, '');
+  // Strip device suffixes e.g. '628563006136:0@s.whatsapp.net' -> '628563006136'
+  const base = raw.split('@')[0].split(':')[0];
+  let cleaned = base.replace(/[^0-9]/g, '');
   if (cleaned.startsWith('0')) {
     cleaned = '62' + cleaned.slice(1);
   }
   return cleaned;
+}
+
+/**
+ * Clean JID by removing multi-device colon suffixes (:0, :1, etc)
+ */
+export function cleanJid(rawJid: string): string {
+  if (!rawJid.includes(':')) return rawJid;
+  const parts = rawJid.split('@');
+  const userPart = parts[0].split(':')[0];
+  return `${userPart}@${parts[1]}`;
 }
 
 /**
@@ -52,18 +89,11 @@ export function isWhitelisted(remoteJid: string): boolean {
 
   // Handle WhatsApp Multi-Device LID (Linked Device Identifier, e.g. for "Message Yourself")
   if (remoteJid.endsWith('@lid')) {
-    const rawLid = remoteJid.split('@')[0];
-    const userLid = sock?.user?.lid?.split(':')[0]?.split('@')[0];
-    // If it matches the bot's own LID or starts with the account's LID, it is the owner
-    if (userLid && rawLid === userLid) {
-      return true;
-    }
-    // Whitelist the owner's known LID (e.g. 87943783936108)
     return true;
   }
 
   const normalizedAllowed = normalizePhoneNumber(allowed);
-  const senderPhone = normalizePhoneNumber(remoteJid.split('@')[0]);
+  const senderPhone = normalizePhoneNumber(remoteJid);
 
   return senderPhone === normalizedAllowed;
 }
@@ -153,8 +183,7 @@ export async function startWhatsAppBot(): Promise<WASocket> {
 
   // Handle incoming messages
   sock.ev.on('messages.upsert', async ({ messages, type }) => {
-    if (type !== 'notify') return;
-
+    // Process messages (handles both 'notify' and 'append' so self-chat / Message Yourself works)
     for (const msg of messages) {
       await processIncomingMessage(msg);
     }
@@ -168,12 +197,47 @@ export async function startWhatsAppBot(): Promise<WASocket> {
  */
 async function processIncomingMessage(msg: WAMessage) {
   try {
+    const msgId = msg.key.id;
+    if (msgId && botSentMessageIds.has(msgId)) {
+      botSentMessageIds.delete(msgId);
+      return;
+    }
+
     const remoteJid = msg.key.remoteJid;
     if (!remoteJid) return;
 
     // Reject group messages & broadcast immediately
     if (remoteJid.endsWith('@g.us') || remoteJid === 'status@broadcast') {
       return;
+    }
+
+    const messageContent = extractMessageContent(msg);
+    if (!messageContent.trim()) return;
+
+    // Prevent bot from replying to its own messages or loops
+    if (
+      messageContent.includes('[SakuKu Assistant]') ||
+      messageContent.includes('SakuKu Financial Assistant')
+    ) {
+      return;
+    }
+
+    // Determine allowed & remote phone numbers
+    const allowedPhone = normalizePhoneNumber(process.env.MY_PHONE_NUMBER || '');
+    const remotePhone = normalizePhoneNumber(remoteJid);
+    const botUserPhone = sock?.user?.id ? normalizePhoneNumber(sock.user.id) : allowedPhone;
+
+    // If message is sent from me (fromMe: true), check if it's sent to self or someone else
+    if (msg.key.fromMe) {
+      const isSelfChat =
+        remoteJid.endsWith('@lid') ||
+        remotePhone === allowedPhone ||
+        remotePhone === botUserPhone;
+
+      if (!isSelfChat) {
+        // User is texting someone else, do not trigger bot
+        return;
+      }
     }
 
     // Security whitelist check
@@ -184,42 +248,54 @@ async function processIncomingMessage(msg: WAMessage) {
       return;
     }
 
-    // Extract text content
-    const messageContent =
-      msg.message?.conversation ||
-      msg.message?.extendedTextMessage?.text ||
-      msg.message?.imageMessage?.caption ||
-      '';
-
-    if (!messageContent.trim()) return;
-
-    // Prevent bot from replying to its own messages (avoid infinite loop)
-    if (messageContent.includes('[SakuKu Assistant]')) {
-      return;
-    }
-
     // Determine user phone number for database lookup
-    let senderPhone = normalizePhoneNumber(remoteJid.split('@')[0]);
-    if (remoteJid.endsWith('@lid')) {
-      senderPhone = normalizePhoneNumber(process.env.MY_PHONE_NUMBER || '628563006136');
+    let senderPhone = remotePhone;
+    if (remoteJid.endsWith('@lid') || senderPhone.length < 5) {
+      senderPhone = allowedPhone || '628563006136';
     }
 
-    console.log(`📩 [SAKUKU BOT INCOMING] Dari: ${senderPhone} (${remoteJid})\nKonten:\n${messageContent}\n`);
+    console.log(
+      `📩 [SAKUKU BOT INCOMING] Dari: ${senderPhone} (${remoteJid})\nKonten: "${messageContent.trim()}"\n`
+    );
 
     // Process via batch-aware handler engine
     const replyText = await handleWhatsAppMessage(senderPhone, messageContent);
 
     // Send reply
     if (sock && replyText) {
-      await sock.sendMessage(remoteJid, { text: replyText });
-      console.log(`📤 [SAKUKU BOT BALASAN TERKIRIM] ke ${senderPhone}`);
+      const targetJid = cleanJid(remoteJid);
+      try {
+        const sent = await sock.sendMessage(targetJid, { text: replyText });
+        if (sent?.key?.id) {
+          botSentMessageIds.add(sent.key.id);
+        }
+        console.log(`📤 [SAKUKU BOT BALASAN TERKIRIM] ke ${targetJid}`);
+      } catch (sendErr: any) {
+        console.warn(
+          `⚠️ [GAGAL KIRIM KE ${targetJid}], mencoba fallback ke phone JID:`,
+          sendErr.message
+        );
+        const fallbackJid = `${allowedPhone || senderPhone}@s.whatsapp.net`;
+        if (fallbackJid !== targetJid) {
+          const sent = await sock.sendMessage(fallbackJid, { text: replyText });
+          if (sent?.key?.id) {
+            botSentMessageIds.add(sent.key.id);
+          }
+          console.log(`📤 [SAKUKU BOT BALASAN TERKIRIM FALLBACK] ke ${fallbackJid}`);
+        }
+      }
     }
   } catch (err) {
     console.error('⚠️ [ERROR PROCESSING MESSAGE]:', err);
     if (sock && msg.key.remoteJid) {
-      await sock.sendMessage(msg.key.remoteJid, {
-        text: '❌ Terjadi kesalahan internal saat memproses pesan SakuKu Anda. Silakan coba sesaat lagi.',
-      });
+      const fallbackTarget = cleanJid(msg.key.remoteJid);
+      try {
+        await sock.sendMessage(fallbackTarget, {
+          text: '🤖 *[SakuKu Assistant]*\n❌ Terjadi kesalahan internal saat memproses pesan SakuKu Anda. Silakan coba sesaat lagi.',
+        });
+      } catch {
+        // Ignore fallback failure
+      }
     }
   }
 }
