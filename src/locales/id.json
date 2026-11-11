@@ -1,0 +1,108 @@
+{
+  "app": {
+    "title": "SakuKu",
+    "subtitle": "Personal Multi-Wallet Finance & WhatsApp Bot",
+    "statusConnected": "WhatsApp Terhubung",
+    "statusWaiting": "Menunggu Scan QR"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "wallets": "Dompet & Rekening",
+    "transactions": "Transaksi",
+    "budgets": "Budget Bulanan",
+    "botGuide": "Panduan Bot",
+    "importExcel": "Import Excel"
+  },
+  "kpi": {
+    "totalNetWorth": "Total Kekayaan Bersih",
+    "monthlyIncome": "Pemasukan Bulan Ini",
+    "monthlyExpense": "Pengeluaran Bulan Ini",
+    "netSavings": "Tabungan Bersih (Savings)",
+    "savingsRate": "Rasio Tabungan"
+  },
+  "wallets": {
+    "title": "Daftar Dompet & Rekening",
+    "addWallet": "Tambah Dompet",
+    "transfer": "Transfer Saldo",
+    "typeBank": "Bank",
+    "typeEwallet": "E-Wallet",
+    "typeCash": "Uang Tunai",
+    "balance": "Saldo",
+    "empty": "Belum ada dompet. Buat dompet pertama Anda!",
+    "modalAddTitle": "Tambah Dompet Baru",
+    "modalEditTitle": "Edit Dompet",
+    "name": "Nama Dompet",
+    "namePlaceholder": "Contoh: BCA, GoPay, Tunai",
+    "type": "Tipe Dompet",
+    "initialBalance": "Saldo Awal",
+    "color": "Warna Kartu",
+    "save": "Simpan",
+    "cancel": "Batal"
+  },
+  "transfer": {
+    "title": "Transfer Antar Dompet",
+    "fromWallet": "Dompet Asal",
+    "toWallet": "Dompet Tujuan",
+    "amount": "Nominal Transfer",
+    "notes": "Catatan (Opsional)",
+    "notesPlaceholder": "Contoh: Top up e-wallet, tarik tunai",
+    "submit": "Kirim Transfer",
+    "sameWalletError": "Dompet asal dan tujuan tidak boleh sama",
+    "insufficientBalance": "Saldo dompet asal tidak mencukupi"
+  },
+  "transactions": {
+    "title": "Riwayat Transaksi",
+    "addTransaction": "Catat Transaksi",
+    "exportCsv": "Export CSV",
+    "filterWallet": "Semua Dompet",
+    "filterType": "Semua Tipe",
+    "filterCategory": "Semua Kategori",
+    "search": "Cari transaksi...",
+    "colDate": "Tanggal",
+    "colTitle": "Keterangan",
+    "colType": "Tipe",
+    "colWallet": "Dompet",
+    "colCategory": "Kategori",
+    "colAmount": "Jumlah",
+    "colSource": "Sumber",
+    "colActions": "Aksi",
+    "income": "Pemasukan",
+    "expense": "Pengeluaran",
+    "typeTransfer": "Transfer",
+    "empty": "Belum ada transaksi yang sesuai filter.",
+    "deleteConfirm": "Yakin ingin menghapus transaksi ini?",
+    "modalAddTitle": "Catat Transaksi Baru",
+    "formTitle": "Judul Transaksi",
+    "formTitlePlaceholder": "Contoh: Makan Siang, Gaji Freelance",
+    "formAmount": "Nominal",
+    "formType": "Tipe Transaksi",
+    "formCategory": "Kategori",
+    "formDate": "Tanggal"
+  },
+  "budgets": {
+    "title": "Target Batas Budget Bulanan",
+    "addBudget": "Atur Budget",
+    "spent": "Terpakai",
+    "limit": "Batas Maksimal",
+    "remaining": "Sisa",
+    "statusSafe": "Aman",
+    "statusWarning": "Perhatian (>75%)",
+    "statusOver": "Overbudget (>100%)",
+    "empty": "Belum ada batas budget yang diatur."
+  },
+  "charts": {
+    "cashflowTitle": "Arus Kas Bulanan (Pemasukan vs Pengeluaran)",
+    "distributionTitle": "Komposisi Aset per Dompet",
+    "income": "Pemasukan",
+    "expense": "Pengeluaran"
+  },
+  "common": {
+    "loading": "Memuat data...",
+    "error": "Terjadi kesalahan",
+    "success": "Berhasil disimpan",
+    "delete": "Hapus",
+    "edit": "Edit",
+    "close": "Tutup",
+    "all": "Semua"
+  }
+}

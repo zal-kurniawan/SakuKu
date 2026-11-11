@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Baileys WhatsApp Session (Sensitive Auth Keys & Tokens)
+auth_session/
+
+# Local SQLite databases (if used)
+*.db
+*.db-journal
+
+# Next.js build output
+.next/
+out/
+
+# Environment Variables
+.env*.local
+.env
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# OS Files
+.DS_Store
+*.pem

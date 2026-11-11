@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: sakuku-bot-worker
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: singapore
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 8080
+      - key: DATABASE_URL
+        sync: false
+      - key: MY_PHONE_NUMBER
+        sync: false
+      - key: ADMIN_SECRET_KEY
+        sync: false
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
+    healthCheckPath: /health

@@ -1,0 +1,108 @@
+{
+  "app": {
+    "title": "SakuKu",
+    "subtitle": "Personal Multi-Wallet Finance & WhatsApp Bot",
+    "statusConnected": "WhatsApp Connected",
+    "statusWaiting": "Waiting for QR Scan"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "wallets": "Wallets & Accounts",
+    "transactions": "Transactions",
+    "budgets": "Monthly Budgets",
+    "botGuide": "Bot Syntax Guide",
+    "importExcel": "Import Excel"
+  },
+  "kpi": {
+    "totalNetWorth": "Total Net Worth",
+    "monthlyIncome": "Income This Month",
+    "monthlyExpense": "Expenses This Month",
+    "netSavings": "Net Savings",
+    "savingsRate": "Savings Rate"
+  },
+  "wallets": {
+    "title": "Wallets & Bank Accounts",
+    "addWallet": "Add Wallet",
+    "transfer": "Transfer Funds",
+    "typeBank": "Bank Account",
+    "typeEwallet": "E-Wallet",
+    "typeCash": "Cash",
+    "balance": "Balance",
+    "empty": "No wallets found. Create your first wallet!",
+    "modalAddTitle": "Add New Wallet",
+    "modalEditTitle": "Edit Wallet",
+    "name": "Wallet Name",
+    "namePlaceholder": "e.g., BCA, GoPay, Cash",
+    "type": "Wallet Type",
+    "initialBalance": "Initial Balance",
+    "color": "Card Color",
+    "save": "Save Wallet",
+    "cancel": "Cancel"
+  },
+  "transfer": {
+    "title": "Inter-Wallet Transfer",
+    "fromWallet": "Source Wallet",
+    "toWallet": "Destination Wallet",
+    "amount": "Transfer Amount",
+    "notes": "Notes (Optional)",
+    "notesPlaceholder": "e.g., Weekly e-wallet top-up, cash withdrawal",
+    "submit": "Execute Transfer",
+    "sameWalletError": "Source and destination wallets must be different",
+    "insufficientBalance": "Insufficient balance in source wallet"
+  },
+  "transactions": {
+    "title": "Transaction History",
+    "addTransaction": "Add Transaction",
+    "exportCsv": "Export to CSV",
+    "filterWallet": "All Wallets",
+    "filterType": "All Types",
+    "filterCategory": "All Categories",
+    "search": "Search transactions...",
+    "colDate": "Date",
+    "colTitle": "Description",
+    "colType": "Type",
+    "colWallet": "Wallet",
+    "colCategory": "Category",
+    "colAmount": "Amount",
+    "colSource": "Source",
+    "colActions": "Actions",
+    "income": "Income",
+    "expense": "Expense",
+    "typeTransfer": "Transfer",
+    "empty": "No transactions found matching your filters.",
+    "deleteConfirm": "Are you sure you want to delete this transaction?",
+    "modalAddTitle": "Add New Transaction",
+    "formTitle": "Transaction Title",
+    "formTitlePlaceholder": "e.g., Lunch, Freelance Payment",
+    "formAmount": "Amount",
+    "formType": "Type",
+    "formCategory": "Category",
+    "formDate": "Date"
+  },
+  "budgets": {
+    "title": "Monthly Category Budget Limits",
+    "addBudget": "Set Budget",
+    "spent": "Spent",
+    "limit": "Max Limit",
+    "remaining": "Remaining",
+    "statusSafe": "Safe",
+    "statusWarning": "Warning (>75%)",
+    "statusOver": "Overbudget (>100%)",
+    "empty": "No monthly budget limits configured."
+  },
+  "charts": {
+    "cashflowTitle": "Monthly Cashflow (Income vs Expense)",
+    "distributionTitle": "Asset Allocation by Wallet",
+    "income": "Income",
+    "expense": "Expense"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "success": "Saved successfully",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "all": "All"
+  }
+}

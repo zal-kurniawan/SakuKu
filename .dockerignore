@@ -1,0 +1,10 @@
+node_modules
+.next
+.git
+.DS_Store
+*.db
+*.db-journal
+auth_session
+.env
+.env.local
+npm-debug.log*

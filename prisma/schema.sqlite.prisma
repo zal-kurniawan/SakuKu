@@ -1,0 +1,107 @@
+// SQLite Alternative for instant local development without PostgreSQL setup
+// To use: cp prisma/schema.sqlite.prisma prisma/schema.prisma && npx prisma db push
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id               String            @id @default(cuid())
+  name             String?
+  phoneNumber      String            @unique
+  language         String            @default("id")
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  wallets          Wallet[]
+  transactions     Transaction[]
+  budgetLimits     BudgetLimit[]
+  notificationLogs NotificationLog[]
+
+  @@map("users")
+}
+
+model Wallet {
+  id                      String            @id @default(cuid())
+  userId                  String
+  name                    String
+  type                    String            @default("BANK") // BANK, EWALLET, CASH
+  balance                 Float             @default(0)
+  colorCode               String            @default("#3B82F6")
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+
+  user                    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions            Transaction[]     @relation("SourceWallet")
+  destinationTransactions Transaction[]     @relation("DestinationWallet")
+
+  @@unique([userId, name])
+  @@map("wallets")
+}
+
+model Transaction {
+  id                  String            @id @default(cuid())
+  userId              String
+  title               String
+  amount              Float
+  type                String            // INCOME, EXPENSE, TRANSFER
+  category            String            @default("Lainnya")
+  walletId            String
+  destinationWalletId String?
+  notes               String?
+  source              String            @default("WEB") // WHATSAPP, WEB
+  date                DateTime          @default(now())
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  user                User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wallet              Wallet            @relation("SourceWallet", fields: [walletId], references: [id], onDelete: Cascade)
+  destinationWallet   Wallet?           @relation("DestinationWallet", fields: [destinationWalletId], references: [id], onDelete: SetNull)
+
+  @@index([userId, date])
+  @@index([walletId])
+  @@map("transactions")
+}
+
+model BudgetLimit {
+  id           String   @id @default(cuid())
+  userId       String
+  category     String
+  monthlyLimit Float
+  month        Int
+  year         Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, category, month, year])
+  @@map("budget_limits")
+}
+
+model NotificationLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  type       String
+  targetDate String
+  status     String   @default("SENT")
+  payload    String?
+  sentAt     DateTime @default(now())
+
+  user       User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type, targetDate])
+  @@map("notification_logs")
+}
+
+model WhatsAppSession {
+  id        String   @id
+  data      String
+  updatedAt DateTime @updatedAt
+
+  @@map("whatsapp_sessions")
+}

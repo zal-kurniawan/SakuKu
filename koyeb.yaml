@@ -1,0 +1,33 @@
+# Koyeb Deployment Configuration for SakuKu Worker
+name: sakuku-bot
+services:
+  - name: sakuku-worker
+    type: web
+    docker:
+      dockerfile: Dockerfile
+    instance_type: nano
+    regions:
+      - sin
+    ports:
+      - port: 8080
+        path: /
+    routes:
+      - path: /
+        port: 8080
+    health_checks:
+      - http:
+          path: /health
+          port: 8080
+        interval: 30
+        timeout: 5
+    env:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "8080"
+      - key: DATABASE_URL
+        value: "" # Set in Koyeb Dashboard Secrets
+      - key: MY_PHONE_NUMBER
+        value: "" # Set in Koyeb Dashboard (e.g. 628563006136)
+      - key: ADMIN_SECRET_KEY
+        value: "" # Set in Koyeb Dashboard
