@@ -78,10 +78,10 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
 
   const handleDeleteBudget = async (id: string, categoryName: string) => {
     const isConfirmed = await confirm({
-      title: t('dialog.deleteBudgetTitle'),
-      message: `${t('dialog.deleteBudgetDesc')} (${categoryName})`,
-      confirmText: t('common.delete'),
-      cancelText: t('common.cancel'),
+      title: t('dialog.deleteBudgetTitle', 'Hapus Target Budget?'),
+      message: `${t('dialog.deleteBudgetDesc', 'Hapus batas anggaran bulanan untuk kategori ini?')} (${categoryName})`,
+      confirmText: t('common.delete', 'Hapus'),
+      cancelText: t('common.cancel', 'Batal'),
       variant: 'danger',
       icon: 'trash',
     });
@@ -90,11 +90,11 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
     setLoading(true);
     try {
       const res = await fetch(`/api/budgets/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error(t('dialog.budgetDeleteFailed'));
-      toast.success(t('dialog.budgetDeleted'));
+      if (!res.ok) throw new Error(t('dialog.budgetDeleteFailed', 'Gagal menghapus target budget'));
+      toast.success(t('dialog.budgetDeleted', 'Target budget berhasil dihapus'));
       onRefresh();
     } catch (err: any) {
-      toast.error(err.message || t('dialog.budgetDeleteFailed'));
+      toast.error(err.message || t('dialog.budgetDeleteFailed', 'Gagal menghapus target budget'));
     } finally {
       setLoading(false);
     }

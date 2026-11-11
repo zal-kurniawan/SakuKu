@@ -90,10 +90,10 @@ export default function DashboardPage() {
 
   const handleDeleteWallet = async (id: string) => {
     const isConfirmed = await confirm({
-      title: t('dialog.deleteWalletTitle'),
-      message: t('dialog.deleteWalletDesc'),
-      confirmText: t('common.delete'),
-      cancelText: t('common.cancel'),
+      title: t('dialog.deleteWalletTitle', 'Hapus Dompet?'),
+      message: t('dialog.deleteWalletDesc', 'Hapus dompet ini beserta seluruh transaksinya? Tindakan ini tidak dapat dibatalkan.'),
+      confirmText: t('common.delete', 'Hapus'),
+      cancelText: t('common.cancel', 'Batal'),
       variant: 'danger',
       icon: 'trash',
     });
@@ -104,15 +104,15 @@ export default function DashboardPage() {
     try {
       const res = await fetch(`/api/wallets/${id}`, { method: 'DELETE' });
       if (res.ok) {
-        toast.success(t('dialog.walletDeleted'));
+        toast.success(t('dialog.walletDeleted', 'Dompet berhasil dihapus'));
         await fetchData();
       } else {
-        toast.error(t('dialog.walletDeleteFailed'));
+        toast.error(t('dialog.walletDeleteFailed', 'Gagal menghapus dompet'));
         await fetchData();
       }
     } catch (err) {
       console.error(err);
-      toast.error(t('dialog.walletDeleteFailed'));
+      toast.error(t('dialog.walletDeleteFailed', 'Gagal menghapus dompet'));
       await fetchData();
     }
   };
@@ -129,15 +129,15 @@ export default function DashboardPage() {
     try {
       const res = await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
       if (res.ok) {
-        toast.success(t('dialog.txDeleted'));
+        toast.success(t('dialog.txDeleted', 'Transaksi berhasil dihapus'));
         await fetchData();
       } else {
-        toast.error(t('dialog.txDeleteFailed'));
+        toast.error(t('dialog.txDeleteFailed', 'Gagal menghapus transaksi'));
         await fetchData();
       }
     } catch (err) {
       console.error(err);
-      toast.error(t('dialog.txDeleteFailed'));
+      toast.error(t('dialog.txDeleteFailed', 'Gagal menghapus transaksi'));
       await fetchData();
     }
   };

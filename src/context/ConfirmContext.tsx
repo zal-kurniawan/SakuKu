@@ -96,13 +96,17 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const variant = options?.variant || 'danger';
   const iconType = options?.icon || (variant === 'danger' ? 'trash' : 'alert');
 
+  // Explicit solid color fallbacks for guaranteed button visibility & high contrast
+  const confirmBgColor =
+    variant === 'danger' ? '#dc2626' : variant === 'warning' ? '#d97706' : '#2563eb';
+
   return (
     <ConfirmContext.Provider value={{ confirm, setConfirmLoading: setIsLoading }}>
       {children}
 
       {isOpen && options && (
         <div
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150"
+          className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150"
           onClick={(e) => {
             if (e.target === e.currentTarget && !isLoading) {
               handleCancel();
@@ -112,44 +116,44 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
           <div
             role="dialog"
             aria-modal="true"
-            className="bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4 animate-in zoom-in-95 duration-150"
+            className="w-[94vw] max-w-md rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-2xl p-5 sm:p-6 space-y-4 sm:space-y-5 animate-in zoom-in-95 duration-150 text-gray-900 dark:text-gray-100"
           >
             {/* Header & Icon */}
-            <div className="flex items-start gap-4">
+            <div className="flex items-start gap-3.5 sm:gap-4">
               <div
-                className={`w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ${
+                className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${
                   variant === 'danger'
-                    ? 'bg-red-500/10 text-red-500 dark:bg-red-500/20'
+                    ? 'bg-rose-100 text-rose-600 dark:bg-rose-950/70 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60'
                     : variant === 'warning'
-                    ? 'bg-amber-500/10 text-amber-500 dark:bg-amber-500/20'
-                    : 'bg-blue-500/10 text-blue-500 dark:bg-blue-500/20'
+                    ? 'bg-amber-100 text-amber-600 dark:bg-amber-950/70 dark:text-amber-400 border border-amber-200 dark:border-amber-900/60'
+                    : 'bg-blue-100 text-blue-600 dark:bg-blue-950/70 dark:text-blue-400 border border-blue-200 dark:border-blue-900/60'
                 }`}
               >
                 {iconType === 'trash' ? (
-                  <Trash2 className="w-5 h-5 text-red-500" />
+                  <Trash2 className="w-5 h-5 sm:w-6 sm:h-6 text-rose-600 dark:text-rose-400" />
                 ) : iconType === 'alert' ? (
-                  <AlertTriangle className="w-5 h-5" />
+                  <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600 dark:text-amber-400" />
                 ) : (
-                  <Info className="w-5 h-5" />
+                  <Info className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400" />
                 )}
               </div>
-              <div className="space-y-1 flex-1">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white leading-tight">
+              <div className="space-y-1 sm:space-y-1.5 flex-1 min-w-0">
+                <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white leading-snug break-words">
                   {options.title}
                 </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 leading-relaxed break-words">
                   {options.message}
                 </p>
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="pt-2 flex items-center justify-end gap-2.5">
+            {/* Action Buttons: Responsive Column-Reverse on Mobile, Row on Desktop */}
+            <div className="pt-2 sm:pt-3 flex flex-col-reverse xs:flex-row items-center justify-end gap-2.5 sm:gap-3">
               <button
                 type="button"
                 onClick={handleCancel}
                 disabled={isLoading}
-                className="px-4 py-2 rounded-xl text-sm font-medium bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[40px]"
+                className="w-full xs:w-auto px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-gray-100 hover:bg-gray-200 text-gray-700 active:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-750 dark:text-gray-200 dark:active:bg-gray-700 border border-gray-200 dark:border-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[42px] flex items-center justify-center cursor-pointer"
               >
                 {options.cancelText || 'Batal'}
               </button>
@@ -158,16 +162,24 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 type="button"
                 onClick={handleConfirm}
                 disabled={isLoading}
-                className={`px-4 py-2 rounded-xl text-sm font-medium text-white shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-[40px] ${
+                style={{
+                  backgroundColor: confirmBgColor,
+                  color: '#ffffff',
+                }}
+                className={`w-full xs:w-auto px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-[42px] cursor-pointer ${
                   variant === 'danger'
-                    ? 'bg-red-600 hover:bg-red-700 shadow-red-600/20'
+                    ? 'bg-red-600 hover:bg-red-700 active:bg-red-800 shadow-red-600/30 border border-red-500'
                     : variant === 'warning'
-                    ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/20'
-                    : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'
+                    ? 'bg-amber-600 hover:bg-amber-700 active:bg-amber-800 shadow-amber-600/30 border border-amber-500'
+                    : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 shadow-blue-600/30 border border-blue-500'
                 }`}
               >
-                {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                <span>{options.confirmText || 'Konfirmasi'}</span>
+                {isLoading && (
+                  <Loader2 className="w-4 h-4 animate-spin text-white flex-shrink-0" />
+                )}
+                <span className="text-white font-bold tracking-wide select-none" style={{ color: '#ffffff' }}>
+                  {options.confirmText || 'Konfirmasi'}
+                </span>
               </button>
             </div>
           </div>

@@ -74,10 +74,10 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
 
   const handleDelete = async (id: string | number) => {
     const isConfirmed = await confirm({
-      title: t('dialog.deleteTxTitle'),
-      message: t('dialog.deleteTxDesc'),
-      confirmText: t('common.delete'),
-      cancelText: t('common.cancel'),
+      title: t('dialog.deleteTxTitle', 'Hapus Transaksi?'),
+      message: t('dialog.deleteTxDesc', 'Transaksi ini akan dihapus dan saldo dompet akan disesuaikan kembali.'),
+      confirmText: t('common.delete', 'Hapus'),
+      cancelText: t('common.cancel', 'Batal'),
       variant: 'danger',
       icon: 'trash',
     });

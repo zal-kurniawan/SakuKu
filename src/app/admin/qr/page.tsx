@@ -101,10 +101,10 @@ export default function AdminQRPage() {
 
   const handleResetSession = async () => {
     const isConfirmed = await confirm({
-      title: t('dialog.disconnectWaTitle'),
-      message: t('dialog.disconnectWaDesc'),
-      confirmText: t('dialog.disconnect'),
-      cancelText: t('common.cancel'),
+      title: t('dialog.disconnectWaTitle', 'Putuskan Tautan WhatsApp?'),
+      message: t('dialog.disconnectWaDesc', 'Apakah Anda yakin ingin memutuskan tautan WhatsApp? Anda harus scan QR baru untuk menghubungkannya kembali.'),
+      confirmText: t('dialog.disconnect', 'Putuskan Tautan'),
+      cancelText: t('common.cancel', 'Batal'),
       variant: 'danger',
       icon: 'alert',
     });
