@@ -72,12 +72,12 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title,
+          title: title.trim(),
           amount: parseFloat(amount),
           type,
           walletId: walletId || wallets[0]?.id,
           category,
-          notes,
+          notes: notes.trim(),
           date,
         }),
       });
@@ -111,9 +111,11 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             </div>
             <div>
               <h3 className="text-base font-bold text-gray-900 dark:text-white">
-                {t('transactions.modalAddTitle')}
+                {t('transactions.recordNew') || t('transactions.modalAddTitle') || 'Catat Transaksi Baru'}
               </h3>
-              <p className="text-[11px] text-gray-400">Catat pemasukan atau pengeluaran</p>
+              <p className="text-[11px] text-gray-400">
+                {t('transactions.recordDesc') || 'Catat pemasukan atau pengeluaran'}
+              </p>
             </div>
           </div>
           <button
@@ -136,7 +138,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             {/* Type Toggle Buttons */}
             <div>
               <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                {t('transactions.formType')}
+                {t('transactions.formType') || 'Tipe Transaksi'}
               </label>
               <div className="grid grid-cols-2 gap-2">
                 <button
@@ -151,7 +153,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200'
                   }`}
                 >
-                  <span>🔴</span> {t('transactions.expense')}
+                  <span>🔴</span> {t('transactions.expense') || 'Pengeluaran'}
                 </button>
                 <button
                   type="button"
@@ -165,7 +167,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200'
                   }`}
                 >
-                  <span>🟢</span> {t('transactions.income')}
+                  <span>🟢</span> {t('transactions.income') || 'Pemasukan'}
                 </button>
               </div>
             </div>
@@ -173,13 +175,13 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             {/* Title */}
             <div>
               <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                {t('transactions.formTitle')} *
+                {t('transactions.formTitle') || 'Judul Transaksi'} *
               </label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Contoh: Makan Siang, Bensin, Gaji"
+                placeholder={t('transactions.formTitlePlaceholder') || 'Contoh: Makan Siang, Bensin, Gaji'}
                 required
                 className="w-full px-3.5 py-2.5 rounded-xl text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
               />
@@ -188,7 +190,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             {/* Amount */}
             <div>
               <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                {t('transactions.formAmount')} (Rp) *
+                {t('transactions.formAmount') || 'Nominal (Rp)'} *
               </label>
               <input
                 type="number"
@@ -206,7 +208,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               {/* Wallet */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                  {t('transactions.formWallet')}
+                  {t('transactions.formWallet') || 'Pilih Dompet / Rekening'}
                 </label>
                 <div className="relative">
                   <select
@@ -227,7 +229,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               {/* Category */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                  {t('transactions.formCategory')}
+                  {t('transactions.formCategory') || 'Kategori'}
                 </label>
                 <div className="relative">
                   <select
@@ -249,7 +251,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             {/* Date */}
             <div>
               <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                {t('transactions.formDate')}
+                {t('transactions.formDate') || 'Tanggal'}
               </label>
               <input
                 type="date"
@@ -262,13 +264,13 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             {/* Notes */}
             <div>
               <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                {t('transactions.formNotes')} (Opsional)
+                {t('transactions.formNotes') || 'Catatan Transaksi (Opsional)'}
               </label>
               <input
                 type="text"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Catatan tambahan..."
+                placeholder={t('transactions.formNotesPlaceholder') || 'Catatan tambahan...'}
                 className="w-full px-3.5 py-2.5 rounded-xl text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
               />
             </div>
@@ -282,7 +284,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             onClick={onClose}
             className="px-4 py-2.5 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition min-h-[42px]"
           >
-            {t('transactions.cancel')}
+            {t('transactions.cancel') || 'Batal'}
           </button>
           <button
             type="submit"
@@ -290,7 +292,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             disabled={loading}
             className="px-5 py-2.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 active:scale-98 text-white shadow-sm transition min-h-[42px] flex items-center justify-center gap-1.5"
           >
-            {loading ? t('common.loading') : t('transactions.save')}
+            {loading ? t('common.loading') || 'Memuat...' : t('transactions.save') || 'Simpan Transaksi'}
           </button>
         </div>
       </div>

@@ -9,7 +9,7 @@ type Locale = 'id' | 'en';
 interface LanguageContextType {
   locale: Locale;
   setLocale: (locale: Locale) => void;
-  t: (key: string) => string;
+  t: (key: string, fallback?: string) => string;
 }
 
 const dictionaries: Record<Locale, Record<string, any>> = {
@@ -20,7 +20,7 @@ const dictionaries: Record<Locale, Record<string, any>> = {
 const LanguageContext = createContext<LanguageContextType>({
   locale: 'id',
   setLocale: () => {},
-  t: (key: string) => key,
+  t: (key: string, fallback?: string) => fallback || key,
 });
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -40,7 +40,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({
     localStorage.setItem('app_locale', newLocale);
   };
 
-  const t = (key: string): string => {
+  const t = (key: string, fallback?: string): string => {
     const dict = dictionaries[locale] || dictionaries.id;
     const parts = key.split('.');
     let current: any = dict;
@@ -49,11 +49,11 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({
       if (current && typeof current === 'object' && part in current) {
         current = current[part];
       } else {
-        return key;
+        return fallback || key;
       }
     }
 
-    return typeof current === 'string' ? current : key;
+    return typeof current === 'string' ? current : (fallback || key);
   };
 
   return (

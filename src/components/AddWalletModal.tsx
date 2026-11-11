@@ -12,16 +12,18 @@ interface AddWalletModalProps {
   walletToEdit?: WalletItem | null;
 }
 
-const COLOR_PRESETS = [
-  '#00529C', // BCA Blue
-  '#0A3B72', // Mandiri Navy
-  '#00AED6', // GoPay Cyan
-  '#10B981', // Cash Green
-  '#6366F1', // Indigo
-  '#8B5CF6', // Purple
-  '#F43F5E', // Rose
-  '#F59E0B', // Amber
+const PRESET_COLORS = [
+  '#005caa', // BCA Blue
+  '#0a2540', // Mandiri Navy
+  '#f15a24', // BNI Orange
+  '#ff7043', // Jago Yellow/Orange
+  '#00aed6', // GoPay Blue
+  '#118eea', // DANA Cyan
+  '#10b981', // Cash/Emerald
+  '#7c3aed', // Superbank Purple
 ];
+
+const DEFAULT_COLOR = '#005caa';
 
 export const AddWalletModal: React.FC<AddWalletModalProps> = ({
   isOpen,
@@ -34,7 +36,7 @@ export const AddWalletModal: React.FC<AddWalletModalProps> = ({
   const [name, setName] = useState('');
   const [type, setType] = useState<'BANK' | 'EWALLET' | 'CASH'>('BANK');
   const [balance, setBalance] = useState('');
-  const [colorCode, setColorCode] = useState('#00529C');
+  const [colorCode, setColorCode] = useState(DEFAULT_COLOR);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -43,12 +45,12 @@ export const AddWalletModal: React.FC<AddWalletModalProps> = ({
       setName(walletToEdit.name);
       setType(walletToEdit.type);
       setBalance(String(walletToEdit.balance));
-      setColorCode(walletToEdit.colorCode);
+      setColorCode(walletToEdit.colorCode || DEFAULT_COLOR);
     } else {
       setName('');
       setType('BANK');
       setBalance('0');
-      setColorCode('#00529C');
+      setColorCode(DEFAULT_COLOR);
     }
     setError('');
   }, [walletToEdit, isOpen]);
@@ -71,14 +73,19 @@ export const AddWalletModal: React.FC<AddWalletModalProps> = ({
         : '/api/wallets';
       const method = walletToEdit ? 'PUT' : 'POST';
 
+      const validColor =
+        colorCode && colorCode.startsWith('#') && colorCode.length === 7
+          ? colorCode
+          : DEFAULT_COLOR;
+
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name,
+          name: name.trim(),
           type,
           balance: parseFloat(balance) || 0,
-          colorCode,
+          colorCode: validColor,
         }),
       });
 
@@ -107,10 +114,14 @@ export const AddWalletModal: React.FC<AddWalletModalProps> = ({
             </div>
             <div>
               <h3 className="text-base font-bold text-gray-900 dark:text-white">
-                {walletToEdit ? t('wallets.modalEditTitle') : t('wallets.modalAddTitle')}
+                {walletToEdit
+                  ? t('wallets.modalEditTitle') || 'Edit Dompet'
+                  : t('wallets.addWalletTitle') || t('wallets.modalAddTitle') || 'Tambah Dompet Baru'}
               </h3>
               <p className="text-[11px] text-gray-400">
-                {walletToEdit ? 'Ubah rincian dompet' : 'Daftarkan instrumen keuangan baru'}
+                {walletToEdit
+                  ? 'Ubah rincian dompet'
+                  : t('wallets.addWalletDesc') || 'Daftarkan instrumen keuangan baru'}
               </p>
             </div>
           </div>
@@ -134,13 +145,13 @@ export const AddWalletModal: React.FC<AddWalletModalProps> = ({
             {/* Wallet Name */}
             <div>
               <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                {t('wallets.formName')} *
+                {t('wallets.formName') || 'Nama Dompet / Bank'} *
               </label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Contoh: BCA, GoPay, Tunai, Jago"
+                placeholder={t('wallets.formNamePlaceholder') || 'Contoh: BCA, Mandiri, GoPay, Tunai'}
                 required
                 className="w-full px-3.5 py-2.5 rounded-xl text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
               />
@@ -149,13 +160,25 @@ export const AddWalletModal: React.FC<AddWalletModalProps> = ({
             {/* Wallet Type */}
             <div>
               <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                {t('wallets.formType')}
+                {t('wallets.formType') || 'Tipe Dompet'}
               </label>
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  { id: 'BANK', label: t('wallets.typeBank'), icon: '🏦' },
-                  { id: 'EWALLET', label: t('wallets.typeEwallet'), icon: '📱' },
-                  { id: 'CASH', label: t('wallets.typeCash'), icon: '💵' },
+                  {
+                    id: 'BANK',
+                    label: t('wallets.bank') || t('wallets.typeBank') || 'Bank',
+                    icon: '🏦',
+                  },
+                  {
+                    id: 'EWALLET',
+                    label: t('wallets.ewallet') || t('wallets.typeEwallet') || 'E-Wallet',
+                    icon: '📱',
+                  },
+                  {
+                    id: 'CASH',
+                    label: t('wallets.cash') || t('wallets.typeCash') || 'Uang Tunai',
+                    icon: '💵',
+                  },
                 ].map((item) => (
                   <button
                     key={item.id}
@@ -177,7 +200,9 @@ export const AddWalletModal: React.FC<AddWalletModalProps> = ({
             {/* Initial / Current Balance */}
             <div>
               <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                {walletToEdit ? t('wallets.balance') : t('wallets.formBalance')} (Rp)
+                {walletToEdit
+                  ? t('wallets.balance') || 'Saldo'
+                  : t('wallets.formBalance') || 'Saldo Awal (Rp)'}
               </label>
               <input
                 type="number"
@@ -189,25 +214,77 @@ export const AddWalletModal: React.FC<AddWalletModalProps> = ({
               />
             </div>
 
-            {/* Color Accent Presets */}
-            <div>
-              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                {t('wallets.formColor')}
+            {/* Color Accent Presets & Custom Hex Picker */}
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300">
+                {t('wallets.formColor') || 'Warna Dompet & Identitas'}
               </label>
-              <div className="flex items-center gap-2.5 flex-wrap pt-1">
-                {COLOR_PRESETS.map((hex) => (
+
+              {/* 1. Baris Preset Warna */}
+              <div className="flex flex-wrap items-center gap-2">
+                {PRESET_COLORS.map((c) => (
                   <button
-                    key={hex}
+                    key={c}
                     type="button"
-                    onClick={() => setColorCode(hex)}
-                    className={`w-8 h-8 rounded-full border-2 transition transform active:scale-90 ${
-                      colorCode === hex
-                        ? 'border-white ring-2 ring-blue-500 scale-110 shadow-md'
+                    onClick={() => setColorCode(c)}
+                    style={{ backgroundColor: c }}
+                    className={`w-7 h-7 rounded-full border-2 transition-transform ${
+                      colorCode.toLowerCase() === c.toLowerCase()
+                        ? 'scale-110 border-white ring-2 ring-blue-500 shadow-md'
                         : 'border-transparent hover:scale-105'
                     }`}
-                    style={{ backgroundColor: hex }}
+                    title={c}
                   />
                 ))}
+              </div>
+
+              {/* 2. Input Hex & Eyedropper / Native Color Picker */}
+              <div className="flex items-center gap-2 pt-1">
+                <div className="relative flex items-center">
+                  <input
+                    type="color"
+                    value={
+                      colorCode.startsWith('#') && colorCode.length === 7
+                        ? colorCode
+                        : DEFAULT_COLOR
+                    }
+                    onChange={(e) => setColorCode(e.target.value)}
+                    className="w-9 h-9 p-0.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 cursor-pointer"
+                    title={t('wallets.customColor') || 'Pilih palet warna bebas'}
+                  />
+                </div>
+                <div className="relative flex-1">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-mono text-gray-400">
+                    #
+                  </span>
+                  <input
+                    type="text"
+                    value={colorCode.replace('#', '')}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^0-9A-Fa-f]/g, '').slice(0, 6);
+                      setColorCode(`#${val}`);
+                    }}
+                    onBlur={() => {
+                      if (!colorCode || colorCode.length < 7) {
+                        setColorCode(DEFAULT_COLOR);
+                      }
+                    }}
+                    placeholder="005caa"
+                    maxLength={6}
+                    className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg pl-7 pr-3 py-2 text-xs font-mono text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase"
+                  />
+                </div>
+                {/* Live Preview Badge */}
+                <div
+                  className="w-9 h-9 rounded-lg flex items-center justify-center border border-gray-200 dark:border-gray-700 shadow-sm text-xs"
+                  style={{
+                    backgroundColor:
+                      colorCode.startsWith('#') && colorCode.length === 7
+                        ? colorCode
+                        : DEFAULT_COLOR,
+                  }}
+                  title={colorCode}
+                />
               </div>
             </div>
           </form>
@@ -220,7 +297,7 @@ export const AddWalletModal: React.FC<AddWalletModalProps> = ({
             onClick={onClose}
             className="px-4 py-2.5 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition min-h-[42px]"
           >
-            {t('wallets.cancel')}
+            {t('wallets.cancel') || 'Batal'}
           </button>
           <button
             type="submit"
@@ -228,7 +305,7 @@ export const AddWalletModal: React.FC<AddWalletModalProps> = ({
             disabled={loading}
             className="px-5 py-2.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 active:scale-98 text-white shadow-sm transition min-h-[42px] flex items-center justify-center gap-1.5"
           >
-            {loading ? t('common.loading') : t('wallets.save')}
+            {loading ? t('common.loading') || 'Memuat...' : t('wallets.save') || 'Simpan Dompet'}
           </button>
         </div>
       </div>

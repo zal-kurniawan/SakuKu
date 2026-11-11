@@ -50,7 +50,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (fromWalletId === toWalletId) {
-      setError(t('transfer.sameWalletError'));
+      setError(t('transfer.sameWalletError') || 'Dompet asal dan tujuan tidak boleh sama');
       return;
     }
 
@@ -61,7 +61,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
     }
 
     if (selectedFromWallet && selectedFromWallet.balance < numAmount) {
-      setError(t('transfer.insufficientBalance'));
+      setError(t('transfer.insufficientBalance') || 'Saldo dompet asal tidak mencukupi');
       return;
     }
 
@@ -105,7 +105,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
             </div>
             <div>
               <h3 className="text-base font-bold text-gray-900 dark:text-white">
-                {t('transfer.modalTitle')}
+                {t('transfer.modalTitle') || 'Transfer Saldo Antar Dompet'}
               </h3>
               <p className="text-[11px] text-gray-400">Pindah saldo antar instrumen dompet</p>
             </div>
@@ -132,7 +132,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
               {/* From Wallet */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                  {t('transfer.fromWallet')}
+                  {t('transfer.fromWallet') || 'Dompet Asal'}
                 </label>
                 <div className="relative">
                   <select
@@ -153,7 +153,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
               {/* To Wallet */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                  {t('transfer.toWallet')}
+                  {t('transfer.toWallet') || 'Dompet Tujuan'}
                 </label>
                 <div className="relative">
                   <select
@@ -175,7 +175,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
             {/* Amount */}
             <div>
               <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                {t('transfer.amount')} (Rp) *
+                {t('transfer.amount') || 'Nominal Transfer'} (Rp) *
               </label>
               <input
                 type="number"
@@ -199,13 +199,13 @@ export const TransferModal: React.FC<TransferModalProps> = ({
             {/* Notes */}
             <div>
               <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                {t('transfer.notes')} (Opsional)
+                {t('transfer.notes') || 'Catatan'} (Opsional)
               </label>
               <input
                 type="text"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Contoh: Top up e-wallet, tarik tunai"
+                placeholder={t('transfer.notesPlaceholder') || 'Contoh: Top up e-wallet, tarik tunai'}
                 className="w-full px-3.5 py-2.5 rounded-xl text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
               />
             </div>
@@ -219,7 +219,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
             onClick={onClose}
             className="px-4 py-2.5 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition min-h-[42px]"
           >
-            {t('transfer.cancel')}
+            {t('transfer.cancel') || 'Batal'}
           </button>
           <button
             type="submit"
@@ -227,7 +227,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
             disabled={loading}
             className="px-5 py-2.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 active:scale-98 text-white shadow-sm transition min-h-[42px] flex items-center justify-center gap-1.5"
           >
-            {loading ? t('common.loading') : t('transfer.confirm')}
+            {loading ? t('common.loading') || 'Memuat...' : t('transfer.confirm') || t('transfer.submit') || 'Konfirmasi Transfer'}
           </button>
         </div>
       </div>

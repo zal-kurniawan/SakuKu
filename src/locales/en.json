@@ -23,36 +23,52 @@
   "wallets": {
     "title": "Wallets & Bank Accounts",
     "addWallet": "Add Wallet",
+    "addWalletTitle": "Add New Wallet",
+    "addWalletDesc": "Register a new financial account",
     "transfer": "Transfer Funds",
     "typeBank": "Bank Account",
     "typeEwallet": "E-Wallet",
     "typeCash": "Cash",
+    "bank": "Bank",
+    "ewallet": "E-Wallet",
+    "cash": "Cash",
     "balance": "Balance",
     "empty": "No wallets found. Create your first wallet!",
     "modalAddTitle": "Add New Wallet",
     "modalEditTitle": "Edit Wallet",
     "name": "Wallet Name",
-    "namePlaceholder": "e.g., BCA, GoPay, Cash",
+    "formName": "Wallet / Bank Name",
+    "namePlaceholder": "e.g., BCA, Mandiri, GoPay, Cash",
+    "formNamePlaceholder": "e.g., BCA, Mandiri, GoPay, Cash",
     "type": "Wallet Type",
+    "formType": "Wallet Type",
     "initialBalance": "Initial Balance",
+    "formBalance": "Initial Balance (Rp)",
     "color": "Card Color",
+    "formColor": "Wallet Color & Identity",
+    "customColor": "Custom Color (Hex)",
     "save": "Save Wallet",
     "cancel": "Cancel"
   },
   "transfer": {
     "title": "Inter-Wallet Transfer",
+    "modalTitle": "Inter-Wallet Balance Transfer",
     "fromWallet": "Source Wallet",
     "toWallet": "Destination Wallet",
     "amount": "Transfer Amount",
     "notes": "Notes (Optional)",
     "notesPlaceholder": "e.g., Weekly e-wallet top-up, cash withdrawal",
     "submit": "Execute Transfer",
+    "confirm": "Confirm Transfer",
+    "cancel": "Cancel",
     "sameWalletError": "Source and destination wallets must be different",
     "insufficientBalance": "Insufficient balance in source wallet"
   },
   "transactions": {
     "title": "Transaction History",
     "addTransaction": "Add Transaction",
+    "recordNew": "Record New Transaction",
+    "recordDesc": "Record income or expense",
     "exportCsv": "Export to CSV",
     "filterWallet": "All Wallets",
     "filterType": "All Types",
@@ -76,8 +92,13 @@
     "formTitlePlaceholder": "e.g., Lunch, Freelance Payment",
     "formAmount": "Amount",
     "formType": "Type",
+    "formWallet": "Select Wallet / Account",
     "formCategory": "Category",
-    "formDate": "Date"
+    "formDate": "Date",
+    "formNotes": "Transaction Notes (Optional)",
+    "formNotesPlaceholder": "Additional notes...",
+    "cancel": "Cancel",
+    "save": "Save Transaction"
   },
   "budgets": {
     "title": "Monthly Category Budget Limits",
@@ -103,6 +124,8 @@
     "delete": "Delete",
     "edit": "Edit",
     "close": "Close",
-    "all": "All"
+    "all": "All",
+    "cancel": "Cancel",
+    "save": "Save"
   }
 }

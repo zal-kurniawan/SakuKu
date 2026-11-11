@@ -23,36 +23,52 @@
   "wallets": {
     "title": "Daftar Dompet & Rekening",
     "addWallet": "Tambah Dompet",
+    "addWalletTitle": "Tambah Dompet Baru",
+    "addWalletDesc": "Daftarkan instrumen keuangan baru",
     "transfer": "Transfer Saldo",
     "typeBank": "Bank",
     "typeEwallet": "E-Wallet",
     "typeCash": "Uang Tunai",
+    "bank": "Bank",
+    "ewallet": "E-Wallet",
+    "cash": "Uang Tunai",
     "balance": "Saldo",
     "empty": "Belum ada dompet. Buat dompet pertama Anda!",
     "modalAddTitle": "Tambah Dompet Baru",
     "modalEditTitle": "Edit Dompet",
     "name": "Nama Dompet",
+    "formName": "Nama Dompet / Bank",
     "namePlaceholder": "Contoh: BCA, GoPay, Tunai",
+    "formNamePlaceholder": "Contoh: BCA, Mandiri, GoPay, Tunai",
     "type": "Tipe Dompet",
+    "formType": "Tipe Dompet",
     "initialBalance": "Saldo Awal",
+    "formBalance": "Saldo Awal (Rp)",
     "color": "Warna Kartu",
-    "save": "Simpan",
+    "formColor": "Warna Dompet & Identitas",
+    "customColor": "Warna Kustom (Hex)",
+    "save": "Simpan Dompet",
     "cancel": "Batal"
   },
   "transfer": {
     "title": "Transfer Antar Dompet",
+    "modalTitle": "Transfer Saldo Antar Dompet",
     "fromWallet": "Dompet Asal",
     "toWallet": "Dompet Tujuan",
     "amount": "Nominal Transfer",
     "notes": "Catatan (Opsional)",
     "notesPlaceholder": "Contoh: Top up e-wallet, tarik tunai",
     "submit": "Kirim Transfer",
+    "confirm": "Konfirmasi Transfer",
+    "cancel": "Batal",
     "sameWalletError": "Dompet asal dan tujuan tidak boleh sama",
     "insufficientBalance": "Saldo dompet asal tidak mencukupi"
   },
   "transactions": {
     "title": "Riwayat Transaksi",
     "addTransaction": "Catat Transaksi",
+    "recordNew": "Catat Transaksi Baru",
+    "recordDesc": "Catat pemasukan atau pengeluaran",
     "exportCsv": "Export CSV",
     "filterWallet": "Semua Dompet",
     "filterType": "Semua Tipe",
@@ -76,8 +92,13 @@
     "formTitlePlaceholder": "Contoh: Makan Siang, Gaji Freelance",
     "formAmount": "Nominal",
     "formType": "Tipe Transaksi",
+    "formWallet": "Pilih Dompet / Rekening",
     "formCategory": "Kategori",
-    "formDate": "Tanggal"
+    "formDate": "Tanggal",
+    "formNotes": "Catatan Transaksi (Opsional)",
+    "formNotesPlaceholder": "Catatan tambahan...",
+    "cancel": "Batal",
+    "save": "Simpan Transaksi"
   },
   "budgets": {
     "title": "Target Batas Budget Bulanan",
@@ -103,6 +124,8 @@
     "delete": "Hapus",
     "edit": "Edit",
     "close": "Tutup",
-    "all": "Semua"
+    "all": "Semua",
+    "cancel": "Batal",
+    "save": "Simpan"
   }
 }
