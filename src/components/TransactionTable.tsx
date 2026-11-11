@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useTranslation } from '@/context/LanguageContext';
 import { formatCurrency } from '@/lib/utils';
@@ -16,6 +16,10 @@ import {
   Globe,
   FileSpreadsheet,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
 } from 'lucide-react';
 import { WalletItem } from './WalletList';
 
@@ -41,6 +45,19 @@ interface TransactionTableProps {
   onRefresh: () => void;
 }
 
+function getPageNumbers(current: number, total: number): (number | string)[] {
+  if (total <= 5) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+  if (current <= 3) {
+    return [1, 2, 3, 4, '...', total];
+  }
+  if (current >= total - 2) {
+    return [1, '...', total - 3, total - 2, total - 1, total];
+  }
+  return [1, '...', current - 1, current, current + 1, '...', total];
+}
+
 export const TransactionTable: React.FC<TransactionTableProps> = ({
   transactions,
   wallets,
@@ -51,6 +68,10 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   const [search, setSearch] = useState('');
   const [selectedWallet, setSelectedWallet] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const filtered = transactions.filter((tx) => {
     const matchesSearch =
@@ -66,6 +87,19 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
 
     return matchesSearch && matchesWallet && matchesType;
   });
+
+  // Reset to page 1 whenever filters or search query changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, selectedWallet, selectedType, rowsPerPage]);
+
+  const totalItems = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
+  const validCurrentPage = Math.min(currentPage, totalPages);
+
+  const startIndex = (validCurrentPage - 1) * rowsPerPage;
+  const endIndex = Math.min(startIndex + rowsPerPage, totalItems);
+  const paginatedItems = filtered.slice(startIndex, endIndex);
 
   const handleExportCsv = () => {
     window.open('/api/export', '_blank');
@@ -164,7 +198,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-            {filtered.map((tx) => {
+            {paginatedItems.map((tx) => {
               const isIncome = tx.type === 'INCOME';
               const isExpense = tx.type === 'EXPENSE';
               const isTransfer = tx.type === 'TRANSFER';
@@ -289,6 +323,107 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
           </tbody>
         </table>
       </div>
+
+      {/* Pagination Controls */}
+      {totalItems > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-gray-100 dark:border-gray-800/80 text-xs text-gray-500 dark:text-gray-400">
+          {/* Rows Per Page & Counter */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span>{locale === 'id' ? 'Baris per halaman:' : 'Rows per page:'}</span>
+              <div className="relative">
+                <select
+                  value={rowsPerPage}
+                  onChange={(e) => setRowsPerPage(Number(e.target.value))}
+                  className="appearance-none pl-2.5 pr-7 py-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+              </div>
+            </div>
+
+            <span className="hidden sm:inline text-gray-300 dark:text-gray-700">|</span>
+
+            <span>
+              {locale === 'id'
+                ? `Menampilkan ${startIndex + 1}–${endIndex} dari ${totalItems} transaksi`
+                : `Showing ${startIndex + 1}–${endIndex} of ${totalItems} transactions`}
+            </span>
+          </div>
+
+          {/* Navigation Controls */}
+          <div className="flex items-center gap-1">
+            {/* First Page */}
+            <button
+              onClick={() => setCurrentPage(1)}
+              disabled={validCurrentPage === 1}
+              className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition text-gray-600 dark:text-gray-300"
+              title={locale === 'id' ? 'Halaman Pertama' : 'First Page'}
+            >
+              <ChevronsLeft className="w-4 h-4" />
+            </button>
+
+            {/* Previous Page */}
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={validCurrentPage === 1}
+              className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition text-gray-600 dark:text-gray-300"
+              title={locale === 'id' ? 'Sebelumnya' : 'Previous Page'}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+
+            {/* Page Numbers */}
+            <div className="flex items-center gap-1 px-1">
+              {getPageNumbers(validCurrentPage, totalPages).map((p, idx) =>
+                p === '...' ? (
+                  <span key={`ellipsis-${idx}`} className="px-1.5 text-gray-400">
+                    ...
+                  </span>
+                ) : (
+                  <button
+                    key={`page-${p}`}
+                    onClick={() => setCurrentPage(Number(p))}
+                    className={`min-w-[28px] h-7 px-2 rounded-lg font-medium transition text-xs ${
+                      validCurrentPage === p
+                        ? 'bg-blue-600 text-white shadow-xs font-semibold'
+                        : 'border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                )
+              )}
+            </div>
+
+            {/* Next Page */}
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={validCurrentPage === totalPages}
+              className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition text-gray-600 dark:text-gray-300"
+              title={locale === 'id' ? 'Selanjutnya' : 'Next Page'}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+
+            {/* Last Page */}
+            <button
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={validCurrentPage === totalPages}
+              className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition text-gray-600 dark:text-gray-300"
+              title={locale === 'id' ? 'Halaman Terakhir' : 'Last Page'}
+            >
+              <ChevronsRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+

@@ -47,7 +47,7 @@ export default function DashboardPage() {
       const [statsRes, walletsRes, txRes, budgetRes] = await Promise.all([
         fetch('/api/stats'),
         fetch('/api/wallets'),
-        fetch('/api/transactions?limit=100'),
+        fetch('/api/transactions?limit=1000'),
         fetch('/api/budgets'),
       ]);
 
