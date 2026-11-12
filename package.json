@@ -16,6 +16,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "test:parser": "tsx src/bot/parser.test.ts",
+    "test:handler": "tsx --env-file=.env src/bot/handler.test.ts",
     "test:excel": "tsx src/lib/excel-parser.test.ts",
     "test": "npm run test:parser && npm run test:excel"
   },

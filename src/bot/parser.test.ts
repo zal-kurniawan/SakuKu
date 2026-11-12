@@ -135,4 +135,72 @@ if (
   process.exit(1);
 }
 
+// 5. Test Error Tracking & Granular Reasons
+const testUnknownAction = parseIncomingMessage('0|gojek pulang|jago|ex|7500');
+if (
+  testUnknownAction.kind === 'UNKNOWN' &&
+  testUnknownAction.reason === "Perintah '0' tidak dikenali (gunakan add/catat/tf/update/hapus)"
+) {
+  console.log('✓ Unrecognized action error reason PASSED');
+} else {
+  console.error('❌ Unrecognized action error reason FAILED', testUnknownAction);
+  process.exit(1);
+}
+
+const testIncomplete = parseIncomingMessage('add|makan siang|bca|ex');
+if (
+  testIncomplete.kind === 'UNKNOWN' &&
+  testIncomplete.reason === 'Format kolom tidak lengkap (contoh: add|judul|dompet|ex|nominal)'
+) {
+  console.log('✓ Incomplete format error reason PASSED');
+} else {
+  console.error('❌ Incomplete format error reason FAILED', testIncomplete);
+  process.exit(1);
+}
+
+const testInvalidType = parseIncomingMessage('add|makan siang|bca|foo|35k');
+if (
+  testInvalidType.kind === 'UNKNOWN' &&
+  testInvalidType.reason === "Tipe 'foo' tidak valid (gunakan in/ex)"
+) {
+  console.log('✓ Invalid type error reason PASSED');
+} else {
+  console.error('❌ Invalid type error reason FAILED', testInvalidType);
+  process.exit(1);
+}
+
+const testInvalidAmount = parseIncomingMessage('add|makan siang|bca|ex|nol');
+if (
+  testInvalidAmount.kind === 'UNKNOWN' &&
+  testInvalidAmount.reason === "Nominal 'nol' tidak valid"
+) {
+  console.log('✓ Invalid amount error reason PASSED');
+} else {
+  console.error('❌ Invalid amount error reason FAILED', testInvalidAmount);
+  process.exit(1);
+}
+
+// 6. Test Mixed Batch Message (3 Valid, 1 Unrecognized)
+const mixedBatchMsg = `
+add|gojek kantor|jago|ex|7500
+add|makan siang|superbank|ex|27000
+add|makan sore|superbank|ex|15000
+0|gojek pulang|jago|ex|7500
+`;
+const parsedMixed = parseBatchIncomingMessage(mixedBatchMsg);
+if (
+  parsedMixed.length === 4 &&
+  parsedMixed[0].kind === 'TRANSACTION' &&
+  parsedMixed[1].kind === 'TRANSACTION' &&
+  parsedMixed[2].kind === 'TRANSACTION' &&
+  parsedMixed[3].kind === 'UNKNOWN' &&
+  parsedMixed[3].lineNumber === 5 &&
+  parsedMixed[3].reason === "Perintah '0' tidak dikenali (gunakan add/catat/tf/update/hapus)"
+) {
+  console.log('✓ Mixed Batch (3 valid, 1 invalid on line 5) PASSED');
+} else {
+  console.error('❌ Mixed Batch test FAILED', parsedMixed);
+  process.exit(1);
+}
+
 console.log('\n🎉 ALL SAKUKU PARSER TESTS PASSED 100% SUCCESSFULLY!\n');

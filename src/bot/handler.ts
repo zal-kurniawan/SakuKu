@@ -65,438 +65,386 @@ export async function handleWhatsAppMessage(
     );
   }
 
-  // If message is a single action
-  if (parsedItems.length === 1) {
-    const item = parsedItems[0];
-    if (item.kind === 'COMMAND') {
-      return handleCommand(user.id, item);
-    }
-    if (item.kind === 'DELETE') {
-      return handleDeleteTransaction(user.id, item.transactionId);
-    }
-    if (item.kind === 'UPDATE') {
-      return handleUpdateTransaction(user.id, item);
-    }
+  // 1. Handle single slash command or when all lines are slash commands
+  if (parsedItems.length === 1 && parsedItems[0].kind === 'COMMAND') {
+    return handleCommand(user.id, parsedItems[0]);
+  }
+  if (parsedItems.every((i) => i.kind === 'COMMAND')) {
+    return handleCommand(user.id, parsedItems[0] as ParsedCommand);
   }
 
-  // If there are unknown commands among the batch
-  const errors: string[] = [];
-  parsedItems.forEach((item, idx) => {
-    if (item.kind === 'UNKNOWN') {
-      errors.push(`Baris ${item.lineNumber || idx + 1}: ${item.reason}`);
-    }
+  // 2. Fetch active user wallets from database
+  const userWallets = await prisma.wallet.findMany({
+    where: { userId: user.id },
+    orderBy: { createdAt: 'asc' },
   });
 
-  if (errors.length > 0 && errors.length === parsedItems.length) {
-    // All lines failed
-    return (
-      BOT_HEADER +
-      `❌ *Format pesan tidak dikenali:*\n` +
-      errors.map((e) => `• ${e}`).join('\n') +
-      `\n\nKetik */help* untuk melihat format panduan transaksi multi-baris.` +
-      BOT_FOOTER
-    );
+  const findWallet = (name: string) =>
+    userWallets.find((w) => w.name.trim().toLowerCase() === name.trim().toLowerCase());
+
+  interface SuccessItem {
+    id: number;
+    kind: 'TRANSACTION' | 'TRANSFER' | 'UPDATE' | 'DELETE';
+    title: string;
+    type?: 'INCOME' | 'EXPENSE' | 'TRANSFER';
+    walletName: string;
+    destWalletName?: string;
+    amount: number;
+    category?: string;
+    notes?: string;
+    rawLine: string;
+    lineNumber: number;
   }
 
-  // Check if all lines are delete/update/command
-  const deleteItems = parsedItems.filter((i): i is ParsedDelete => i.kind === 'DELETE');
-  const updateItems = parsedItems.filter((i): i is ParsedUpdate => i.kind === 'UPDATE');
-  const commandItems = parsedItems.filter((i): i is ParsedCommand => i.kind === 'COMMAND');
-
-  if (deleteItems.length === 1 && parsedItems.length === 1) {
-    return handleDeleteTransaction(user.id, deleteItems[0].transactionId);
+  interface FailedItem {
+    lineNumber: number;
+    rawLine: string;
+    reason: string;
   }
 
-  if (updateItems.length === 1 && parsedItems.length === 1) {
-    return handleUpdateTransaction(user.id, updateItems[0]);
-  }
-
-  if (commandItems.length === parsedItems.length && commandItems.length > 0) {
-    return handleCommand(user.id, commandItems[0]);
-  }
-
-  // Filter out executable transactions/transfers
-  const executableItems = parsedItems.filter(
-    (item): item is ParsedTransaction | ParsedTransfer =>
-      item.kind === 'TRANSACTION' || item.kind === 'TRANSFER'
-  );
-
-  if (executableItems.length === 0) {
-    if (deleteItems.length > 0) {
-      return handleDeleteTransaction(user.id, deleteItems[0].transactionId);
-    }
-    if (updateItems.length > 0) {
-      return handleUpdateTransaction(user.id, updateItems[0]);
-    }
-    return (
-      BOT_HEADER +
-      `❌ Format pesan tidak dikenali.\nKetik */help* untuk panduan format.` +
-      BOT_FOOTER
-    );
-  }
-
-  // Execute Batch Transactions Atomically
-  return executeBatchTransactions(user.id, executableItems);
-}
-
-/**
- * Handle Delete transaction via WhatsApp: hapus | ID or delete | ID
- */
-async function handleDeleteTransaction(userId: string, txId: number): Promise<string> {
-  const tx = await prisma.transaction.findFirst({
-    where: { id: txId, userId },
-    include: { wallet: true, destinationWallet: true },
-  });
-
-  if (!tx) {
-    return (
-      BOT_HEADER +
-      `❌ Transaksi *#${txId}* tidak ditemukan atau bukan milik Anda.\nPastikan ID transaksi sudah benar.` +
-      BOT_FOOTER
-    );
-  }
-
-  try {
-    const updatedWallet = await prisma.$transaction(async (db) => {
-      // Revert wallet balance
-      if (tx.type === 'EXPENSE') {
-        await db.wallet.update({
-          where: { id: tx.walletId },
-          data: { balance: { increment: tx.amount } },
-        });
-      } else if (tx.type === 'INCOME') {
-        await db.wallet.update({
-          where: { id: tx.walletId },
-          data: { balance: { decrement: tx.amount } },
-        });
-      } else if (tx.type === 'TRANSFER' && tx.destinationWalletId) {
-        await db.wallet.update({
-          where: { id: tx.walletId },
-          data: { balance: { increment: tx.amount } },
-        });
-        await db.wallet.update({
-          where: { id: tx.destinationWalletId },
-          data: { balance: { decrement: tx.amount } },
-        });
-      }
-
-      await db.transaction.delete({
-        where: { id: tx.id },
-      });
-
-      return await db.wallet.findUnique({
-        where: { id: tx.walletId },
-      });
-    });
-
-    const isExpense = tx.type === 'EXPENSE';
-    const isIncome = tx.type === 'INCOME';
-    const typeLabel = isExpense ? 'Pengeluaran' : isIncome ? 'Pemasukan' : 'Transfer';
-    const sign = isExpense ? '-' : isIncome ? '+' : '';
-
-    let transferExtra = '';
-    if (tx.type === 'TRANSFER' && tx.destinationWalletId) {
-      const destW = await prisma.wallet.findUnique({ where: { id: tx.destinationWalletId } });
-      if (destW) {
-        transferExtra = `\n• *${destW.name}*: ${formatCurrency(destW.balance)}`;
-      }
-    }
-
-    return (
-      `🤖 *[SakuKu - Transaksi Dihapus]*\n` +
-      `🆔 *ID: #${tx.id}*\n` +
-      `📝 Transaksi: ${tx.title} (${typeLabel})\n` +
-      `👛 Dompet: ${tx.wallet.name} (${sign}${formatCurrency(tx.amount)})\n` +
-      `🏷️ Kategori: ${tx.category}\n` +
-      `━━━━━━━━━━━━━━━━━━━━━\n` +
-      `*Saldo Dompet Terkini:*\n` +
-      `• *${tx.wallet.name}*: ${formatCurrency(updatedWallet?.balance || 0)}` +
-      transferExtra +
-      BOT_FOOTER
-    );
-  } catch (err: any) {
-    return (
-      BOT_HEADER +
-      `❌ Gagal menghapus transaksi *#${txId}*: ${err.message}` +
-      BOT_FOOTER
-    );
-  }
-}
-
-/**
- * Handle Update transaction via WhatsApp: update | ID | TITLE | WALLET | TYPE | AMOUNT | [CATEGORY]
- */
-async function handleUpdateTransaction(userId: string, parsed: ParsedUpdate): Promise<string> {
-  const oldTx = await prisma.transaction.findFirst({
-    where: { id: parsed.transactionId, userId },
-    include: { wallet: true, destinationWallet: true },
-  });
-
-  if (!oldTx) {
-    return (
-      BOT_HEADER +
-      `❌ Transaksi *#${parsed.transactionId}* tidak ditemukan atau bukan milik Anda.\nPastikan ID transaksi sudah benar.` +
-      BOT_FOOTER
-    );
-  }
-
-  try {
-    const result = await prisma.$transaction(async (db) => {
-      // Find or create target wallet
-      const existingWallets = await db.wallet.findMany({ where: { userId } });
-      let targetWallet = existingWallets.find(
-        (w) => w.name.trim().toLowerCase() === parsed.walletName.trim().toLowerCase()
-      );
-
-      if (!targetWallet) {
-        targetWallet = await db.wallet.create({
-          data: {
-            userId,
-            name: parsed.walletName.toUpperCase(),
-            type: /gopay|ovo|dana|shopeepay|linkaja/i.test(parsed.walletName)
-              ? 'EWALLET'
-              : /cash|tunai/i.test(parsed.walletName)
-              ? 'CASH'
-              : 'BANK',
-            balance: 0,
-            colorCode: '#005caa',
-          },
-        });
-      }
-
-      // 1. Rollback old transaction impact
-      if (oldTx.type === 'EXPENSE') {
-        await db.wallet.update({
-          where: { id: oldTx.walletId },
-          data: { balance: { increment: oldTx.amount } },
-        });
-      } else if (oldTx.type === 'INCOME') {
-        await db.wallet.update({
-          where: { id: oldTx.walletId },
-          data: { balance: { decrement: oldTx.amount } },
-        });
-      } else if (oldTx.type === 'TRANSFER' && oldTx.destinationWalletId) {
-        await db.wallet.update({
-          where: { id: oldTx.walletId },
-          data: { balance: { increment: oldTx.amount } },
-        });
-        await db.wallet.update({
-          where: { id: oldTx.destinationWalletId },
-          data: { balance: { decrement: oldTx.amount } },
-        });
-      }
-
-      // 2. Apply new transaction impact
-      if (parsed.type === 'EXPENSE') {
-        await db.wallet.update({
-          where: { id: targetWallet.id },
-          data: { balance: { decrement: parsed.amount } },
-        });
-      } else if (parsed.type === 'INCOME') {
-        await db.wallet.update({
-          where: { id: targetWallet.id },
-          data: { balance: { increment: parsed.amount } },
-        });
-      }
-
-      // 3. Update transaction record
-      const updatedTx = await db.transaction.update({
-        where: { id: oldTx.id },
-        data: {
-          title: formatTransactionTitle(parsed.title),
-          amount: parsed.amount,
-          type: parsed.type,
-          category: parsed.category,
-          walletId: targetWallet.id,
-          destinationWalletId: null,
-          updatedAt: new Date(),
-        },
-      });
-
-      const updatedWallet = await db.wallet.findUnique({
-        where: { id: targetWallet.id },
-      });
-
-      return { updatedTx, updatedWallet };
-    });
-
-    const isExpense = parsed.type === 'EXPENSE';
-    const sign = isExpense ? '-' : '+';
-
-    return (
-      `🤖 *[SakuKu - Transaksi Diperbarui]*\n` +
-      `🆔 *ID: #${result.updatedTx.id}*\n` +
-      `📝 Transaksi: ${result.updatedTx.title}\n` +
-      `👛 Dompet: ${result.updatedWallet?.name} (${sign}${formatCurrency(result.updatedTx.amount)})\n` +
-      `🏷️ Kategori: ${result.updatedTx.category}\n` +
-      `━━━━━━━━━━━━━━━━━━━━━\n` +
-      `*Sisa Saldo ${result.updatedWallet?.name}:* ${formatCurrency(result.updatedWallet?.balance || 0)}` +
-      BOT_FOOTER
-    );
-  } catch (err: any) {
-    return (
-      BOT_HEADER +
-      `❌ Gagal memperbarui transaksi *#${parsed.transactionId}*: ${err.message}` +
-      BOT_FOOTER
-    );
-  }
-}
-
-/**
- * Atomic batch transaction executor
- */
-async function executeBatchTransactions(
-  userId: string,
-  items: (ParsedTransaction | ParsedTransfer)[]
-): Promise<string> {
-  // 1. Fetch all existing wallets of the user
-  const existingWallets = await prisma.wallet.findMany({ where: { userId } });
-  const walletMap = new Map<string, any>();
-  existingWallets.forEach((w) => {
-    walletMap.set(w.name.trim().toLowerCase(), { ...w });
-  });
-
-  // Helper to resolve or auto-create wallet in memory
-  const getOrInitWallet = (rawName: string) => {
-    const key = rawName.trim().toLowerCase();
-    if (walletMap.has(key)) {
-      return walletMap.get(key);
-    }
-    const isEwallet = /gopay|ovo|dana|shopeepay|linkaja/i.test(rawName);
-    const isCash = /tunai|cash|dompet/i.test(rawName);
-    const type = isEwallet ? 'EWALLET' : isCash ? 'CASH' : 'BANK';
-    const colorCode = isEwallet ? '#00AED6' : isCash ? '#10B981' : '#005caa';
-
-    const tempWallet = {
-      id: `temp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-      userId,
-      name: rawName.toUpperCase(),
-      type,
-      balance: 0,
-      colorCode,
-      isNew: true,
-    };
-    walletMap.set(key, tempWallet);
-    return tempWallet;
-  };
-
-  // 2. Prepare atomic operations and running balance changes
-  const transactionCreatePayloads: any[] = [];
-  const touchedWalletKeys = new Set<string>();
+  const succeeded: SuccessItem[] = [];
+  const failed: FailedItem[] = [];
+  const touchedWalletIds = new Set<string>();
   const expenseCategoriesThisBatch: { category: string; amount: number }[] = [];
 
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i];
+  // 3. Process every non-empty line
+  for (const item of parsedItems) {
+    const lineNum = item.lineNumber || 1;
+
+    if (item.kind === 'UNKNOWN') {
+      failed.push({
+        lineNumber: lineNum,
+        rawLine: item.raw,
+        reason: item.reason || 'Format pesan tidak dikenali',
+      });
+      continue;
+    }
+
+    if (item.kind === 'COMMAND') {
+      failed.push({
+        lineNumber: lineNum,
+        rawLine: item.raw,
+        reason: 'Perintah slash command tidak dapat digabung dengan transaksi baris',
+      });
+      continue;
+    }
 
     if (item.kind === 'TRANSACTION') {
-      const wallet = getOrInitWallet(item.walletName);
-      touchedWalletKeys.add(wallet.name.toLowerCase());
-
-      const isExpense = item.type === 'EXPENSE';
-      if (isExpense) {
-        wallet.balance -= item.amount;
-        expenseCategoriesThisBatch.push({ category: item.category, amount: item.amount });
-
-        transactionCreatePayloads.push({
-          userId,
-          walletId: wallet.id,
-          title: formatTransactionTitle(item.title),
-          amount: item.amount,
-          type: 'EXPENSE',
-          category: item.category,
-          source: 'WHATSAPP',
-          date: new Date(),
+      const wallet = findWallet(item.walletName);
+      if (!wallet) {
+        failed.push({
+          lineNumber: lineNum,
+          rawLine: item.raw,
+          reason: `Dompet '${item.walletName}' tidak ditemukan`,
         });
-      } else {
-        wallet.balance += item.amount;
+        continue;
+      }
 
-        transactionCreatePayloads.push({
-          userId,
-          walletId: wallet.id,
-          title: formatTransactionTitle(item.title),
-          amount: item.amount,
-          type: 'INCOME',
-          category: item.category,
-          source: 'WHATSAPP',
-          date: new Date(),
+      try {
+        const isExpense = item.type === 'EXPENSE';
+        const delta = isExpense ? -item.amount : item.amount;
+
+        const [createdTx, updatedWallet] = await prisma.$transaction([
+          prisma.transaction.create({
+            data: {
+              userId: user.id,
+              walletId: wallet.id,
+              title: formatTransactionTitle(item.title),
+              amount: item.amount,
+              type: item.type,
+              category: item.category,
+              source: 'WHATSAPP',
+              date: new Date(),
+            },
+          }),
+          prisma.wallet.update({
+            where: { id: wallet.id },
+            data: { balance: { increment: delta } },
+          }),
+        ]);
+
+        wallet.balance = updatedWallet.balance;
+        touchedWalletIds.add(wallet.id);
+        if (isExpense) {
+          expenseCategoriesThisBatch.push({ category: item.category, amount: item.amount });
+        }
+
+        succeeded.push({
+          id: createdTx.id,
+          kind: 'TRANSACTION',
+          title: createdTx.title,
+          type: createdTx.type,
+          walletName: wallet.name,
+          amount: createdTx.amount,
+          category: createdTx.category,
+          rawLine: item.raw,
+          lineNumber: lineNum,
+        });
+      } catch (err: any) {
+        failed.push({
+          lineNumber: lineNum,
+          rawLine: item.raw,
+          reason: err.message || 'Gagal menyimpan transaksi ke basis data',
         });
       }
     } else if (item.kind === 'TRANSFER') {
-      const fromWallet = getOrInitWallet(item.fromWalletName);
-      const toWallet = getOrInitWallet(item.toWalletName);
-      touchedWalletKeys.add(fromWallet.name.toLowerCase());
-      touchedWalletKeys.add(toWallet.name.toLowerCase());
+      const fromWallet = findWallet(item.fromWalletName);
+      if (!fromWallet) {
+        failed.push({
+          lineNumber: lineNum,
+          rawLine: item.raw,
+          reason: `Dompet '${item.fromWalletName}' tidak ditemukan`,
+        });
+        continue;
+      }
 
-      fromWallet.balance -= item.amount;
-      toWallet.balance += item.amount;
+      const toWallet = findWallet(item.toWalletName);
+      if (!toWallet) {
+        failed.push({
+          lineNumber: lineNum,
+          rawLine: item.raw,
+          reason: `Dompet '${item.toWalletName}' tidak ditemukan`,
+        });
+        continue;
+      }
 
-      transactionCreatePayloads.push({
-        userId,
-        walletId: fromWallet.id,
-        destinationWalletId: toWallet.id,
-        title: item.notes
+      if (fromWallet.id === toWallet.id) {
+        failed.push({
+          lineNumber: lineNum,
+          rawLine: item.raw,
+          reason: 'Dompet asal dan tujuan tidak boleh sama',
+        });
+        continue;
+      }
+
+      try {
+        const title = item.notes
           ? formatTransactionTitle(item.notes)
-          : `Transfer ${fromWallet.name} -> ${toWallet.name}`,
-        amount: item.amount,
-        type: 'TRANSFER',
-        category: 'Transfer Antar Dompet',
-        notes: item.notes,
-        source: 'WHATSAPP',
-        date: new Date(),
-      });
-    }
-  }
+          : `Transfer ${fromWallet.name} -> ${toWallet.name}`;
 
-  // 3. Execute everything inside an atomic Prisma Transaction
-  const createdTransactions: any[] = [];
-  try {
-    await prisma.$transaction(async (tx) => {
-      // Create new wallets if any were auto-detected
-      for (const [key, wallet] of Array.from(walletMap.entries())) {
-        if (wallet.isNew) {
-          const created = await tx.wallet.create({
+        const [createdTx, updatedFrom, updatedTo] = await prisma.$transaction([
+          prisma.transaction.create({
             data: {
-              userId,
-              name: wallet.name,
-              type: wallet.type,
-              balance: 0,
-              colorCode: wallet.colorCode,
+              userId: user.id,
+              walletId: fromWallet.id,
+              destinationWalletId: toWallet.id,
+              title,
+              amount: item.amount,
+              type: 'TRANSFER',
+              category: 'Transfer Antar Dompet',
+              notes: item.notes,
+              source: 'WHATSAPP',
+              date: new Date(),
+            },
+          }),
+          prisma.wallet.update({
+            where: { id: fromWallet.id },
+            data: { balance: { decrement: item.amount } },
+          }),
+          prisma.wallet.update({
+            where: { id: toWallet.id },
+            data: { balance: { increment: item.amount } },
+          }),
+        ]);
+
+        fromWallet.balance = updatedFrom.balance;
+        toWallet.balance = updatedTo.balance;
+        touchedWalletIds.add(fromWallet.id);
+        touchedWalletIds.add(toWallet.id);
+
+        succeeded.push({
+          id: createdTx.id,
+          kind: 'TRANSFER',
+          title,
+          type: 'TRANSFER',
+          walletName: fromWallet.name,
+          destWalletName: toWallet.name,
+          amount: createdTx.amount,
+          notes: item.notes,
+          rawLine: item.raw,
+          lineNumber: lineNum,
+        });
+      } catch (err: any) {
+        failed.push({
+          lineNumber: lineNum,
+          rawLine: item.raw,
+          reason: err.message || 'Gagal memproses transfer ke basis data',
+        });
+      }
+    } else if (item.kind === 'DELETE') {
+      const tx = await prisma.transaction.findFirst({
+        where: { id: item.transactionId, userId: user.id },
+        include: { wallet: true, destinationWallet: true },
+      });
+
+      if (!tx) {
+        failed.push({
+          lineNumber: lineNum,
+          rawLine: item.raw,
+          reason: `Transaksi ID #${item.transactionId} tidak ditemukan`,
+        });
+        continue;
+      }
+
+      try {
+        await prisma.$transaction(async (db) => {
+          if (tx.type === 'EXPENSE') {
+            await db.wallet.update({
+              where: { id: tx.walletId },
+              data: { balance: { increment: tx.amount } },
+            });
+          } else if (tx.type === 'INCOME') {
+            await db.wallet.update({
+              where: { id: tx.walletId },
+              data: { balance: { decrement: tx.amount } },
+            });
+          } else if (tx.type === 'TRANSFER' && tx.destinationWalletId) {
+            await db.wallet.update({
+              where: { id: tx.walletId },
+              data: { balance: { increment: tx.amount } },
+            });
+            await db.wallet.update({
+              where: { id: tx.destinationWalletId },
+              data: { balance: { decrement: tx.amount } },
+            });
+          }
+
+          await db.transaction.delete({ where: { id: tx.id } });
+        });
+
+        touchedWalletIds.add(tx.walletId);
+        if (tx.destinationWalletId) touchedWalletIds.add(tx.destinationWalletId);
+
+        const w1 = await prisma.wallet.findUnique({ where: { id: tx.walletId } });
+        if (w1) {
+          const memW1 = userWallets.find((uw) => uw.id === w1.id);
+          if (memW1) memW1.balance = w1.balance;
+        }
+        if (tx.destinationWalletId) {
+          const w2 = await prisma.wallet.findUnique({ where: { id: tx.destinationWalletId } });
+          if (w2) {
+            const memW2 = userWallets.find((uw) => uw.id === w2.id);
+            if (memW2) memW2.balance = w2.balance;
+          }
+        }
+
+        succeeded.push({
+          id: tx.id,
+          kind: 'DELETE',
+          title: tx.title,
+          walletName: tx.wallet?.name || '',
+          amount: tx.amount,
+          category: tx.category,
+          rawLine: item.raw,
+          lineNumber: lineNum,
+        });
+      } catch (err: any) {
+        failed.push({
+          lineNumber: lineNum,
+          rawLine: item.raw,
+          reason: err.message || 'Gagal menghapus transaksi',
+        });
+      }
+    } else if (item.kind === 'UPDATE') {
+      const oldTx = await prisma.transaction.findFirst({
+        where: { id: item.transactionId, userId: user.id },
+        include: { wallet: true, destinationWallet: true },
+      });
+
+      if (!oldTx) {
+        failed.push({
+          lineNumber: lineNum,
+          rawLine: item.raw,
+          reason: `Transaksi ID #${item.transactionId} tidak ditemukan`,
+        });
+        continue;
+      }
+
+      const targetWallet = findWallet(item.walletName);
+      if (!targetWallet) {
+        failed.push({
+          lineNumber: lineNum,
+          rawLine: item.raw,
+          reason: `Dompet '${item.walletName}' tidak ditemukan`,
+        });
+        continue;
+      }
+
+      try {
+        await prisma.$transaction(async (db) => {
+          // Rollback old impact
+          if (oldTx.type === 'EXPENSE') {
+            await db.wallet.update({
+              where: { id: oldTx.walletId },
+              data: { balance: { increment: oldTx.amount } },
+            });
+          } else if (oldTx.type === 'INCOME') {
+            await db.wallet.update({
+              where: { id: oldTx.walletId },
+              data: { balance: { decrement: oldTx.amount } },
+            });
+          } else if (oldTx.type === 'TRANSFER' && oldTx.destinationWalletId) {
+            await db.wallet.update({
+              where: { id: oldTx.walletId },
+              data: { balance: { increment: oldTx.amount } },
+            });
+            await db.wallet.update({
+              where: { id: oldTx.destinationWalletId },
+              data: { balance: { decrement: oldTx.amount } },
+            });
+          }
+
+          // Apply new impact
+          const delta = item.type === 'EXPENSE' ? -item.amount : item.amount;
+          await db.wallet.update({
+            where: { id: targetWallet.id },
+            data: { balance: { increment: delta } },
+          });
+
+          // Update transaction record
+          await db.transaction.update({
+            where: { id: oldTx.id },
+            data: {
+              title: formatTransactionTitle(item.title),
+              amount: item.amount,
+              type: item.type,
+              category: item.category,
+              walletId: targetWallet.id,
+              destinationWalletId: null,
+              updatedAt: new Date(),
             },
           });
-          // Replace temporary id in transactions payload
-          const oldId = wallet.id;
-          wallet.id = created.id;
-          transactionCreatePayloads.forEach((payload) => {
-            if (payload.walletId === oldId) payload.walletId = created.id;
-            if (payload.destinationWalletId === oldId) payload.destinationWalletId = created.id;
-          });
-        }
-      }
+        });
 
-      // Create transaction records
-      for (const payload of transactionCreatePayloads) {
-        const created = await tx.transaction.create({ data: payload });
-        createdTransactions.push(created);
-      }
+        touchedWalletIds.add(oldTx.walletId);
+        touchedWalletIds.add(targetWallet.id);
 
-      // Update balances for all touched wallets
-      for (const key of touchedWalletKeys) {
-        const wallet = walletMap.get(key);
-        if (wallet) {
-          await tx.wallet.update({
-            where: { id: wallet.id },
-            data: { balance: wallet.balance },
-          });
+        const tw = await prisma.wallet.findUnique({ where: { id: targetWallet.id } });
+        if (tw) targetWallet.balance = tw.balance;
+
+        if (item.type === 'EXPENSE') {
+          expenseCategoriesThisBatch.push({ category: item.category, amount: item.amount });
         }
+
+        succeeded.push({
+          id: item.transactionId,
+          kind: 'UPDATE',
+          title: formatTransactionTitle(item.title),
+          type: item.type,
+          walletName: targetWallet.name,
+          amount: item.amount,
+          category: item.category,
+          rawLine: item.raw,
+          lineNumber: lineNum,
+        });
+      } catch (err: any) {
+        failed.push({
+          lineNumber: lineNum,
+          rawLine: item.raw,
+          reason: err.message || 'Gagal memperbarui transaksi',
+        });
       }
-    });
-  } catch (dbErr: any) {
-    console.error('Batch database transaction failed:', dbErr);
-    return (
-      BOT_HEADER +
-      `❌ Gagal menyimpan transaksi batch ke basis data: ${dbErr.message}` +
-      BOT_FOOTER
-    );
+    }
   }
 
   // 4. Check budget limits for touched expense categories
@@ -507,7 +455,7 @@ async function executeBatchTransactions(
     const currentYear = now.getFullYear();
 
     const budgets = await prisma.budgetLimit.findMany({
-      where: { userId, month: currentMonth, year: currentYear },
+      where: { userId: user.id, month: currentMonth, year: currentYear },
     });
 
     const startOfMonth = new Date(currentYear, currentMonth - 1, 1);
@@ -521,7 +469,7 @@ async function executeBatchTransactions(
       ) {
         const agg = await prisma.transaction.aggregate({
           where: {
-            userId,
+            userId: user.id,
             category: b.category,
             type: 'EXPENSE',
             date: { gte: startOfMonth, lte: endOfMonth },
@@ -542,88 +490,192 @@ async function executeBatchTransactions(
   }
 
   // 5. Fetch updated wallets from DB for fresh balances
-  const updatedWallets = await prisma.wallet.findMany({
-    where: { userId },
+  const freshWallets = await prisma.wallet.findMany({
+    where: { userId: user.id },
     orderBy: { createdAt: 'asc' },
   });
 
-  const count = items.length;
+  const walletStatusLines = freshWallets
+    .filter((w) => touchedWalletIds.has(w.id))
+    .map((w) => `• *${w.name}:* ${formatCurrency(w.balance)}`)
+    .join('\n');
 
-  // Single Input Response (Exact format requested by user)
-  if (count === 1 && createdTransactions.length === 1) {
-    const tx = createdTransactions[0];
-    const isExpense = tx.type === 'EXPENSE';
-    const isIncome = tx.type === 'INCOME';
-    const isTransfer = tx.type === 'TRANSFER';
-    const wallet = updatedWallets.find((w) => w.id === tx.walletId);
+  // Multi-item summaries
+  const multiSummaries = succeeded.map((item, idx) => {
+    const isExpense = item.type === 'EXPENSE';
+    const isIncome = item.type === 'INCOME';
+    const isTransfer = item.type === 'TRANSFER';
+    const sign = isExpense ? '-' : isIncome ? '+' : '';
 
     if (isTransfer) {
-      const destWallet = updatedWallets.find((w) => w.id === tx.destinationWalletId);
+      return (
+        `${idx + 1}. 🆔 *#${item.id}* 🔄 *[TRANSFER]* ${item.walletName} ➡️ ${item.destWalletName}\n` +
+        `   Nominal: *${formatCurrency(item.amount)}*` +
+        (item.notes ? ` (${item.notes})` : '')
+      );
+    }
+
+    if (item.kind === 'DELETE') {
+      return (
+        `${idx + 1}. 🆔 *#${item.id}* 🗑️ *[HAPUS]* ${item.title}\n` +
+        `   Dompet: *${item.walletName}* (${formatCurrency(item.amount)})`
+      );
+    }
+
+    if (item.kind === 'UPDATE') {
+      return (
+        `${idx + 1}. 🆔 *#${item.id}* ✏️ *[UPDATE]* ${item.title}\n` +
+        `   Dompet: *${item.walletName}* (${sign}${formatCurrency(item.amount)}) | Kategori: ${item.category}`
+      );
+    }
+
+    return (
+      `${idx + 1}. 🆔 *#${item.id}* ${isExpense ? '🔴' : '🟢'} *${item.title}*\n` +
+      `   Dompet: ${item.walletName} (${sign}${formatCurrency(item.amount)}) | Kategori: ${item.category}`
+    );
+  });
+
+  const failedLines = failed
+    .map(
+      (f) =>
+        `• *Baris ${f.lineNumber}:* \`${f.rawLine}\`\n  ↳ _Alasan: ${f.reason}_`
+    )
+    .join('\n\n');
+
+  // Kondisi A — Sebagian Berhasil & Sebagian Gagal
+  if (succeeded.length > 0 && failed.length > 0) {
+    let response =
+      BOT_HEADER +
+      `⚠️ *Berhasil memproses ${succeeded.length} transaksi, ${failed.length} gagal!*\n\n` +
+      `${multiSummaries.join('\n\n')}\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━━\n` +
+      `❌ *Gagal Diproses (${failed.length} Baris):*\n` +
+      `${failedLines}`;
+
+    if (budgetAlerts) {
+      response += `\n\n━━━━━━━━━━━━━━━━━━━━━${budgetAlerts}`;
+    }
+
+    if (walletStatusLines) {
+      response +=
+        `\n\n━━━━━━━━━━━━━━━━━━━━━\n` +
+        `👛 *Status Saldo Dompet Terkait:*\n` +
+        `${walletStatusLines}`;
+    }
+
+    response += BOT_FOOTER;
+    return response;
+  }
+
+  // Kondisi B — Sukses Penuh
+  if (succeeded.length > 0 && failed.length === 0) {
+    // If single line input and exactly 1 succeeded
+    if (parsedItems.length === 1 && succeeded.length === 1) {
+      const item = succeeded[0];
+      const isExpense = item.type === 'EXPENSE';
+      const isIncome = item.type === 'INCOME';
+      const isTransfer = item.type === 'TRANSFER';
+      const wallet = freshWallets.find(
+        (w) => w.name.toLowerCase() === item.walletName.toLowerCase()
+      );
+
+      if (isTransfer) {
+        const destWallet = freshWallets.find(
+          (w) => w.name.toLowerCase() === (item.destWalletName || '').toLowerCase()
+        );
+        return (
+          `🤖 *[SakuKu - Berhasil Dicatat]*\n` +
+          `🆔 *ID: #${item.id}*\n` +
+          `📝 Transfer Antar Dompet\n` +
+          `🔄 *${wallet?.name || item.walletName}* ➡️ *${destWallet?.name || item.destWalletName}*\n` +
+          `💵 Nominal: ${formatCurrency(item.amount)}\n` +
+          (item.notes ? `🗒️ Catatan: ${item.notes}\n` : '') +
+          `━━━━━━━━━━━━━━━━━━━━━\n` +
+          `*Sisa Saldo ${wallet?.name || item.walletName}:* ${formatCurrency(wallet?.balance || 0)}\n` +
+          (destWallet ? `*Sisa Saldo ${destWallet.name}:* ${formatCurrency(destWallet.balance)}\n` : '') +
+          (budgetAlerts ? `━━━━━━━━━━━━━━━━━━━━━${budgetAlerts}\n` : '') +
+          BOT_FOOTER
+        );
+      }
+
+      if (item.kind === 'DELETE') {
+        return (
+          `🤖 *[SakuKu - Transaksi Dihapus]*\n` +
+          `🆔 *ID: #${item.id}*\n` +
+          `📝 Transaksi: ${item.title}\n` +
+          `━━━━━━━━━━━━━━━━━━━━━\n` +
+          `*Saldo Dompet Terkini:*\n` +
+          `${walletStatusLines}` +
+          BOT_FOOTER
+        );
+      }
+
+      if (item.kind === 'UPDATE') {
+        const sign = isExpense ? '-' : '+';
+        return (
+          `🤖 *[SakuKu - Transaksi Diperbarui]*\n` +
+          `🆔 *ID: #${item.id}*\n` +
+          `📝 Transaksi: ${item.title}\n` +
+          `👛 Dompet: ${wallet?.name || item.walletName} (${sign}${formatCurrency(item.amount)})\n` +
+          `🏷️ Kategori: ${item.category}\n` +
+          `━━━━━━━━━━━━━━━━━━━━━\n` +
+          `*Sisa Saldo ${wallet?.name || item.walletName}:* ${formatCurrency(wallet?.balance || 0)}` +
+          BOT_FOOTER
+        );
+      }
+
+      const sign = isExpense ? '-' : '+';
       return (
         `🤖 *[SakuKu - Berhasil Dicatat]*\n` +
-        `🆔 *ID: #${tx.id}*\n` +
-        `📝 Transfer Antar Dompet\n` +
-        `🔄 *${wallet?.name || 'Asal'}* ➡️ *${destWallet?.name || 'Tujuan'}*\n` +
-        `💵 Nominal: ${formatCurrency(tx.amount)}\n` +
-        (tx.notes ? `🗒️ Catatan: ${tx.notes}\n` : '') +
+        `🆔 *ID: #${item.id}*\n` +
+        `📝 Transaksi: ${item.title}\n` +
+        `👛 Dompet: ${wallet?.name || item.walletName} (${sign}${formatCurrency(item.amount)})\n` +
+        `🏷️ Kategori: ${item.category}\n` +
         `━━━━━━━━━━━━━━━━━━━━━\n` +
-        `*Sisa Saldo ${wallet?.name}:* ${formatCurrency(wallet?.balance || 0)}\n` +
-        (destWallet ? `*Sisa Saldo ${destWallet.name}:* ${formatCurrency(destWallet.balance)}\n` : '') +
+        `*Sisa Saldo ${wallet?.name || item.walletName}:* ${formatCurrency(wallet?.balance || 0)}\n` +
         (budgetAlerts ? `━━━━━━━━━━━━━━━━━━━━━${budgetAlerts}\n` : '') +
         BOT_FOOTER
       );
     }
 
-    const sign = isExpense ? '-' : '+';
+    // Multi-line full success
+    let response =
+      BOT_HEADER +
+      `✅ *Berhasil memproses ${succeeded.length} transaksi sekaligus!*\n\n` +
+      `${multiSummaries.join('\n\n')}`;
+
+    if (budgetAlerts) {
+      response += `\n\n━━━━━━━━━━━━━━━━━━━━━${budgetAlerts}`;
+    }
+
+    if (walletStatusLines) {
+      response +=
+        `\n\n━━━━━━━━━━━━━━━━━━━━━\n` +
+        `👛 *Status Saldo Dompet Terkait:*\n` +
+        `${walletStatusLines}`;
+    }
+
+    response += BOT_FOOTER;
+    return response;
+  }
+
+  // Kondisi C — Gagal Total
+  if (failed.length === 1) {
     return (
-      `🤖 *[SakuKu - Berhasil Dicatat]*\n` +
-      `🆔 *ID: #${tx.id}*\n` +
-      `📝 Transaksi: ${tx.title}\n` +
-      `👛 Dompet: ${wallet?.name || ''} (${sign}${formatCurrency(tx.amount)})\n` +
-      `🏷️ Kategori: ${tx.category}\n` +
-      `━━━━━━━━━━━━━━━━━━━━━\n` +
-      `*Sisa Saldo ${wallet?.name}:* ${formatCurrency(wallet?.balance || 0)}\n` +
-      (budgetAlerts ? `━━━━━━━━━━━━━━━━━━━━━${budgetAlerts}\n` : '') +
+      BOT_HEADER +
+      `❌ *Gagal memproses transaksi:*\n` +
+      `• *Baris ${failed[0].lineNumber}:* \`${failed[0].rawLine}\`\n` +
+      `  ↳ _Alasan: ${failed[0].reason}_\n\n` +
+      `Ketik */help* untuk melihat panduan format transaksi.` +
       BOT_FOOTER
     );
   }
 
-  // Multi-line Batch Input Response with #ID for each item
-  const multiSummaries = createdTransactions.map((tx, idx) => {
-    const isExpense = tx.type === 'EXPENSE';
-    const isIncome = tx.type === 'INCOME';
-    const isTransfer = tx.type === 'TRANSFER';
-    const wallet = updatedWallets.find((w) => w.id === tx.walletId);
-    const sign = isExpense ? '-' : isIncome ? '+' : '';
-
-    if (isTransfer) {
-      const destWallet = updatedWallets.find((w) => w.id === tx.destinationWalletId);
-      return (
-        `${idx + 1}. 🆔 *#${tx.id}* 🔄 *[TRANSFER]* ${wallet?.name || 'Asal'} ➡️ ${destWallet?.name || 'Tujuan'}\n` +
-        `   Nominal: *${formatCurrency(tx.amount)}*` +
-        (tx.notes ? ` (${tx.notes})` : '')
-      );
-    }
-
-    return (
-      `${idx + 1}. 🆔 *#${tx.id}* ${isExpense ? '🔴' : '🟢'} *${tx.title}*\n` +
-      `   Dompet: *${wallet?.name || ''}* (${sign}${formatCurrency(tx.amount)}) | Kategori: ${tx.category}`
-    );
-  });
-
-  const walletStatusLines = updatedWallets
-    .filter((w) => touchedWalletKeys.has(w.name.toLowerCase()))
-    .map((w) => `• *${w.name}*: ${formatCurrency(w.balance)}`)
-    .join('\n');
-
   return (
     BOT_HEADER +
-    `✅ *Berhasil memproses ${count} transaksi sekaligus!*\n\n` +
-    `${multiSummaries.join('\n\n')}\n\n` +
-    `───────────────────────\n` +
-    `💼 *Status Saldo Dompet Terkait:*\n` +
-    `${walletStatusLines}\n` +
-    (budgetAlerts ? `───────────────────────${budgetAlerts}\n` : '') +
+    `❌ *Semua transaksi gagal diproses (${failed.length} Baris):*\n\n` +
+    `${failedLines}\n\n` +
+    `Ketik */help* untuk melihat format panduan transaksi multi-baris.` +
     BOT_FOOTER
   );
 }

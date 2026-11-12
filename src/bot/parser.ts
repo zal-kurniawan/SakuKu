@@ -271,43 +271,46 @@ export function parseSingleLine(line: string, lineNumber?: number): ParseResult 
   // 2. Pipe-delimited messages
   if (trimmed.includes('|')) {
     const parts = trimmed.split('|').map((p) => p.trim());
-    if (parts.length < 2) {
+    const rawAction = parts[0];
+    const action = rawAction.toLowerCase();
+
+    const isTransferAction = ['tf', 'transfer', 'pindah', 'kirim'].includes(action);
+    const isDeleteAction = ['hapus', 'delete', 'del', 'batal'].includes(action);
+    const isUpdateAction = ['update', 'edit', 'ubah'].includes(action);
+    const isAddAction = ['add', 'catat', 'insert', '+', 'keluar', 'masuk'].includes(action);
+
+    // If first word before | is not a recognized action
+    if (!isTransferAction && !isDeleteAction && !isUpdateAction && !isAddAction) {
       return {
         kind: 'UNKNOWN',
         raw: trimmed,
-        reason: 'Format pipe | tidak valid',
+        reason: `Perintah '${rawAction}' tidak dikenali (gunakan add/catat/tf/update/hapus)`,
         lineNumber,
       };
     }
 
-    const action = parts[0].toLowerCase();
-
     // Transfer syntax: tf | WALLET_DARI | WALLET_TUJUAN | AMOUNT | [NOTES]
-    if (
-      action === 'tf' ||
-      action === 'transfer' ||
-      action === 'pindah' ||
-      action === 'kirim'
-    ) {
-      if (parts.length < 4) {
+    if (isTransferAction) {
+      if (parts.length < 4 || !parts[1] || !parts[2] || !parts[3]) {
         return {
           kind: 'UNKNOWN',
           raw: trimmed,
-          reason: 'Format transfer tidak lengkap. Gunakan: tf | asal | tujuan | nominal | [catatan]',
+          reason: 'Format kolom tidak lengkap (contoh: tf|asal|tujuan|nominal|[catatan])',
           lineNumber,
         };
       }
 
       const fromWalletName = parts[1];
       const toWalletName = parts[2];
-      const amount = parseAmount(parts[3]);
+      const rawAmount = parts[3];
+      const amount = parseAmount(rawAmount);
       const notes = parts.length > 4 ? parts.slice(4).join(' | ') : undefined;
 
       if (!amount || amount <= 0) {
         return {
           kind: 'UNKNOWN',
           raw: trimmed,
-          reason: `Nominal transfer "${parts[3]}" tidak valid. Contoh: 50k, 100000, 2.5jt`,
+          reason: `Nominal '${rawAmount}' tidak valid`,
           lineNumber,
         };
       }
@@ -316,7 +319,7 @@ export function parseSingleLine(line: string, lineNumber?: number): ParseResult 
         return {
           kind: 'UNKNOWN',
           raw: trimmed,
-          reason: 'Dompet asal dan tujuan tidak boleh sama.',
+          reason: 'Dompet asal dan tujuan tidak boleh sama',
           lineNumber,
         };
       }
@@ -333,17 +336,12 @@ export function parseSingleLine(line: string, lineNumber?: number): ParseResult 
     }
 
     // Delete syntax: hapus | ID or delete | ID (e.g., hapus | 105 or delete | #105)
-    if (
-      action === 'hapus' ||
-      action === 'delete' ||
-      action === 'del' ||
-      action === 'batal'
-    ) {
-      if (parts.length < 2) {
+    if (isDeleteAction) {
+      if (parts.length < 2 || !parts[1]) {
         return {
           kind: 'UNKNOWN',
           raw: trimmed,
-          reason: 'Format hapus tidak lengkap. Gunakan: hapus | ID (contoh: hapus | 105)',
+          reason: 'Format kolom tidak lengkap (contoh: hapus|id)',
           lineNumber,
         };
       }
@@ -354,7 +352,7 @@ export function parseSingleLine(line: string, lineNumber?: number): ParseResult 
         return {
           kind: 'UNKNOWN',
           raw: trimmed,
-          reason: `ID transaksi "${parts[1]}" tidak valid. Harus berupa nomor ID numerik (contoh: hapus | 105)`,
+          reason: `ID transaksi '${parts[1]}' tidak valid`,
           lineNumber,
         };
       }
@@ -368,16 +366,12 @@ export function parseSingleLine(line: string, lineNumber?: number): ParseResult 
     }
 
     // Update syntax: update | ID | TITLE | WALLET | TYPE | AMOUNT | [CATEGORY]
-    if (
-      action === 'update' ||
-      action === 'edit' ||
-      action === 'ubah'
-    ) {
-      if (parts.length < 6) {
+    if (isUpdateAction) {
+      if (parts.length < 6 || !parts[1] || !parts[2] || !parts[3] || !parts[4] || !parts[5]) {
         return {
           kind: 'UNKNOWN',
           raw: trimmed,
-          reason: 'Format update tidak lengkap. Gunakan: update | ID | JUDUL | DOMPET | TYPE | NOMINAL | [KATEGORI]',
+          reason: 'Format kolom tidak lengkap (contoh: update|id|judul|dompet|ex|nominal)',
           lineNumber,
         };
       }
@@ -388,7 +382,7 @@ export function parseSingleLine(line: string, lineNumber?: number): ParseResult 
         return {
           kind: 'UNKNOWN',
           raw: trimmed,
-          reason: `ID transaksi "${parts[1]}" tidak valid. Harus berupa nomor ID numerik (contoh: update | 105 | ...)`,
+          reason: `ID transaksi '${parts[1]}' tidak valid`,
           lineNumber,
         };
       }
@@ -396,7 +390,8 @@ export function parseSingleLine(line: string, lineNumber?: number): ParseResult 
       const title = formatTransactionTitle(parts[2]);
       const walletName = parts[3];
       const rawType = parts[4].toLowerCase();
-      const amount = parseAmount(parts[5]);
+      const rawAmount = parts[5];
+      const amount = parseAmount(rawAmount);
 
       let type: 'INCOME' | 'EXPENSE';
       if (
@@ -422,7 +417,7 @@ export function parseSingleLine(line: string, lineNumber?: number): ParseResult 
         return {
           kind: 'UNKNOWN',
           raw: trimmed,
-          reason: `Tipe transaksi "${parts[4]}" tidak dikenal. Gunakan "expense" atau "income".`,
+          reason: `Tipe '${parts[4]}' tidak valid (gunakan in/ex)`,
           lineNumber,
         };
       }
@@ -431,7 +426,7 @@ export function parseSingleLine(line: string, lineNumber?: number): ParseResult 
         return {
           kind: 'UNKNOWN',
           raw: trimmed,
-          reason: `Nominal transaksi "${parts[5]}" tidak valid. Contoh: 35k, 50000, 2.5jt`,
+          reason: `Nominal '${rawAmount}' tidak valid`,
           lineNumber,
         };
       }
@@ -455,19 +450,12 @@ export function parseSingleLine(line: string, lineNumber?: number): ParseResult 
     }
 
     // Transaction syntax: ACTION | TITLE | WALLET | TYPE | AMOUNT | [CATEGORY]
-    if (
-      action === 'add' ||
-      action === 'insert' ||
-      action === 'catat' ||
-      action === '+' ||
-      action === 'keluar' ||
-      action === 'masuk'
-    ) {
-      if (parts.length < 5) {
+    if (isAddAction) {
+      if (parts.length < 5 || !parts[1] || !parts[2] || !parts[3] || !parts[4]) {
         return {
           kind: 'UNKNOWN',
           raw: trimmed,
-          reason: 'Format catat transaksi: ACTION | JUDUL | DOMPET | TYPE | NOMINAL | [KATEGORI]',
+          reason: 'Format kolom tidak lengkap (contoh: add|judul|dompet|ex|nominal)',
           lineNumber,
         };
       }
@@ -475,7 +463,8 @@ export function parseSingleLine(line: string, lineNumber?: number): ParseResult 
       const title = formatTransactionTitle(parts[1]);
       const walletName = parts[2];
       const rawType = parts[3].toLowerCase();
-      const amount = parseAmount(parts[4]);
+      const rawAmount = parts[4];
+      const amount = parseAmount(rawAmount);
 
       let type: 'INCOME' | 'EXPENSE';
       if (
@@ -501,7 +490,7 @@ export function parseSingleLine(line: string, lineNumber?: number): ParseResult 
         return {
           kind: 'UNKNOWN',
           raw: trimmed,
-          reason: `Tipe transaksi "${parts[3]}" tidak dikenal. Gunakan "expense" atau "income".`,
+          reason: `Tipe '${parts[3]}' tidak valid (gunakan in/ex)`,
           lineNumber,
         };
       }
@@ -510,7 +499,7 @@ export function parseSingleLine(line: string, lineNumber?: number): ParseResult 
         return {
           kind: 'UNKNOWN',
           raw: trimmed,
-          reason: `Nominal transaksi "${parts[4]}" tidak valid. Contoh: 35k, 100000, 2.5jt`,
+          reason: `Nominal '${rawAmount}' tidak valid`,
           lineNumber,
         };
       }
@@ -534,10 +523,28 @@ export function parseSingleLine(line: string, lineNumber?: number): ParseResult 
     }
   }
 
+  // 3. Fallback for non-pipe messages that are not slash commands
+  const firstWord = trimmed.split(/[\s|]+/)[0];
+  const isRecognized = [
+    'add', 'catat', 'insert', '+', 'keluar', 'masuk',
+    'tf', 'transfer', 'pindah', 'kirim',
+    'update', 'edit', 'ubah',
+    'hapus', 'delete', 'del', 'batal'
+  ].includes(firstWord.toLowerCase());
+
+  if (isRecognized) {
+    return {
+      kind: 'UNKNOWN',
+      raw: trimmed,
+      reason: 'Format kolom tidak lengkap (contoh: add|judul|dompet|ex|nominal)',
+      lineNumber,
+    };
+  }
+
   return {
     kind: 'UNKNOWN',
     raw: trimmed,
-    reason: 'Format pesan tidak dikenali. Ketik /help untuk panduan format.',
+    reason: `Perintah '${firstWord}' tidak dikenali (gunakan add/catat/tf/update/hapus)`,
     lineNumber,
   };
 }
