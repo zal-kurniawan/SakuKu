@@ -11,7 +11,13 @@
     "transactions": "Transactions",
     "budgets": "Monthly Budgets",
     "botGuide": "Bot Syntax Guide",
-    "importExcel": "Import Excel"
+    "importExcel": "Import Excel",
+    "mobileMenuSubtitle": "Menu & Quick Actions",
+    "waBotStatus": "WhatsApp Bot Status",
+    "openMenu": "Open Menu",
+    "switchLanguage": "Switch Language",
+    "toggleTheme": "Toggle Theme",
+    "mobileFooter": "Mobile Version • Cloud Sync"
   },
   "kpi": {
     "totalNetWorth": "Total Net Worth",
@@ -107,7 +113,21 @@
     "formNotes": "Transaction Notes (Optional)",
     "formNotesPlaceholder": "Additional notes...",
     "cancel": "Cancel",
-    "save": "Save Transaction"
+    "save": "Save Transaction",
+    "quickAdd": "Quick Add Transaction",
+    "rows": "Rows:",
+    "of": "of",
+    "pageOf": "Page {page} / {total}",
+    "firstPage": "First Page",
+    "lastPage": "Last Page",
+    "prevPage": "Previous",
+    "nextPage": "Next",
+    "editTransaction": "Edit Transaction",
+    "editDesc": "Update a recorded transaction",
+    "updateSuccess": "Transaction updated successfully",
+    "updateFailed": "Failed to update transaction",
+    "destinationWallet": "Destination Wallet",
+    "selectDestWallet": "Select Destination Wallet"
   },
   "budgets": {
     "title": "Monthly Category Budget Limits",
@@ -133,10 +153,18 @@
   "charts": {
     "cashflowTitle": "Monthly Cashflow (Income vs Expense)",
     "cashflowSubtitle": "Cash flow trend over the last 6 months",
+    "cashflowSubtitleYear": "12-month cash flow comparison for {year}",
     "distributionTitle": "Asset Allocation by Wallet",
     "distributionSubtitle": "Balance proportion per wallet & account",
+    "distributionSubtitlePeriod": "Asset allocation as of end of {period}",
     "income": "Income",
-    "expense": "Expense"
+    "expense": "Expense",
+    "loading": "Loading chart...",
+    "emptyWalletTitle": "No active wallet balances",
+    "emptyWalletDesc": "Add balance to wallets to view asset allocation.",
+    "filterYear": "Select Year",
+    "filterMonth": "Select Month",
+    "currentMonth": "Current"
   },
   "common": {
     "loading": "Loading...",

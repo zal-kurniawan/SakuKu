@@ -147,13 +147,13 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
               </div>
             </div>
 
-            {/* Action Buttons: Responsive Column-Reverse on Mobile, Row on Desktop */}
-            <div className="pt-2 sm:pt-3 flex flex-col-reverse xs:flex-row items-center justify-end gap-2.5 sm:gap-3">
+            {/* Action Buttons: Side-by-side or stacked cleanly on all screen sizes */}
+            <div className="pt-2 sm:pt-3 flex items-center justify-end gap-2.5 sm:gap-3">
               <button
                 type="button"
                 onClick={handleCancel}
                 disabled={isLoading}
-                className="w-full xs:w-auto px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-gray-100 hover:bg-gray-200 text-gray-700 active:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-750 dark:text-gray-200 dark:active:bg-gray-700 border border-gray-200 dark:border-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[42px] flex items-center justify-center cursor-pointer"
+                className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-gray-100 hover:bg-gray-200 text-gray-700 active:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-200 dark:active:bg-gray-700 border border-gray-200 dark:border-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[42px] flex items-center justify-center cursor-pointer"
               >
                 {options.cancelText || 'Batal'}
               </button>
@@ -166,7 +166,7 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
                   backgroundColor: confirmBgColor,
                   color: '#ffffff',
                 }}
-                className={`w-full xs:w-auto px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-[42px] cursor-pointer ${
+                className={`flex-1 sm:flex-initial px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-[42px] cursor-pointer text-white ${
                   variant === 'danger'
                     ? 'bg-red-600 hover:bg-red-700 active:bg-red-800 shadow-red-600/30 border border-red-500'
                     : variant === 'warning'

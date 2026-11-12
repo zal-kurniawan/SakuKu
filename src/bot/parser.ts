@@ -3,6 +3,8 @@
  * Pipe-Delimited, Multi-Line Batch & Slash-Command Message Parser Engine
  */
 
+import { formatTransactionTitle } from '@/lib/formatters';
+
 export interface ParsedTransaction {
   kind: 'TRANSACTION';
   action: 'insert';
@@ -391,7 +393,7 @@ export function parseSingleLine(line: string, lineNumber?: number): ParseResult 
         };
       }
 
-      const title = parts[2];
+      const title = formatTransactionTitle(parts[2]);
       const walletName = parts[3];
       const rawType = parts[4].toLowerCase();
       const amount = parseAmount(parts[5]);
@@ -403,6 +405,7 @@ export function parseSingleLine(line: string, lineNumber?: number): ParseResult 
         rawType === 'out' ||
         rawType === 'keluar' ||
         rawType === 'exp' ||
+        rawType === 'ex' ||
         rawType === '-'
       ) {
         type = 'EXPENSE';
@@ -469,7 +472,7 @@ export function parseSingleLine(line: string, lineNumber?: number): ParseResult 
         };
       }
 
-      const title = parts[1];
+      const title = formatTransactionTitle(parts[1]);
       const walletName = parts[2];
       const rawType = parts[3].toLowerCase();
       const amount = parseAmount(parts[4]);
@@ -481,6 +484,7 @@ export function parseSingleLine(line: string, lineNumber?: number): ParseResult 
         rawType === 'out' ||
         rawType === 'keluar' ||
         rawType === 'exp' ||
+        rawType === 'ex' ||
         rawType === '-'
       ) {
         type = 'EXPENSE';

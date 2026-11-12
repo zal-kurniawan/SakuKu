@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getActiveUser } from '@/lib/current-user';
+import { formatTransactionTitle } from '@/lib/formatters';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -86,7 +87,7 @@ export async function POST(req: Request) {
       prisma.transaction.create({
         data: {
           userId: user.id,
-          title,
+          title: formatTransactionTitle(title),
           amount: numAmount,
           type,
           category: category || 'Lainnya',

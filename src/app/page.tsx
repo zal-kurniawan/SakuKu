@@ -7,6 +7,7 @@ import { WalletList, WalletItem } from '@/components/WalletList';
 import { AddWalletModal } from '@/components/AddWalletModal';
 import { TransferModal } from '@/components/TransferModal';
 import { AddTransactionModal } from '@/components/AddTransactionModal';
+import { EditTransactionModal } from '@/components/EditTransactionModal';
 import { CashflowChart } from '@/components/CashflowChart';
 import { WalletDistributionChart } from '@/components/WalletDistributionChart';
 import { BudgetLimitCard, BudgetItem } from '@/components/BudgetLimitCard';
@@ -43,6 +44,8 @@ export default function DashboardPage() {
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [transferFromId, setTransferFromId] = useState<string | undefined>();
   const [isAddTxOpen, setIsAddTxOpen] = useState(false);
+  const [txToEdit, setTxToEdit] = useState<TransactionItem | null>(null);
+  const [isEditTxOpen, setIsEditTxOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
 
   // Load Data
@@ -123,6 +126,11 @@ export default function DashboardPage() {
   };
 
   // Transaction Actions
+  const handleEditTransaction = (tx: TransactionItem) => {
+    setTxToEdit(tx);
+    setIsEditTxOpen(true);
+  };
+
   const handleDeleteTransaction = async (id: string | number) => {
     // Optimistic instant UI update
     setTransactions((prev) => prev.filter((tx) => String(tx.id) !== String(id)));
@@ -182,6 +190,7 @@ export default function DashboardPage() {
               transactions={transactions}
               wallets={wallets}
               onDelete={handleDeleteTransaction}
+              onEdit={handleEditTransaction}
               onRefresh={fetchData}
             />
           </div>
@@ -223,6 +232,17 @@ export default function DashboardPage() {
         onClose={() => setIsAddTxOpen(false)}
         onSuccess={fetchData}
         wallets={wallets}
+      />
+
+      <EditTransactionModal
+        isOpen={isEditTxOpen}
+        onClose={() => {
+          setIsEditTxOpen(false);
+          setTxToEdit(null);
+        }}
+        onSuccess={fetchData}
+        wallets={wallets}
+        transaction={txToEdit}
       />
 
       <BotGuideModal

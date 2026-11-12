@@ -9,6 +9,7 @@ import {
   Download,
   Search,
   Trash2,
+  Pencil,
   ArrowRightLeft,
   Smartphone,
   Globe,
@@ -40,6 +41,7 @@ interface TransactionTableProps {
   transactions: TransactionItem[];
   wallets: WalletItem[];
   onDelete: (id: string | number) => void;
+  onEdit?: (tx: TransactionItem) => void;
   onRefresh: () => void;
 }
 
@@ -60,6 +62,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   transactions,
   wallets,
   onDelete,
+  onEdit,
 }) => {
   const { t, locale } = useTranslation();
   const confirm = useConfirm();
@@ -268,11 +271,11 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                 )}
               </div>
 
-              {/* Row 3: Date, Source, and Delete Action */}
+              {/* Row 3: Date, Source, and Actions */}
               <div className="flex items-center justify-between pt-2 border-t border-gray-200/50 dark:border-gray-800 text-[11px] text-gray-500 dark:text-gray-400">
                 <div className="flex items-center gap-2">
                   <span>
-                    {new Date(tx.date).toLocaleDateString('id-ID', {
+                    {new Date(tx.date).toLocaleDateString(locale === 'en' ? 'en-US' : 'id-ID', {
                       day: '2-digit',
                       month: 'short',
                       year: 'numeric',
@@ -292,13 +295,24 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                   </span>
                 </div>
 
-                <button
-                  onClick={() => handleDelete(tx.id)}
-                  title="Hapus"
-                  className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition min-h-[34px] min-w-[34px] flex items-center justify-center"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <div className="flex items-center space-x-1">
+                  {onEdit && (
+                    <button
+                      onClick={() => onEdit(tx)}
+                      title={t('common.edit') || 'Edit'}
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition min-h-[34px] min-w-[34px] flex items-center justify-center"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleDelete(tx.id)}
+                    title={t('common.delete') || 'Hapus'}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition min-h-[34px] min-w-[34px] flex items-center justify-center"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
           );
@@ -346,7 +360,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
 
                   {/* Date */}
                   <td className="px-4 py-3 whitespace-nowrap text-gray-500 dark:text-gray-400">
-                    {new Date(tx.date).toLocaleDateString('id-ID', {
+                    {new Date(tx.date).toLocaleDateString(locale === 'en' ? 'en-US' : 'id-ID', {
                       day: '2-digit',
                       month: 'short',
                       year: 'numeric',
@@ -433,13 +447,24 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
 
                   {/* Actions */}
                   <td className="px-4 py-3 whitespace-nowrap text-right">
-                    <button
-                      onClick={() => handleDelete(tx.id)}
-                      title="Hapus"
-                      className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition min-h-[34px] min-w-[34px]"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center justify-end space-x-1">
+                      {onEdit && (
+                        <button
+                          onClick={() => onEdit(tx)}
+                          title={t('common.edit') || 'Edit'}
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition min-h-[34px] min-w-[34px] flex items-center justify-center"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleDelete(tx.id)}
+                        title={t('common.delete') || 'Hapus'}
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition min-h-[34px] min-w-[34px] flex items-center justify-center"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );
@@ -463,7 +488,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
           <div className="flex items-center justify-between w-full sm:w-auto gap-4">
             <div className="flex items-center gap-1.5">
               <span className="text-xs sm:text-sm font-medium">
-                {locale === 'id' ? 'Baris:' : 'Rows:'}
+                {t('transactions.rows') || (locale === 'id' ? 'Baris:' : 'Rows:')}
               </span>
               <div className="relative">
                 <select
@@ -481,7 +506,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
             </div>
 
             <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
-              {startIndex + 1}–{endIndex} dari {totalItems}
+              {startIndex + 1}–{endIndex} {t('transactions.of') || (locale === 'id' ? 'dari' : 'of')} {totalItems}
             </span>
           </div>
 
@@ -494,11 +519,13 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
               className="h-8 px-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
-              <span>{locale === 'id' ? 'Sebelumnya' : 'Prev'}</span>
+              <span>{t('transactions.prevPage') || (locale === 'id' ? 'Sebelumnya' : 'Prev')}</span>
             </button>
 
             <span className="text-xs font-bold text-gray-800 dark:text-gray-200">
-              Hal {validCurrentPage} / {totalPages}
+              {t('transactions.pageOf')
+                ? t('transactions.pageOf').replace('{page}', String(validCurrentPage)).replace('{total}', String(totalPages))
+                : `Hal ${validCurrentPage} / ${totalPages}`}
             </span>
 
             <button
@@ -506,7 +533,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
               disabled={validCurrentPage === totalPages}
               className="h-8 px-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1"
             >
-              <span>{locale === 'id' ? 'Berikutnya' : 'Next'}</span>
+              <span>{t('transactions.nextPage') || (locale === 'id' ? 'Berikutnya' : 'Next')}</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -518,7 +545,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
               onClick={() => setCurrentPage(1)}
               disabled={validCurrentPage === 1}
               className="h-9 w-9 p-0 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition text-gray-600 dark:text-gray-300 flex items-center justify-center"
-              title={locale === 'id' ? 'Halaman Pertama' : 'First Page'}
+              title={t('transactions.firstPage') || (locale === 'id' ? 'Halaman Pertama' : 'First Page')}
             >
               <ChevronsLeft className="w-4 h-4" />
             </button>
@@ -528,7 +555,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={validCurrentPage === 1}
               className="h-9 w-9 p-0 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition text-gray-600 dark:text-gray-300 flex items-center justify-center"
-              title={locale === 'id' ? 'Sebelumnya' : 'Previous Page'}
+              title={t('transactions.prevPage') || (locale === 'id' ? 'Sebelumnya' : 'Previous Page')}
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -561,7 +588,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={validCurrentPage === totalPages}
               className="h-9 w-9 p-0 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition text-gray-600 dark:text-gray-300 flex items-center justify-center"
-              title={locale === 'id' ? 'Selanjutnya' : 'Next Page'}
+              title={t('transactions.nextPage') || (locale === 'id' ? 'Selanjutnya' : 'Next Page')}
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -571,7 +598,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
               onClick={() => setCurrentPage(totalPages)}
               disabled={validCurrentPage === totalPages}
               className="h-9 w-9 p-0 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition text-gray-600 dark:text-gray-300 flex items-center justify-center"
-              title={locale === 'id' ? 'Halaman Terakhir' : 'Last Page'}
+              title={t('transactions.lastPage') || (locale === 'id' ? 'Halaman Terakhir' : 'Last Page')}
             >
               <ChevronsRight className="w-4 h-4" />
             </button>

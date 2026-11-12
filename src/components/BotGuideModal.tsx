@@ -31,14 +31,14 @@ tf | bca | gopay | 50k | top up`,
     {
       title: 'Catat Pengeluaran (Expense)',
       syntax: 'ACTION | TITLE | WALLET | TYPE | AMOUNT | [CATEGORY]',
-      example: 'catat | makan siang | bca | expense | 35k | Makanan & Minuman',
-      desc: 'Mencatat pengeluaran, memotong saldo dompet, dan memvalidasi batas budget bulanan.',
+      example: 'catat | makan siang | bca | ex | 35k | Makanan & Minuman',
+      desc: 'Mencatat pengeluaran (alias TYPE: ex / expense / keluar), memotong saldo dompet, dan memvalidasi batas budget bulanan.',
     },
     {
       title: 'Catat Pemasukan (Income)',
       syntax: 'ACTION | TITLE | WALLET | TYPE | AMOUNT | [CATEGORY]',
-      example: 'insert | gaji freelance proyek | mandiri | income | 3.5jt | Freelance',
-      desc: 'Mencatat pemasukan dan menambah saldo dompet berjalan.',
+      example: 'insert | bonus proyek | jago | in | 500k | Gaji',
+      desc: 'Mencatat pemasukan (alias TYPE: in / income / masuk) dan menambah saldo dompet berjalan.',
     },
     {
       title: 'Transfer Antar Dompet / Bank',

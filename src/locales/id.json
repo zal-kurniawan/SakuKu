@@ -11,7 +11,13 @@
     "transactions": "Transaksi",
     "budgets": "Budget Bulanan",
     "botGuide": "Panduan Bot",
-    "importExcel": "Import Excel"
+    "importExcel": "Import Excel",
+    "mobileMenuSubtitle": "Menu & Aksi Cepat",
+    "waBotStatus": "Status Bot WhatsApp",
+    "openMenu": "Buka Menu",
+    "switchLanguage": "Ganti Bahasa",
+    "toggleTheme": "Ganti Tema",
+    "mobileFooter": "Versi Mobile • Cloud Sync"
   },
   "kpi": {
     "totalNetWorth": "Total Kekayaan Bersih",
@@ -107,7 +113,21 @@
     "formNotes": "Catatan Transaksi (Opsional)",
     "formNotesPlaceholder": "Catatan tambahan...",
     "cancel": "Batal",
-    "save": "Simpan Transaksi"
+    "save": "Simpan Transaksi",
+    "quickAdd": "Catat Transaksi Cepat",
+    "rows": "Baris:",
+    "of": "dari",
+    "pageOf": "Hal {page} / {total}",
+    "firstPage": "Halaman Pertama",
+    "lastPage": "Halaman Terakhir",
+    "prevPage": "Sebelumnya",
+    "nextPage": "Berikutnya",
+    "editTransaction": "Edit Transaksi",
+    "editDesc": "Perbarui data transaksi yang sudah tercatat",
+    "updateSuccess": "Transaksi berhasil diperbarui",
+    "updateFailed": "Gagal memperbarui transaksi",
+    "destinationWallet": "Dompet Tujuan",
+    "selectDestWallet": "Pilih Dompet Tujuan"
   },
   "budgets": {
     "title": "Target Batas Budget Bulanan",
@@ -133,10 +153,18 @@
   "charts": {
     "cashflowTitle": "Arus Kas Bulanan (Pemasukan vs Pengeluaran)",
     "cashflowSubtitle": "Perbandingan tren arus kas 6 bulan terakhir",
+    "cashflowSubtitleYear": "Perbandingan tren arus kas 12 bulan tahun {year}",
     "distributionTitle": "Komposisi Aset per Dompet",
     "distributionSubtitle": "Proporsi saldo tiap instrumen dompet & rekening",
+    "distributionSubtitlePeriod": "Proporsi aset per akhir {period}",
     "income": "Pemasukan",
-    "expense": "Pengeluaran"
+    "expense": "Pengeluaran",
+    "loading": "Memuat grafik...",
+    "emptyWalletTitle": "Belum ada saldo pada dompet aktif",
+    "emptyWalletDesc": "Tambahkan saldo pada dompet untuk melihat proporsi aset.",
+    "filterYear": "Pilih Tahun",
+    "filterMonth": "Pilih Bulan",
+    "currentMonth": "Saat Ini"
   },
   "common": {
     "loading": "Memuat data...",

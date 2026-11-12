@@ -9,6 +9,7 @@ import {
   ParseResult,
 } from './parser';
 import { formatCurrency } from '../lib/utils';
+import { formatTransactionTitle } from '../lib/formatters';
 
 const BOT_HEADER = `🤖 *[SakuKu Assistant]*\n`;
 const BOT_FOOTER = `\n✨ _SakuKu Financial Assistant_`;
@@ -302,7 +303,7 @@ async function handleUpdateTransaction(userId: string, parsed: ParsedUpdate): Pr
       const updatedTx = await db.transaction.update({
         where: { id: oldTx.id },
         data: {
-          title: parsed.title,
+          title: formatTransactionTitle(parsed.title),
           amount: parsed.amount,
           type: parsed.type,
           category: parsed.category,
@@ -399,7 +400,7 @@ async function executeBatchTransactions(
         transactionCreatePayloads.push({
           userId,
           walletId: wallet.id,
-          title: item.title,
+          title: formatTransactionTitle(item.title),
           amount: item.amount,
           type: 'EXPENSE',
           category: item.category,
@@ -412,7 +413,7 @@ async function executeBatchTransactions(
         transactionCreatePayloads.push({
           userId,
           walletId: wallet.id,
-          title: item.title,
+          title: formatTransactionTitle(item.title),
           amount: item.amount,
           type: 'INCOME',
           category: item.category,
@@ -433,7 +434,9 @@ async function executeBatchTransactions(
         userId,
         walletId: fromWallet.id,
         destinationWalletId: toWallet.id,
-        title: item.notes || `Transfer ${fromWallet.name} -> ${toWallet.name}`,
+        title: item.notes
+          ? formatTransactionTitle(item.notes)
+          : `Transfer ${fromWallet.name} -> ${toWallet.name}`,
         amount: item.amount,
         type: 'TRANSFER',
         category: 'Transfer Antar Dompet',
@@ -636,8 +639,10 @@ async function handleCommand(userId: string, parsed: ParsedCommand): Promise<str
         `📖 *PANDUAN FORMAT SAKUKU BOT*\n\n` +
         `⚡ *Catat Transaksi (Single / Multi-Baris):*\n` +
         `\`ACTION | JUDUL | DOMPET | TYPE | NOMINAL | [KATEGORI]\`\n` +
-        `• _catat | makan siang | bca | expense | 35k | Makanan_\n` +
-        `• _insert | gaji freelance | mandiri | income | 5jt | Gaji_\n\n` +
+        `• _catat | makan siang | bca | ex | 35k | Makanan_\n` +
+        `• _catat | bonus proyek | jago | in | 500k | Gaji_\n` +
+        `• _insert | gaji freelance | mandiri | income | 5jt | Gaji_\n` +
+        `💡 _Alias TYPE: "in"/"masuk"/"income" (Pemasukan) & "ex"/"keluar"/"expense" (Pengeluaran)_\n\n` +
         `🔄 *Transfer Antar Dompet:*\n` +
         `\`tf | ASAL | TUJUAN | NOMINAL | [CATATAN]\`\n` +
         `• _tf | bca | gopay | 50k | top up mingguan_\n\n` +
@@ -646,7 +651,7 @@ async function handleCommand(userId: string, parsed: ParsedCommand): Promise<str
         `• _hapus | 105_\n\n` +
         `✏️ *Update Transaksi:*\n` +
         `\`update | ID | JUDUL | DOMPET | TYPE | NOMINAL | [KATEGORI]\`\n` +
-        `• _update | 105 | makan siang padang | bca | expense | 45k | Makanan_\n\n` +
+        `• _update | 105 | makan siang padang | bca | ex | 45k | Makanan_\n\n` +
         `📊 *Perintah Cepat:*\n` +
         `• */saldo* : Rincian saldo & Total Kekayaan Bersih\n` +
         `• */rekap hari ini* : Rincian transaksi & cashflow hari ini\n` +

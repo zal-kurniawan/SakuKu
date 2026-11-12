@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   PieChart,
   Pie,
@@ -9,39 +9,97 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
+import { ChevronDown } from 'lucide-react';
 import { useTranslation } from '@/context/LanguageContext';
 import { formatCurrency } from '@/lib/utils';
 
 interface WalletDistPoint {
+  id?: string;
   name: string;
   value: number;
   color: string;
-  type: string;
+  type?: string;
 }
 
 interface WalletDistributionChartProps {
   data: WalletDistPoint[];
 }
 
+const FULL_MONTHS_ID = [
+  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+];
+
+const FULL_MONTHS_EN = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
+
 export const WalletDistributionChart: React.FC<WalletDistributionChartProps> = ({
-  data,
+  data: liveData,
 }) => {
   const { t, locale } = useTranslation();
   const [mounted, setMounted] = useState(false);
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
+
+  const [selectedMonth, setSelectedMonth] = useState<string>('current'); // 'current' or '1'..'12'
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+  const [availableYears, setAvailableYears] = useState<number[]>([currentYear]);
+  const [historicalWallets, setHistoricalWallets] = useState<WalletDistPoint[] | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const fullMonths = locale === 'en' ? FULL_MONTHS_EN : FULL_MONTHS_ID;
+
+  // Fetch available years & historical distribution when month !== 'current'
+  const fetchDistribution = useCallback(async (month: string, year: number) => {
+    if (month === 'current') {
+      setHistoricalWallets(null);
+      // Still fetch available years if we don't have them
+      try {
+        const res = await fetch('/api/stats/wallet-history');
+        if (res.ok) {
+          const json = await res.json();
+          if (json.availableYears) setAvailableYears(json.availableYears);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/stats/wallet-history?month=${month}&year=${year}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.availableYears) setAvailableYears(json.availableYears);
+        if (json.wallets) setHistoricalWallets(json.wallets);
+      }
+    } catch (err) {
+      console.error('Failed to fetch historical wallet distribution:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    fetchDistribution(selectedMonth, selectedYear);
+  }, [fetchDistribution, selectedMonth, selectedYear]);
 
   if (!mounted) {
     return (
       <div className="h-64 sm:h-80 flex items-center justify-center text-xs text-gray-400">
-        Memuat grafik...
+        {t('charts.loading') || 'Memuat grafik...'}
       </div>
     );
   }
 
-  const filteredData = data.filter((d) => d.value > 0);
+  // Choose source data: historical or current live data
+  const currentSource = selectedMonth === 'current' ? liveData : (historicalWallets || []);
+  const filteredData = currentSource.filter((d) => d.value > 0);
   const totalValue = filteredData.reduce((acc, curr) => acc + curr.value, 0);
 
   const CustomTooltip = ({ active, payload }: any) => {
@@ -66,28 +124,85 @@ export const WalletDistributionChart: React.FC<WalletDistributionChartProps> = (
     return null;
   };
 
+  // Subtitle based on period
+  const periodLabel =
+    selectedMonth === 'current'
+      ? (t('charts.currentMonth') || 'Saat Ini')
+      : `${fullMonths[parseInt(selectedMonth, 10) - 1]} ${selectedYear}`;
+
   return (
     <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-xs sm:shadow-sm">
-      <div className="mb-3 sm:mb-4">
-        <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
-          {t('charts.distributionTitle')}
-        </h3>
-        <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
-          {t('charts.distributionSubtitle') || 'Proporsi saldo tiap instrumen dompet & rekening'}
-        </p>
+      {/* Header with Title and Month/Year Dropdowns */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-3 sm:mb-4">
+        <div>
+          <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
+            {t('charts.distributionTitle')}
+          </h3>
+          <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
+            {selectedMonth === 'current'
+              ? (t('charts.distributionSubtitle') || 'Proporsi saldo tiap instrumen dompet & rekening')
+              : `${t('charts.distributionSubtitlePeriod') ? t('charts.distributionSubtitlePeriod').replace('{period}', periodLabel) : `Proporsi aset per akhir ${periodLabel}`}`}
+          </p>
+        </div>
+
+        {/* Month & Year Selectors */}
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          {/* Month Selector */}
+          <div className="relative">
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              aria-label={t('charts.filterMonth') || 'Pilih Bulan'}
+              className="appearance-none bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl pl-3 pr-8 py-1.5 text-xs font-semibold text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer min-h-[36px]"
+            >
+              <option value="current">{t('charts.currentMonth') || 'Saat Ini'}</option>
+              {fullMonths.map((mName, idx) => (
+                <option key={idx + 1} value={String(idx + 1)}>
+                  {mName}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+          </div>
+
+          {/* Year Selector (Visible when specific month is selected) */}
+          {selectedMonth !== 'current' && (
+            <div className="relative animate-in fade-in duration-150">
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                aria-label={t('charts.filterYear') || 'Pilih Tahun'}
+                className="appearance-none bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl pl-3 pr-8 py-1.5 text-xs font-semibold text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer min-h-[36px]"
+              >
+                {availableYears.map((yr) => (
+                  <option key={yr} value={yr}>
+                    {yr}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="h-64 sm:h-80 w-full flex items-center justify-center">
+      <div className="h-64 sm:h-80 w-full relative flex items-center justify-center">
+        {loading && (
+          <div className="absolute inset-0 bg-white/60 dark:bg-gray-800/60 backdrop-blur-xs flex items-center justify-center z-10 text-xs text-gray-500 dark:text-gray-400">
+            {t('charts.loading') || 'Memuat grafik...'}
+          </div>
+        )}
+
         {filteredData.length === 0 ? (
           <div className="flex flex-col items-center justify-center text-center p-4">
             <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800/80 flex items-center justify-center text-gray-400 mb-2">
               <span className="text-xl">💳</span>
             </div>
             <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-              Belum ada saldo pada dompet aktif
+              {t('charts.emptyWalletTitle') || 'Belum ada saldo pada dompet aktif'}
             </p>
             <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">
-              Tambahkan saldo pada dompet untuk melihat proporsi aset.
+              {t('charts.emptyWalletDesc') || 'Tambahkan saldo pada dompet untuk melihat proporsi aset.'}
             </p>
           </div>
         ) : (

@@ -16,6 +16,7 @@ import {
   Menu,
   X,
   Plus,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -150,7 +151,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Language Switcher */}
             <button
               onClick={() => setLocale(locale === 'id' ? 'en' : 'id')}
-              title="Ganti Bahasa"
+              title={t('nav.switchLanguage') || 'Ganti Bahasa'}
               className="p-2 rounded-xl text-xs font-bold bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 min-h-[40px] min-w-[40px] flex items-center justify-center"
             >
               <span className="uppercase text-[11px]">{locale}</span>
@@ -160,7 +161,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {mounted && (
               <button
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                title="Toggle Mode"
+                title={t('nav.toggleTheme') || 'Toggle Mode'}
                 className="p-2 rounded-xl text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 min-h-[40px] min-w-[40px] flex items-center justify-center"
               >
                 {theme === 'dark' ? (
@@ -174,7 +175,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Hamburger Button */}
             <button
               onClick={() => setIsMobileMenuOpen(true)}
-              aria-label="Buka Menu"
+              aria-label={t('nav.openMenu') || 'Buka Menu'}
               className="p-2 rounded-xl text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition min-h-[40px] min-w-[40px] flex items-center justify-center"
             >
               <Menu className="w-5 h-5" />
@@ -193,7 +194,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           />
 
           {/* Sliding Sheet Panel */}
-          <div className="relative w-full max-w-xs bg-white dark:bg-gray-900 h-full shadow-2xl p-6 flex flex-col justify-between border-l border-gray-200 dark:border-gray-800 animate-in slide-in-from-right duration-250 z-10">
+          <div className="relative w-full max-w-xs bg-white dark:bg-gray-900 h-full shadow-2xl p-6 flex flex-col justify-between border-l border-gray-200 dark:border-gray-800 animate-in slide-in-from-right duration-250 z-10 overflow-y-auto">
             <div>
               {/* Sheet Header */}
               <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-gray-800">
@@ -205,7 +206,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <h3 className="font-bold text-gray-900 dark:text-white text-base">
                       {t('app.title')}
                     </h3>
-                    <p className="text-[11px] text-gray-400">Menu & Aksi Cepat</p>
+                    <p className="text-[11px] text-gray-400">{t('nav.mobileMenuSubtitle') || 'Menu & Aksi Cepat'}</p>
                   </div>
                 </div>
                 <button
@@ -217,7 +218,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
 
               {/* Action Buttons List in Mobile Drawer */}
-              <div className="py-5 space-y-2.5">
+              <div className="py-4 space-y-2.5">
                 {/* Catat Transaksi */}
                 <button
                   onClick={() => {
@@ -242,14 +243,30 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <span>{t('wallets.transfer')}</span>
                 </button>
 
+                {/* Import Excel */}
+                <Link
+                  href="/import"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="w-full min-h-[46px] px-4 py-3 rounded-xl bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/60 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 font-medium text-sm flex items-center gap-3 transition"
+                >
+                  <FileSpreadsheet className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  <span>{t('nav.importExcel') || 'Import Excel'}</span>
+                </Link>
+
                 {/* Status Bot WhatsApp */}
                 <Link
                   href="/admin/qr"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="w-full min-h-[46px] px-4 py-3 rounded-xl bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/60 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 font-medium text-sm flex items-center gap-3 transition"
+                  className="w-full min-h-[46px] px-4 py-3 rounded-xl bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/60 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 font-medium text-sm flex items-center justify-between transition"
                 >
-                  <Radio className="w-5 h-5 text-emerald-500" />
-                  <span>Status Bot WhatsApp</span>
+                  <div className="flex items-center gap-3">
+                    <Radio className="w-5 h-5 text-emerald-500" />
+                    <span>{t('nav.waBotStatus') || 'Status Bot WhatsApp'}</span>
+                  </div>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+                    <Radio className="w-2.5 h-2.5 animate-pulse text-emerald-500" />
+                    <span>WA Bot</span>
+                  </span>
                 </Link>
 
                 {/* Panduan WhatsApp Bot */}
@@ -264,12 +281,46 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <span>{t('nav.botGuide')}</span>
                 </button>
               </div>
+
+              {/* Language & Theme Controls inside Drawer */}
+              <div className="pt-3 border-t border-gray-100 dark:border-gray-800 space-y-2">
+                <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 px-1">
+                  <span>{t('nav.switchLanguage') || 'Bahasa'}</span>
+                  <button
+                    onClick={() => setLocale(locale === 'id' ? 'en' : 'id')}
+                    className="px-2.5 py-1 rounded-lg text-xs font-bold bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 uppercase border border-gray-200 dark:border-gray-700"
+                  >
+                    {locale === 'id' ? '🇮🇩 ID' : '🇬🇧 EN'}
+                  </button>
+                </div>
+                {mounted && (
+                  <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 px-1">
+                    <span>{t('nav.toggleTheme') || 'Tema'}</span>
+                    <button
+                      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                      className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 flex items-center gap-1.5 border border-gray-200 dark:border-gray-700"
+                    >
+                      {theme === 'dark' ? (
+                        <>
+                          <Sun className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Dark</span>
+                        </>
+                      ) : (
+                        <>
+                          <Moon className="w-3.5 h-3.5 text-gray-600" />
+                          <span>Light</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Drawer Footer Info */}
             <div className="pt-4 border-t border-gray-100 dark:border-gray-800 text-center text-xs text-gray-400">
               <p>SakuKu Finance Tracker</p>
-              <p className="text-[10px] mt-0.5">Versi Mobile • Cloud Sync</p>
+              <p className="text-[10px] mt-0.5">{t('nav.mobileFooter') || 'Versi Mobile • Cloud Sync'}</p>
             </div>
           </div>
         </div>
@@ -278,7 +329,8 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* Floating Action Button (FAB) for Mobile (< 640px) */}
       <button
         onClick={onOpenAddTransaction}
-        aria-label="Catat Transaksi Cepat"
+        aria-label={t('transactions.quickAdd') || 'Catat Transaksi Cepat'}
+        title={t('transactions.quickAdd') || 'Catat Transaksi Cepat'}
         className="fixed bottom-5 right-5 z-40 sm:hidden h-14 w-14 rounded-full bg-blue-600 hover:bg-blue-700 active:scale-90 text-white shadow-xl shadow-blue-600/40 flex items-center justify-center transition-all duration-200"
       >
         <Plus className="w-7 h-7" />

@@ -49,7 +49,7 @@ const [item1, item2, item3] = parsedBatch;
 
 if (
   item1.kind === 'TRANSACTION' &&
-  item1.title === 'makan siang' &&
+  item1.title === 'Makan Siang' &&
   item1.walletName === 'bca' &&
   item1.type === 'EXPENSE' &&
   item1.amount === 35000
@@ -62,7 +62,7 @@ if (
 
 if (
   item2.kind === 'TRANSACTION' &&
-  item2.title === 'beli kopi' &&
+  item2.title === 'Beli Kopi' &&
   item2.walletName === 'gopay' &&
   item2.type === 'EXPENSE' &&
   item2.amount === 18000
@@ -105,6 +105,33 @@ if (
   console.log('✓ All Slash Commands PASSED');
 } else {
   console.error('❌ Slash Commands FAILED');
+  process.exit(1);
+}
+
+// 4. Test "in" and "ex" aliases & title-casing
+const testEx = parseIncomingMessage('catat | makan siang padang | bca | ex | 35k | Makanan');
+if (
+  testEx.kind === 'TRANSACTION' &&
+  testEx.type === 'EXPENSE' &&
+  testEx.title === 'Makan Siang Padang' &&
+  testEx.amount === 35000
+) {
+  console.log('✓ "ex" alias and title casing PASSED');
+} else {
+  console.error('❌ "ex" alias test FAILED', testEx);
+  process.exit(1);
+}
+
+const testIn = parseIncomingMessage('catat | bonus proyek QRIS | jago | in | 500k | Gaji');
+if (
+  testIn.kind === 'TRANSACTION' &&
+  testIn.type === 'INCOME' &&
+  testIn.title === 'Bonus Proyek QRIS' &&
+  testIn.amount === 500000
+) {
+  console.log('✓ "in" alias and acronym preservation PASSED');
+} else {
+  console.error('❌ "in" alias test FAILED', testIn);
   process.exit(1);
 }
 
