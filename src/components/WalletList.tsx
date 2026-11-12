@@ -130,14 +130,14 @@ export const WalletList: React.FC<WalletListProps> = ({
                   <div className="flex items-center space-x-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition">
                     <button
                       onClick={() => onEditWallet(wallet)}
-                      title="Edit Dompet"
+                      title={t('common.edit') || 'Edit Dompet'}
                       className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition min-h-[32px] min-w-[32px] flex items-center justify-center"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => onDeleteWallet(wallet.id)}
-                      title="Hapus Dompet"
+                      title={t('common.delete') || 'Hapus Dompet'}
                       className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition min-h-[32px] min-w-[32px] flex items-center justify-center"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -157,14 +157,14 @@ export const WalletList: React.FC<WalletListProps> = ({
               {/* Share & Quick Transfer Footer */}
               <div className="mt-3 sm:mt-4 pt-2.5 sm:pt-3 border-t border-gray-100 dark:border-gray-700/50 flex items-center justify-between text-xs">
                 <span className="text-gray-500 dark:text-gray-400 text-[11px]">
-                  Porsi: <span className="font-bold text-gray-700 dark:text-gray-200">{share}%</span>
+                  {t('wallets.portion') || 'Porsi:'} <span className="font-bold text-gray-700 dark:text-gray-200">{share}%</span>
                 </span>
                 <button
                   onClick={() => onTransfer(wallet.id)}
                   className="text-blue-600 dark:text-blue-400 font-semibold hover:underline inline-flex items-center gap-1 text-[11px] py-1 px-1.5 rounded-md hover:bg-blue-50 dark:hover:bg-blue-950/40"
                 >
                   <ArrowRightLeft className="w-3 h-3" />
-                  <span>Transfer</span>
+                  <span>{t('wallets.transfer') || 'Transfer'}</span>
                 </button>
               </div>
             </div>
@@ -192,7 +192,7 @@ export const WalletList: React.FC<WalletListProps> = ({
       {wallets.length > 1 && (
         <div className="sm:hidden text-center">
           <p className="text-[10px] text-gray-400 dark:text-gray-500">
-            👈 Geser untuk melihat semua dompet 👉
+            {t('wallets.swipeHint') || '👉 Geser untuk melihat semua dompet 👈'}
           </p>
         </div>
       )}

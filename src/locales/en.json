@@ -5,6 +5,11 @@
     "statusConnected": "WhatsApp Connected",
     "statusWaiting": "Waiting for QR Scan"
   },
+  "bot": {
+    "online": "Online",
+    "statusConnected": "WhatsApp Connected",
+    "statusWaiting": "Waiting for QR Scan"
+  },
   "nav": {
     "dashboard": "Dashboard",
     "wallets": "Wallets & Accounts",
@@ -15,7 +20,9 @@
     "mobileMenuSubtitle": "Menu & Quick Actions",
     "waBotStatus": "WhatsApp Bot Status",
     "openMenu": "Open Menu",
+    "language": "Language",
     "switchLanguage": "Switch Language",
+    "theme": "Theme",
     "toggleTheme": "Toggle Theme",
     "mobileFooter": "Mobile Version • Cloud Sync"
   },
@@ -36,7 +43,10 @@
     "addWallet": "Add Wallet",
     "addWalletTitle": "Add New Wallet",
     "addWalletDesc": "Register a new financial account",
+    "modalEditDesc": "Update wallet details",
     "transfer": "Transfer Funds",
+    "portion": "Portion:",
+    "swipeHint": "👉 Swipe to see all wallets 👈",
     "typeBank": "Bank Account",
     "typeEwallet": "E-Wallet",
     "typeCash": "Cash",
@@ -59,7 +69,11 @@
     "formColor": "Wallet Color & Identity",
     "customColor": "Custom Color (Hex)",
     "save": "Save Wallet",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "addSuccess": "Wallet added successfully",
+    "addFailed": "Failed to add wallet",
+    "updateSuccess": "Wallet updated successfully",
+    "updateFailed": "Failed to update wallet"
   },
   "transfer": {
     "title": "Inter-Wallet Transfer",
@@ -75,7 +89,9 @@
     "confirm": "Confirm Transfer",
     "cancel": "Cancel",
     "sameWalletError": "Source and destination wallets must be different",
-    "insufficientBalance": "Insufficient balance in source wallet"
+    "insufficientBalance": "Insufficient balance in source wallet",
+    "transferSuccess": "Funds transferred successfully",
+    "transferFailed": "Failed to transfer funds"
   },
   "transactions": {
     "title": "Transaction History",
@@ -124,6 +140,8 @@
     "nextPage": "Next",
     "editTransaction": "Edit Transaction",
     "editDesc": "Update a recorded transaction",
+    "addSuccess": "Transaction added successfully",
+    "addFailed": "Failed to record transaction",
     "updateSuccess": "Transaction updated successfully",
     "updateFailed": "Failed to update transaction",
     "destinationWallet": "Destination Wallet",
@@ -148,7 +166,11 @@
     "empty": "No monthly budget limits configured.",
     "setNow": "Set budget limits now",
     "deleteConfirm": "Are you sure you want to delete this budget target?",
-    "limitError": "Budget limit must be greater than 0."
+    "limitError": "Budget limit must be greater than 0.",
+    "addSuccess": "Budget limit saved successfully",
+    "addFailed": "Failed to save budget limit",
+    "updateSuccess": "Budget limit updated successfully",
+    "updateFailed": "Failed to update budget limit"
   },
   "charts": {
     "cashflowTitle": "Monthly Cashflow (Income vs Expense)",
@@ -193,5 +215,46 @@
     "txDeleteFailed": "Failed to delete transaction",
     "budgetDeleted": "Budget target successfully deleted",
     "budgetDeleteFailed": "Failed to delete budget target"
+  },
+  "import": {
+    "successCount": "Successfully imported {count} transactions",
+    "failed": "Failed to save transactions"
+  },
+  "guide": {
+    "title": "SakuKu WhatsApp Bot Guide",
+    "subtitle": "Use pipe (|) format, multi-line batch, or slash commands in WA",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "copiedToast": "Command copied to clipboard!",
+    "copyFailed": "Failed to copy command",
+    "formatLabel": "Format:",
+    "close": "Close Guide",
+    "cmdBatchTitle": "⚡ Multi-Transaction Batch (Multi-Line)",
+    "cmdBatchSyntax": "Send multiple lines separated by Enter (newline)",
+    "cmdBatchDesc": "Record multiple expenses, incomes, and transfers atomically in a single WhatsApp message.",
+    "cmdExpenseTitle": "Record Expense",
+    "cmdExpenseSyntax": "ACTION | TITLE | WALLET | TYPE | AMOUNT | [CATEGORY]",
+    "cmdExpenseDesc": "Record expense (TYPE alias: ex / expense / keluar), deduct wallet balance, and validate monthly budget limit.",
+    "cmdIncomeTitle": "Record Income",
+    "cmdIncomeSyntax": "ACTION | TITLE | WALLET | TYPE | AMOUNT | [CATEGORY]",
+    "cmdIncomeDesc": "Record income (TYPE alias: in / income / masuk) and increase wallet balance.",
+    "cmdTransferTitle": "Inter-Wallet / Bank Transfer",
+    "cmdTransferSyntax": "tf | FROM_WALLET | TO_WALLET | AMOUNT | [NOTES]",
+    "cmdTransferDesc": "Atomically transfer funds between wallets without discrepancy.",
+    "cmdDeleteTitle": "Delete Transaction",
+    "cmdDeleteSyntax": "hapus | ID or delete | ID",
+    "cmdDeleteDesc": "Delete transaction data and atomically rollback wallet balance.",
+    "cmdUpdateTitle": "Update Transaction",
+    "cmdUpdateSyntax": "update | ID | TITLE | WALLET | TYPE | AMOUNT | [CATEGORY]",
+    "cmdUpdateDesc": "Update transaction details and adjust old and new wallet balances atomically.",
+    "cmdSaldoTitle": "Check Net Worth & Balances",
+    "cmdSaldoSyntax": "/saldo or /dompet",
+    "cmdSaldoDesc": "Display balance details for each bank/e-wallet and Total Net Worth.",
+    "cmdRekapTodayTitle": "Daily Recap Evaluation",
+    "cmdRekapTodaySyntax": "/rekap hari ini",
+    "cmdRekapTodayDesc": "Summary of today's inflow and outflow with net cashflow.",
+    "cmdRekapMonthTitle": "Monthly Cashflow Evaluation",
+    "cmdRekapMonthSyntax": "/rekap bulan ini",
+    "cmdRekapMonthDesc": "Evaluation of income, expense, savings rate %, and Top 3 spending categories."
   }
 }

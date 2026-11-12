@@ -259,13 +259,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="w-full min-h-[46px] px-4 py-3 rounded-xl bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/60 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 font-medium text-sm flex items-center justify-between transition"
                 >
-                  <div className="flex items-center gap-3">
-                    <Radio className="w-5 h-5 text-emerald-500" />
-                    <span>{t('nav.waBotStatus') || 'Status Bot WhatsApp'}</span>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Radio className="w-5 h-5 text-emerald-500 shrink-0" />
+                    <span className="truncate">{t('nav.waBotStatus') || 'Status Bot WhatsApp'}</span>
                   </div>
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
-                    <Radio className="w-2.5 h-2.5 animate-pulse text-emerald-500" />
-                    <span>WA Bot</span>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 whitespace-nowrap shrink-0">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    {t('bot.online') || 'Aktif'}
                   </span>
                 </Link>
 
@@ -285,7 +285,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               {/* Language & Theme Controls inside Drawer */}
               <div className="pt-3 border-t border-gray-100 dark:border-gray-800 space-y-2">
                 <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 px-1">
-                  <span>{t('nav.switchLanguage') || 'Bahasa'}</span>
+                  <span>{t('nav.language') || t('nav.switchLanguage') || 'Bahasa'}</span>
                   <button
                     onClick={() => setLocale(locale === 'id' ? 'en' : 'id')}
                     className="px-2.5 py-1 rounded-lg text-xs font-bold bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 uppercase border border-gray-200 dark:border-gray-700"
@@ -295,7 +295,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </div>
                 {mounted && (
                   <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 px-1">
-                    <span>{t('nav.toggleTheme') || 'Tema'}</span>
+                    <span>{t('nav.theme') || t('nav.toggleTheme') || 'Tema'}</span>
                     <button
                       onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                       className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 flex items-center gap-1.5 border border-gray-200 dark:border-gray-700"

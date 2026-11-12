@@ -5,6 +5,11 @@
     "statusConnected": "WhatsApp Terhubung",
     "statusWaiting": "Menunggu Scan QR"
   },
+  "bot": {
+    "online": "Aktif",
+    "statusConnected": "WhatsApp Terhubung",
+    "statusWaiting": "Menunggu Scan QR"
+  },
   "nav": {
     "dashboard": "Dashboard",
     "wallets": "Dompet & Rekening",
@@ -15,7 +20,9 @@
     "mobileMenuSubtitle": "Menu & Aksi Cepat",
     "waBotStatus": "Status Bot WhatsApp",
     "openMenu": "Buka Menu",
+    "language": "Bahasa",
     "switchLanguage": "Ganti Bahasa",
+    "theme": "Tema",
     "toggleTheme": "Ganti Tema",
     "mobileFooter": "Versi Mobile • Cloud Sync"
   },
@@ -36,7 +43,10 @@
     "addWallet": "Tambah Dompet",
     "addWalletTitle": "Tambah Dompet Baru",
     "addWalletDesc": "Daftarkan instrumen keuangan baru",
+    "modalEditDesc": "Ubah rincian dompet",
     "transfer": "Transfer Saldo",
+    "portion": "Porsi:",
+    "swipeHint": "👉 Geser untuk melihat semua dompet 👈",
     "typeBank": "Bank",
     "typeEwallet": "E-Wallet",
     "typeCash": "Uang Tunai",
@@ -59,7 +69,11 @@
     "formColor": "Warna Dompet & Identitas",
     "customColor": "Warna Kustom (Hex)",
     "save": "Simpan Dompet",
-    "cancel": "Batal"
+    "cancel": "Batal",
+    "addSuccess": "Dompet berhasil ditambahkan",
+    "addFailed": "Gagal menambahkan dompet",
+    "updateSuccess": "Dompet berhasil diperbarui",
+    "updateFailed": "Gagal memperbarui dompet"
   },
   "transfer": {
     "title": "Transfer Antar Dompet",
@@ -75,7 +89,9 @@
     "confirm": "Konfirmasi Transfer",
     "cancel": "Batal",
     "sameWalletError": "Dompet asal dan tujuan tidak boleh sama",
-    "insufficientBalance": "Saldo dompet asal tidak mencukupi"
+    "insufficientBalance": "Saldo dompet asal tidak mencukupi",
+    "transferSuccess": "Transfer saldo berhasil",
+    "transferFailed": "Gagal melakukan transfer"
   },
   "transactions": {
     "title": "Riwayat Transaksi",
@@ -124,6 +140,8 @@
     "nextPage": "Berikutnya",
     "editTransaction": "Edit Transaksi",
     "editDesc": "Perbarui data transaksi yang sudah tercatat",
+    "addSuccess": "Transaksi berhasil dicatat",
+    "addFailed": "Gagal mencatat transaksi",
     "updateSuccess": "Transaksi berhasil diperbarui",
     "updateFailed": "Gagal memperbarui transaksi",
     "destinationWallet": "Dompet Tujuan",
@@ -148,7 +166,11 @@
     "empty": "Belum ada batas budget yang diatur.",
     "setNow": "Atur batas budget sekarang",
     "deleteConfirm": "Yakin ingin menghapus target budget ini?",
-    "limitError": "Batas budget harus lebih dari 0."
+    "limitError": "Batas budget harus lebih dari 0.",
+    "addSuccess": "Target budget berhasil disimpan",
+    "addFailed": "Gagal menyimpan target budget",
+    "updateSuccess": "Target budget berhasil diperbarui",
+    "updateFailed": "Gagal memperbarui target budget"
   },
   "charts": {
     "cashflowTitle": "Arus Kas Bulanan (Pemasukan vs Pengeluaran)",
@@ -193,5 +215,46 @@
     "txDeleteFailed": "Gagal menghapus transaksi",
     "budgetDeleted": "Target budget berhasil dihapus",
     "budgetDeleteFailed": "Gagal menghapus target budget"
+  },
+  "import": {
+    "successCount": "Berhasil mengimpor {count} transaksi",
+    "failed": "Gagal menyimpan transaksi"
+  },
+  "guide": {
+    "title": "Panduan SakuKu WhatsApp Bot",
+    "subtitle": "Gunakan format pipe (|), batch multi-baris, atau slash command di WA",
+    "copy": "Salin",
+    "copied": "Tersalin!",
+    "copiedToast": "Perintah berhasil disalin!",
+    "copyFailed": "Gagal menyalin perintah",
+    "formatLabel": "Format:",
+    "close": "Tutup Panduan",
+    "cmdBatchTitle": "⚡ Multi-Transaksi Sekaligus (Batch Multi-Line)",
+    "cmdBatchSyntax": "Kirim beberapa baris sekaligus dipisah Enter (newline)",
+    "cmdBatchDesc": "Mencatat banyak pengeluaran, pemasukan, dan transfer dalam satu kali kirim pesan WhatsApp secara atomik.",
+    "cmdExpenseTitle": "Catat Pengeluaran (Expense)",
+    "cmdExpenseSyntax": "ACTION | TITLE | WALLET | TYPE | AMOUNT | [CATEGORY]",
+    "cmdExpenseDesc": "Mencatat pengeluaran (alias TYPE: ex / expense / keluar), memotong saldo dompet, dan memvalidasi batas budget bulanan.",
+    "cmdIncomeTitle": "Catat Pemasukan (Income)",
+    "cmdIncomeSyntax": "ACTION | TITLE | WALLET | TYPE | AMOUNT | [CATEGORY]",
+    "cmdIncomeDesc": "Mencatat pemasukan (alias TYPE: in / income / masuk) dan menambah saldo dompet berjalan.",
+    "cmdTransferTitle": "Transfer Antar Dompet / Bank",
+    "cmdTransferSyntax": "tf | WALLET_DARI | WALLET_TUJUAN | AMOUNT | [NOTES]",
+    "cmdTransferDesc": "Memindahkan saldo antar dompet secara atomik tanpa selisih.",
+    "cmdDeleteTitle": "Hapus Transaksi (Delete)",
+    "cmdDeleteSyntax": "hapus | ID atau delete | ID",
+    "cmdDeleteDesc": "Menghapus data transaksi dan mengembalikan (rollback) saldo dompet secara atomik.",
+    "cmdUpdateTitle": "Perbarui Transaksi (Update)",
+    "cmdUpdateSyntax": "update | ID | JUDUL | DOMPET | TYPE | NOMINAL | [KATEGORI]",
+    "cmdUpdateDesc": "Memperbarui rincian transaksi dan menyesuaikan saldo dompet lama dan baru secara atomik.",
+    "cmdSaldoTitle": "Cek Total Kekayaan & Saldo",
+    "cmdSaldoSyntax": "/saldo atau /dompet",
+    "cmdSaldoDesc": "Menampilkan rincian saldo tiap bank/e-wallet dan Total Net Worth.",
+    "cmdRekapTodayTitle": "Evaluasi Rekap Harian",
+    "cmdRekapTodaySyntax": "/rekap hari ini",
+    "cmdRekapTodayDesc": "Ringkasan transaksi masuk & keluar hari ini beserta net cashflow.",
+    "cmdRekapMonthTitle": "Evaluasi Cashflow Bulanan",
+    "cmdRekapMonthSyntax": "/rekap bulan ini",
+    "cmdRekapMonthDesc": "Evaluasi pemasukan, pengeluaran, savings rate %, dan Top 3 kategori belanja terbesar."
   }
 }

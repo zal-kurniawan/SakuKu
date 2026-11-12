@@ -258,7 +258,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border border-blue-200 dark:border-blue-900/60 text-blue-700 dark:text-blue-300 bg-blue-50/50 dark:bg-blue-950/40">
                     <span>{tx.wallet.name}</span>
                     <ArrowRightLeft className="w-2.5 h-2.5 text-blue-500" />
-                    <span>{tx.destinationWallet?.name || 'Tujuan'}</span>
+                    <span>{tx.destinationWallet?.name || t('transactions.destinationWallet') || 'Tujuan'}</span>
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800">
@@ -395,7 +395,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                         </span>
                         <ArrowRightLeft className="w-3 h-3 text-gray-400" />
                         <span className="text-gray-700 dark:text-gray-300">
-                          {tx.destinationWallet?.name || 'Tujuan'}
+                          {tx.destinationWallet?.name || t('transactions.destinationWallet') || 'Tujuan'}
                         </span>
                       </div>
                     ) : (

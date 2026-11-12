@@ -18,10 +18,12 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { useTranslation } from '@/context/LanguageContext';
+import { useToast } from '@/context/ToastContext';
 import { formatCurrency } from '@/lib/utils';
 
 export default function ImportPage() {
   const { t, locale } = useTranslation();
+  const toast = useToast();
   const router = useRouter();
 
   // Drag & drop state
@@ -123,9 +125,15 @@ export default function ImportPage() {
       }
 
       setCommitProgress(100);
-      setCommitSuccess(data.message || `Berhasil mengimpor transaksi.`);
+      const count = data.importedCount || previewData.transactions.length;
+      setCommitSuccess(data.message || `Berhasil mengimpor ${count} transaksi.`);
+      toast.success(
+        t('import.successCount', 'Berhasil mengimpor {count} transaksi').replace('{count}', String(count))
+      );
     } catch (err: any) {
-      setCommitError(err.message || 'Gagal menyimpan transaksi.');
+      const errMsg = err.message || t('import.failed', 'Gagal menyimpan transaksi.');
+      setCommitError(errMsg);
+      toast.error(errMsg);
     } finally {
       setCommitting(false);
     }
