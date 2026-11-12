@@ -267,7 +267,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         {t('nav.waBotStatus') || 'Status Bot WhatsApp'}
                       </div>
                       <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
                         <span>{t('bot.online') || 'Aktif'}</span>
                       </div>
                     </div>
