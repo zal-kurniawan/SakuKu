@@ -258,18 +258,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <Link
                   href="/admin/qr"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/60 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 transition flex items-center justify-between group active:scale-[0.99]"
+                  className="w-full min-h-[46px] px-4 py-3 rounded-xl bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/60 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 font-medium text-sm flex items-center justify-between transition group"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/20">
-                      <Radio className="w-4 h-4 animate-pulse" />
-                    </div>
+                    <Radio className="w-5 h-5 text-emerald-500 shrink-0" />
                     <div className="min-w-0 text-left">
-                      <div className="font-semibold text-xs sm:text-sm text-gray-900 dark:text-gray-100 leading-tight">
+                      <div className="font-medium text-sm text-gray-800 dark:text-gray-200 leading-snug">
                         {t('nav.waBotStatus') || 'Status Bot WhatsApp'}
                       </div>
-                      <div className="flex items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                      <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
                         <span>{t('bot.online') || 'Aktif'}</span>
                       </div>
                     </div>
