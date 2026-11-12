@@ -17,6 +17,7 @@ import {
   X,
   Plus,
   FileSpreadsheet,
+  ChevronRight,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -194,7 +195,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           />
 
           {/* Sliding Sheet Panel */}
-          <div className="relative w-full max-w-xs bg-white dark:bg-gray-900 h-full shadow-2xl p-6 flex flex-col justify-between border-l border-gray-200 dark:border-gray-800 animate-in slide-in-from-right duration-250 z-10 overflow-y-auto">
+          <div className="relative w-full max-w-xs bg-white dark:bg-gray-900 h-full shadow-2xl p-5 sm:p-6 flex flex-col justify-between border-l border-gray-200 dark:border-gray-800 animate-in slide-in-from-right duration-250 z-10 overflow-y-auto">
             <div>
               {/* Sheet Header */}
               <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-gray-800">
@@ -257,16 +258,23 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <Link
                   href="/admin/qr"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="w-full min-h-[46px] px-4 py-3 rounded-xl bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/60 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 font-medium text-sm flex items-center justify-between transition"
+                  className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/60 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 transition flex items-center justify-between group active:scale-[0.99]"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <Radio className="w-5 h-5 text-emerald-500 shrink-0" />
-                    <span className="truncate">{t('nav.waBotStatus') || 'Status Bot WhatsApp'}</span>
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/20">
+                      <Radio className="w-4 h-4 animate-pulse" />
+                    </div>
+                    <div className="min-w-0 text-left">
+                      <div className="font-semibold text-xs sm:text-sm text-gray-900 dark:text-gray-100 leading-tight">
+                        {t('nav.waBotStatus') || 'Status Bot WhatsApp'}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                        <span>{t('bot.online') || 'Aktif'}</span>
+                      </div>
+                    </div>
                   </div>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 whitespace-nowrap shrink-0">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    {t('bot.online') || 'Aktif'}
-                  </span>
+                  <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-200 group-hover:translate-x-0.5 transition shrink-0 ml-2" />
                 </Link>
 
                 {/* Panduan WhatsApp Bot */}
