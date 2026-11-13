@@ -8,8 +8,6 @@ import {
   Wallet,
   Sun,
   Moon,
-  Globe,
-  Radio,
   BookOpen,
   ArrowRightLeft,
   PlusCircle,
@@ -47,110 +45,122 @@ export const Navbar: React.FC<NavbarProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isSpeedDialOpen]);
 
+  const iconControlClass =
+    'h-9 w-9 inline-flex items-center justify-center rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/70 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer shrink-0';
+
   return (
     <>
       <header className="sticky top-0 z-40 w-full border-b border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          {/* Brand Logo & Name */}
-          <div className="flex items-center space-x-3">
-            <div className="flex items-center space-x-2.5">
-              <Link href="/" className="flex items-center space-x-2.5 group">
-                <div className="p-2 rounded-xl bg-blue-600 text-white shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform duration-200">
-                  <Wallet className="w-5 h-5 sm:w-6 sm:h-6" />
-                </div>
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <span className="font-extrabold text-lg sm:text-xl text-gray-900 dark:text-white tracking-tight">
-                      {t('app.title')}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400 hidden sm:block">
-                    {t('app.subtitle')}
-                  </p>
-                </div>
-              </Link>
-
-              {/* WA Bot Badge Trigger Button (Desktop & Mobile) */}
-              <button
-                type="button"
-                onClick={onOpenBotLinker}
-                title={t('botLinker.title') || 'Status Bot WhatsApp'}
-                aria-label={t('botLinker.title') || 'Status Bot WhatsApp'}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition cursor-pointer active:scale-95"
-              >
-                <Radio className="w-2.5 h-2.5 sm:w-3 sm:h-3 animate-pulse text-emerald-500 shrink-0" />
-                <span>WA Bot</span>
-              </button>
+          {/* Brand Logo & Name Area */}
+          <div className="flex items-center gap-3 min-w-0">
+            <Link
+              href="/"
+              className="p-2 rounded-xl bg-blue-600 text-white shadow-md shadow-blue-500/20 hover:scale-105 transition-transform duration-200 shrink-0"
+              title={t('app.title')}
+              aria-label={t('app.title')}
+            >
+              <Wallet className="w-5 h-5 sm:w-6 sm:h-6" />
+            </Link>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/"
+                  className="text-lg sm:text-xl font-bold tracking-tight text-gray-900 dark:text-white leading-none whitespace-nowrap hover:opacity-90 transition-opacity"
+                >
+                  {t('app.title')}
+                </Link>
+                <button
+                  type="button"
+                  onClick={onOpenBotLinker}
+                  title={t('botLinker.title') || 'Status Bot WhatsApp'}
+                  aria-label={t('botLinker.title') || 'Status Bot WhatsApp'}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-500 border border-emerald-500/25 hover:bg-emerald-500/20 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  WA Bot
+                </button>
+              </div>
+              <p className="hidden lg:block text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                {t('app.subtitle')}
+              </p>
             </div>
           </div>
 
           {/* Desktop & Tablet Navigation Controls (>= 768px / md:flex) */}
-          <div className="hidden md:flex items-center space-x-2 lg:space-x-2.5">
+          <div className="hidden md:flex items-center gap-2 lg:gap-2.5">
             {/* Quick Add Transaction */}
             <button
+              type="button"
               onClick={onOpenAddTransaction}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition active:scale-98 min-h-[38px]"
+              className="inline-flex items-center gap-1.5 px-3 lg:px-4 py-2 rounded-xl text-xs lg:text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition active:scale-98 whitespace-nowrap shrink-0 min-h-[38px]"
             >
-              <PlusCircle className="w-4 h-4" />
+              <PlusCircle className="w-4 h-4 shrink-0" />
               <span>{t('transactions.addTransaction')}</span>
             </button>
 
             {/* Quick Transfer */}
             <button
+              type="button"
               onClick={onOpenTransfer}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition active:scale-98 min-h-[38px]"
+              className="inline-flex items-center gap-1.5 px-3 lg:px-4 py-2 rounded-xl text-xs lg:text-sm font-semibold bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition active:scale-98 whitespace-nowrap shrink-0 min-h-[38px]"
             >
-              <ArrowRightLeft className="w-3.5 h-3.5" />
+              <ArrowRightLeft className="w-3.5 h-3.5 shrink-0" />
               <span>{t('wallets.transfer')}</span>
             </button>
 
-            {/* Bot Guide */}
-            <button
-              onClick={onOpenGuide}
-              title={t('nav.botGuide')}
-              aria-label={t('nav.botGuide')}
-              className="p-2 rounded-xl text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition min-h-[38px] min-w-[38px] flex items-center justify-center"
-            >
-              <BookOpen className="w-4 h-4" />
-            </button>
-
-            {/* Language Switcher */}
-            <button
-              onClick={() => setLocale(locale === 'id' ? 'en' : 'id')}
-              title={t('nav.switchLanguage') || 'Ganti Bahasa'}
-              aria-label={t('nav.switchLanguage') || 'Ganti Bahasa'}
-              className="inline-flex items-center gap-1 px-2.5 py-2 rounded-xl text-xs font-bold bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition min-h-[38px]"
-            >
-              <Globe className="w-3.5 h-3.5" />
-              <span className="uppercase">{locale}</span>
-            </button>
-
-            {/* Theme Switcher */}
-            {mounted && (
+            {/* 3 Unified Control Buttons: Guide, Language, Theme */}
+            <div className="flex items-center gap-1 pl-1">
+              {/* 1. Bot Guide */}
               <button
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                title={t('nav.toggleTheme') || 'Toggle Mode'}
-                aria-label={t('nav.toggleTheme') || 'Toggle Mode'}
-                className="p-2 rounded-xl text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition min-h-[38px] min-w-[38px] flex items-center justify-center"
+                type="button"
+                onClick={onOpenGuide}
+                title={t('nav.botGuide')}
+                aria-label={t('nav.botGuide')}
+                className={iconControlClass}
               >
-                {theme === 'dark' ? (
-                  <Sun className="w-4 h-4 text-amber-400" />
-                ) : (
-                  <Moon className="w-4 h-4 text-gray-700" />
-                )}
+                <BookOpen className="w-4 h-4" />
               </button>
-            )}
+
+              {/* 2. Language Switcher (100% same styling) */}
+              <button
+                type="button"
+                onClick={() => setLocale(locale === 'id' ? 'en' : 'id')}
+                title={t('nav.switchLanguage') || 'Ganti Bahasa'}
+                aria-label={t('nav.switchLanguage') || 'Ganti Bahasa'}
+                className={`${iconControlClass} text-xs font-bold tracking-wide uppercase`}
+              >
+                <span>{locale}</span>
+              </button>
+
+              {/* 3. Theme Switcher */}
+              {mounted && (
+                <button
+                  type="button"
+                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                  title={t('nav.toggleTheme') || 'Toggle Mode'}
+                  aria-label={t('nav.toggleTheme') || 'Toggle Mode'}
+                  className={iconControlClass}
+                >
+                  {theme === 'dark' ? (
+                    <Sun className="w-4 h-4 text-amber-400" />
+                  ) : (
+                    <Moon className="w-4 h-4 text-gray-700 dark:text-gray-300" />
+                  )}
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Mobile Right Controls: Only 3 Clean Buttons (Language, Theme, Guide) (< 768px) */}
           <div className="flex md:hidden items-center gap-1.5">
-            {/* 1. Language Switcher Pill */}
+            {/* 1. Language Switcher */}
             <button
               type="button"
               onClick={() => setLocale(locale === 'id' ? 'en' : 'id')}
               title={t('nav.switchLanguage') || 'Ganti Bahasa'}
               aria-label={t('nav.switchLanguage') || 'Ganti Bahasa'}
-              className="h-8 px-2.5 text-xs font-semibold rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition uppercase flex items-center justify-center active:scale-95"
+              className="h-8 w-8 inline-flex items-center justify-center rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/70 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer text-xs font-bold tracking-wide uppercase active:scale-95"
             >
               <span>{locale}</span>
             </button>
@@ -162,12 +172,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                 title={t('nav.toggleTheme') || 'Toggle Mode'}
                 aria-label={t('nav.toggleTheme') || 'Toggle Mode'}
-                className="h-8 w-8 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition flex items-center justify-center active:scale-95"
+                className="h-8 w-8 inline-flex items-center justify-center rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/70 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer active:scale-95"
               >
                 {theme === 'dark' ? (
                   <Sun className="w-4 h-4 text-amber-400" />
                 ) : (
-                  <Moon className="w-4 h-4 text-gray-700" />
+                  <Moon className="w-4 h-4 text-gray-700 dark:text-gray-300" />
                 )}
               </button>
             )}
@@ -178,7 +188,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={onOpenGuide}
               title={t('nav.botGuide') || 'Panduan Bot'}
               aria-label={t('nav.botGuide') || 'Panduan Bot'}
-              className="h-8 w-8 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition flex items-center justify-center active:scale-95"
+              className="h-8 w-8 inline-flex items-center justify-center rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/70 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer active:scale-95"
             >
               <BookOpen className="w-4 h-4 text-amber-500" />
             </button>

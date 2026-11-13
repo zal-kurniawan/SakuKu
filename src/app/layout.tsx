@@ -9,6 +9,10 @@ export const metadata: Metadata = {
   title: 'SakuKu - Personal Multi-Wallet Finance Tracker & WhatsApp Bot',
   description:
     'SakuKu - Modern Multi-Wallet Personal Finance Management Dashboard with WhatsApp Bot Integration via Baileys & Scheduled Cron Reminders.',
+  icons: {
+    icon: '/icon.svg',
+    apple: '/apple-icon.svg',
+  },
 };
 
 export default function RootLayout({
