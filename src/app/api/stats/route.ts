@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getActiveUser } from '@/lib/current-user';
+import { getMonthRange } from '@/lib/timezone';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -18,9 +19,7 @@ export async function GET() {
     const totalNetWorth = wallets.reduce((acc, w) => acc + w.balance, 0);
 
     // 2. Current Month Income & Expense
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    const { startOfMonth, endOfMonth, year, month } = getMonthRange();
 
     const monthlyTxs = await prisma.transaction.findMany({
       where: {
@@ -44,9 +43,10 @@ export async function GET() {
     // 3. Last 6 Months Cashflow Chart Data
     const cashflowHistory = [];
     for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const mStart = new Date(d.getFullYear(), d.getMonth(), 1);
-      const mEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
+      const d = new Date(year, month - 1 - i, 1);
+      const targetY = d.getFullYear();
+      const targetM = d.getMonth() + 1;
+      const { startOfMonth: mStart, endOfMonth: mEnd } = getMonthRange(targetY, targetM);
 
       const txs = await prisma.transaction.findMany({
         where: {

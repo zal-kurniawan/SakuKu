@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getActiveUser } from '@/lib/current-user';
+import { getMonthRange } from '@/lib/timezone';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -56,8 +57,8 @@ export async function GET(req: Request) {
     const targetMonth = parseInt(monthParam, 10); // 1-12
     const targetYear = parseInt(yearParam, 10);
 
-    // End date of the selected month
-    const endOfMonth = new Date(targetYear, targetMonth, 0, 23, 59, 59, 999);
+    // End date of the selected month in application timezone
+    const { endOfMonth } = getMonthRange(targetYear, targetMonth);
 
     // Fetch transactions occurring strictly AFTER the selected month-end
     const subsequentTxs = await prisma.transaction.findMany({

@@ -2,27 +2,24 @@ import cron from 'node-cron';
 import { prisma } from '../lib/prisma';
 import { sendDirectMessage } from './whatsapp';
 import { formatCurrency } from '../lib/utils';
+import {
+  getTodayRange,
+  getMonthRange,
+  getYearRange,
+  getTimezoneDateParts,
+  APP_TIMEZONE,
+} from '../lib/timezone';
 
 const CRON_HEADER = `🤖 *[SakuKu Assistant]*\n`;
 const CRON_FOOTER = `\n✨ _SakuKu Financial Assistant_`;
 
 /**
- * Checks whether today is the last day of the current month
+ * Checks whether today is the last day of the current month in target timezone
  */
-function isLastDayOfMonth(date: Date): boolean {
-  const tomorrow = new Date(date);
-  tomorrow.setDate(date.getDate() + 1);
-  return tomorrow.getMonth() !== date.getMonth();
-}
-
-/**
- * Format Date to YYYY-MM-DD
- */
-function formatDateKey(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+function isLastDayOfMonth(date: Date = new Date(), timeZone = APP_TIMEZONE): boolean {
+  const { year, month, day } = getTimezoneDateParts(date, timeZone);
+  const lastDay = new Date(year, month, 0).getDate();
+  return day === lastDay;
 }
 
 /**
@@ -76,8 +73,7 @@ export function initCronSchedulers() {
  * 1. Daily Reminder Execution
  */
 export async function executeDailyReminder() {
-  const now = new Date();
-  const todayKey = formatDateKey(now);
+  const { startOfDay, endOfDay, dateKey: todayKey } = getTodayRange();
 
   const users = await prisma.user.findMany({
     where: { phoneNumber: { not: '' } },
@@ -97,9 +93,6 @@ export async function executeDailyReminder() {
       console.log(`[DAILY REMINDER] Sudah dikirim ke user ${user.phoneNumber} hari ini.`);
       continue;
     }
-
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
 
     const countToday = await prisma.transaction.count({
       where: {
@@ -150,8 +143,7 @@ export async function executeDailyReminder() {
  * 2. Monthly Report Execution
  */
 export async function executeMonthlyReport() {
-  const now = new Date();
-  const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const { startOfMonth, endOfMonth, monthKey } = getMonthRange();
 
   const users = await prisma.user.findMany({
     include: { wallets: true },
@@ -168,9 +160,6 @@ export async function executeMonthlyReport() {
     });
 
     if (existingLog) continue;
-
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 
     const txs = await prisma.transaction.findMany({
       where: {
@@ -204,10 +193,10 @@ export async function executeMonthlyReport() {
       (w) => `   • ${w.name}: ${formatCurrency(w.balance)}`
     );
 
-    const monthName = now.toLocaleString('id-ID', {
+    const monthName = startOfMonth.toLocaleString('id-ID', {
       month: 'long',
       year: 'numeric',
-      timeZone: 'Asia/Jakarta',
+      timeZone: APP_TIMEZONE,
     });
 
     const reportText =
@@ -245,8 +234,8 @@ export async function executeMonthlyReport() {
  * 3. Yearly Report Execution
  */
 export async function executeYearlyReport() {
-  const now = new Date();
-  const yearKey = `${now.getFullYear()}`;
+  const { startOfYear, endOfYear, year } = getYearRange();
+  const yearKey = `${year}`;
 
   const users = await prisma.user.findMany({
     include: { wallets: true },
@@ -263,9 +252,6 @@ export async function executeYearlyReport() {
     });
 
     if (existingLog) continue;
-
-    const startOfYear = new Date(now.getFullYear(), 0, 1);
-    const endOfYear = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
 
     const txs = await prisma.transaction.findMany({
       where: {

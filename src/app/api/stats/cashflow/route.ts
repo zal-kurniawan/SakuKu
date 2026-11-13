@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getActiveUser } from '@/lib/current-user';
+import { getYearRange, getTimezoneDateParts } from '@/lib/timezone';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -29,9 +30,8 @@ export async function GET(req: Request) {
     // Selected year (defaults to current year)
     const selectedYear = parseInt(searchParams.get('year') || String(currentYear), 10);
 
-    // 2. Fetch full 12 months (Jan–Dec) data for the selected year
-    const startOfYear = new Date(selectedYear, 0, 1, 0, 0, 0, 0);
-    const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59, 999);
+    // 2. Fetch full 12 months (Jan–Dec) data for the selected year in target timezone
+    const { startOfYear, endOfYear } = getYearRange(selectedYear);
 
     const yearTxs = await prisma.transaction.findMany({
       where: {
@@ -46,7 +46,8 @@ export async function GET(req: Request) {
 
       yearTxs.forEach((tx) => {
         const txDate = new Date(tx.date);
-        if (txDate.getMonth() === monthIdx) {
+        const { month } = getTimezoneDateParts(txDate);
+        if (month === monthIdx + 1) {
           if (tx.type === 'INCOME') income += tx.amount;
           if (tx.type === 'EXPENSE') expense += tx.amount;
         }

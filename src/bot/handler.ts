@@ -10,6 +10,7 @@ import {
 } from './parser';
 import { formatCurrency } from '../lib/utils';
 import { formatTransactionTitle } from '../lib/formatters';
+import { getTodayRange, getMonthRange, APP_TIMEZONE } from '../lib/timezone';
 
 const BOT_HEADER = `🤖 *[SakuKu Assistant]*\n`;
 const BOT_FOOTER = `\n✨ _SakuKu Financial Assistant_`;
@@ -450,16 +451,11 @@ export async function handleWhatsAppMessage(
   // 4. Check budget limits for touched expense categories
   let budgetAlerts = '';
   if (expenseCategoriesThisBatch.length > 0) {
-    const now = new Date();
-    const currentMonth = now.getMonth() + 1;
-    const currentYear = now.getFullYear();
+    const { startOfMonth, endOfMonth, year: currentYear, month: currentMonth } = getMonthRange();
 
     const budgets = await prisma.budgetLimit.findMany({
       where: { userId: user.id, month: currentMonth, year: currentYear },
     });
-
-    const startOfMonth = new Date(currentYear, currentMonth - 1, 1);
-    const endOfMonth = new Date(currentYear, currentMonth, 0, 23, 59, 59, 999);
 
     for (const b of budgets) {
       if (
@@ -748,11 +744,7 @@ async function handleCommand(userId: string, parsed: ParsedCommand): Promise<str
     }
 
     case 'REKAP_TODAY': {
-      const startOfDay = new Date();
-      startOfDay.setHours(0, 0, 0, 0);
-
-      const endOfDay = new Date();
-      endOfDay.setHours(23, 59, 59, 999);
+      const { startOfDay, endOfDay } = getTodayRange();
 
       const txs = await prisma.transaction.findMany({
         where: {
@@ -808,9 +800,7 @@ async function handleCommand(userId: string, parsed: ParsedCommand): Promise<str
     }
 
     case 'REKAP_MONTH': {
-      const now = new Date();
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+      const { startOfMonth, endOfMonth } = getMonthRange();
 
       const txs = await prisma.transaction.findMany({
         where: {
@@ -848,10 +838,10 @@ async function handleCommand(userId: string, parsed: ParsedCommand): Promise<str
         .slice(0, 3)
         .map(([cat, amt], idx) => `  ${idx + 1}. ${cat}: ${formatCurrency(amt)}`);
 
-      const monthName = now.toLocaleString('id-ID', {
+      const monthName = startOfMonth.toLocaleString('id-ID', {
         month: 'long',
         year: 'numeric',
-        timeZone: 'Asia/Jakarta',
+        timeZone: APP_TIMEZONE,
       });
 
       return (

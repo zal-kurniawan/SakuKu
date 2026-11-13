@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getActiveUser } from '@/lib/current-user';
+import { getMonthRange } from '@/lib/timezone';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -10,12 +11,11 @@ export async function GET(req: Request) {
     const user = await getActiveUser();
     const { searchParams } = new URL(req.url);
 
-    const now = new Date();
-    const month = parseInt(searchParams.get('month') || String(now.getMonth() + 1), 10);
-    const year = parseInt(searchParams.get('year') || String(now.getFullYear()), 10);
+    const current = getMonthRange();
+    const month = parseInt(searchParams.get('month') || String(current.month), 10);
+    const year = parseInt(searchParams.get('year') || String(current.year), 10);
 
-    const startOfMonth = new Date(year, month - 1, 1);
-    const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
+    const { startOfMonth, endOfMonth } = getMonthRange(year, month);
 
     // Fetch budget limits
     const budgets = await prisma.budgetLimit.findMany({
@@ -71,9 +71,9 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { category, monthlyLimit, month, year } = body;
 
-    const now = new Date();
-    const targetMonth = month || now.getMonth() + 1;
-    const targetYear = year || now.getFullYear();
+    const current = getMonthRange();
+    const targetMonth = month || current.month;
+    const targetYear = year || current.year;
 
     const budget = await prisma.budgetLimit.upsert({
       where: {
@@ -119,9 +119,7 @@ export async function PUT(req: Request) {
       });
       return NextResponse.json(updated);
     } else if (category) {
-      const now = new Date();
-      const month = now.getMonth() + 1;
-      const year = now.getFullYear();
+      const { month, year } = getMonthRange();
       const updated = await prisma.budgetLimit.update({
         where: {
           userId_category_month_year: {

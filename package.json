@@ -18,7 +18,8 @@
     "test:parser": "tsx src/bot/parser.test.ts",
     "test:handler": "tsx --env-file=.env src/bot/handler.test.ts",
     "test:excel": "tsx src/lib/excel-parser.test.ts",
-    "test": "npm run test:parser && npm run test:excel"
+    "test:timezone": "tsx src/lib/timezone.test.ts",
+    "test": "npm run test:parser && npm run test:excel && npm run test:timezone"
   },
   "keywords": [
     "sakuku",
