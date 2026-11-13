@@ -20,6 +20,8 @@ import {
 
 let sock: WASocket | null = null;
 let botStatus: 'DISCONNECTED' | 'SCANNING_QR' | 'CONNECTED' = 'DISCONNECTED';
+let reconnectTimeout: NodeJS.Timeout | null = null;
+let isStartingBot = false;
 // Cache recent message IDs sent by bot to avoid processing own echo in self-chat
 const botSentMessageIds = new Set<string>();
 // Owner's WhatsApp LID (Linked Device Identifier) - strictly whitelisted for self-chat
@@ -127,104 +129,135 @@ export function isWhitelisted(remoteJid: string): boolean {
  * Starts the Baileys WhatsApp Socket for SakuKu
  */
 export async function startWhatsAppBot(): Promise<WASocket> {
-  console.log(`\n📱 [SAKUKU BOT] Inisialisasi sesi WhatsApp (Database Zero-File Auth)...`);
+  if (isStartingBot) {
+    console.log('⏳ [SAKUKU BOT] Inisialisasi bot sedang berlangsung, menunggu proses sebelumnya...');
+    return sock!;
+  }
+  isStartingBot = true;
 
-  const { state, saveCreds } = await usePrismaAuthState();
-  const { version, isLatest } = await fetchLatestBaileysVersion();
-  console.log(`ℹ️ [SAKUKU BOT] Versi Baileys: v${version.join('.')} (Latest: ${isLatest})`);
-
-  sock = makeWASocket({
-    version,
-    auth: state,
-    logger: pino({ level: 'error' }),
-    printQRInTerminal: false,
-    browser: ['SakuKu', 'Chrome', '1.0.0'],
-    generateHighQualityLinkPreview: false,
-    syncFullHistory: false,
-  });
-
-  // Save credentials on update
-  sock.ev.on('creds.update', saveCreds);
-
-  // Handle connection events
-  sock.ev.on('connection.update', async (update) => {
-    const { connection, lastDisconnect, qr } = update;
-
-    if (qr) {
-      botStatus = 'SCANNING_QR';
-      await setDbLiveQR(qr);
-      await setDbBotStatus('SCANNING_QR');
-      console.log('\n==========================================================');
-      console.log('📲 [SAKUKU WHATSAPP BOT] Silakan scan QR code di bawah:');
-      console.log('==========================================================\n');
-      qrcode.generate(qr, { small: true });
-      console.log('\n💡 Atau scan dari Web Dashboard via badge WA Bot');
-      console.log('💡 Buka WhatsApp > Perangkat Tertaut (Linked Devices) > Tautkan Perangkat');
-      console.log('==========================================================\n');
+  try {
+    if (reconnectTimeout) {
+      clearTimeout(reconnectTimeout);
+      reconnectTimeout = null;
     }
 
-    if (connection === 'close') {
-      botStatus = 'DISCONNECTED';
-      await setDbLiveQR(null);
-      const statusCode = (lastDisconnect?.error as any)?.output?.statusCode;
-      const isLoggedOut = statusCode === DisconnectReason.loggedOut;
-      const shouldReconnect = !isLoggedOut;
-      const disconnectReason: 'loggedOut' | 'network' = isLoggedOut ? 'loggedOut' : 'network';
+    console.log(`\n📱 [SAKUKU BOT] Inisialisasi sesi WhatsApp (Database Zero-File Auth)...`);
 
-      await setDbBotStatus('DISCONNECTED', { disconnectReason });
+    const { state, saveCreds } = await usePrismaAuthState();
+    const { version, isLatest } = await fetchLatestBaileysVersion();
+    console.log(`ℹ️ [SAKUKU BOT] Versi Baileys: v${version.join('.')} (Latest: ${isLatest})`);
 
-      console.log(
-        `❌ [SAKUKU BOT] Koneksi terputus. Status Code: ${statusCode}. Alasan: ${disconnectReason}. Auto-reconnect: ${shouldReconnect}`
-      );
+    sock = makeWASocket({
+      version,
+      auth: state,
+      logger: pino({ level: 'error' }),
+      printQRInTerminal: false,
+      browser: ['SakuKu', 'Chrome', '1.0.0'],
+      generateHighQualityLinkPreview: false,
+      syncFullHistory: false,
+    });
 
-      if (shouldReconnect) {
-        console.log('🔄 [SAKUKU BOT] Gangguan sementara/network glitch. Menghubungkan ulang dalam 5 detik...');
-        setTimeout(() => {
-          startWhatsAppBot().catch((err) =>
-            console.error('Error saat reconnect Baileys:', err)
+    // Save credentials on update
+    sock.ev.on('creds.update', saveCreds);
+
+    // Handle connection events
+    sock.ev.on('connection.update', async (update) => {
+      const { connection, lastDisconnect, qr } = update;
+
+      if (qr) {
+        botStatus = 'SCANNING_QR';
+        await setDbLiveQR(qr);
+        await setDbBotStatus('SCANNING_QR');
+        console.log('\n==========================================================');
+        console.log('📲 [SAKUKU WHATSAPP BOT] Silakan scan QR code di bawah:');
+        console.log('==========================================================\n');
+        qrcode.generate(qr, { small: true });
+        console.log('\n💡 Atau scan dari Web Dashboard via badge WA Bot');
+        console.log('💡 Buka WhatsApp > Perangkat Tertaut (Linked Devices) > Tautkan Perangkat');
+        console.log('==========================================================\n');
+      }
+
+      if (connection === 'close') {
+        botStatus = 'DISCONNECTED';
+        await setDbLiveQR(null);
+        const statusCode = (lastDisconnect?.error as any)?.output?.statusCode;
+        const isLoggedOut = statusCode === DisconnectReason.loggedOut;
+        const isReplaced = statusCode === DisconnectReason.connectionReplaced;
+        const shouldReconnect = !isLoggedOut;
+        const disconnectReason: 'loggedOut' | 'network' = isLoggedOut ? 'loggedOut' : 'network';
+
+        await setDbBotStatus('DISCONNECTED', { disconnectReason });
+
+        if (isReplaced) {
+          console.log(
+            `⚠️ [SAKUKU BOT] Status Code: 440 (connectionReplaced). Sesi digantikan oleh koneksi baru atau proses restart.`
           );
-        }, 5000);
-      } else {
-        console.log(
-          '🚪 [SAKUKU BOT] Sesi telah logout dari Linked Devices HP. Worker tetap standby/idle dan tidak looping QR di background.'
-        );
-        console.log(
-          '💡 [SAKUKU BOT] Menunggu instruksi "Buat Kode QR" / "Restart Worker" dari Web Dashboard SakuKu.'
-        );
-      }
-    } else if (connection === 'open') {
-      botStatus = 'CONNECTED';
-      await setDbLiveQR(null);
-      const userPhone = sock?.user?.id?.split(':')[0]?.split('@')[0];
-      if (sock?.user?.lid) {
-        cachedOwnerLid = sock.user.lid.split('@')[0].split(':')[0];
-      }
-      await setDbBotStatus('CONNECTED', { phone: userPhone, name: 'SakuKu', disconnectReason: null });
-      console.log('\n==========================================================');
-      console.log('✅ [SAKUKU BOT] WhatsApp Bot BERHASIL TERHUBUNG!');
-      console.log(`👤 Whitelist aktif untuk pemilik: ${process.env.MY_PHONE_NUMBER}`);
-      console.log(`🔑 Owner LID aktif: ${cachedOwnerLid}`);
-      console.log('==========================================================\n');
+        } else {
+          console.log(
+            `❌ [SAKUKU BOT] Koneksi terputus. Status Code: ${statusCode}. Alasan: ${disconnectReason}. Auto-reconnect: ${shouldReconnect}`
+          );
+        }
 
-      // Update WhatsApp profile name to "SakuKu" automatically
-      try {
-        await sock?.updateProfileName('SakuKu');
-        console.log('🤖 [SAKUKU BOT] Nama profil WhatsApp berhasil diperbarui menjadi: "SakuKu"');
-      } catch (profileErr: any) {
-        console.warn('ℹ️ [SAKUKU BOT] Info nama profil (mungkin dibatasi frekuensi oleh WA):', profileErr.message);
+        if (shouldReconnect) {
+          const delay = isReplaced ? 6000 : 5000;
+          console.log(`🔄 [SAKUKU BOT] Menghubungkan ulang dalam ${delay / 1000} detik...`);
+          if (reconnectTimeout) {
+            clearTimeout(reconnectTimeout);
+          }
+          reconnectTimeout = setTimeout(() => {
+            reconnectTimeout = null;
+            startWhatsAppBot().catch((err) =>
+              console.error('Error saat reconnect Baileys:', err)
+            );
+          }, delay);
+        } else {
+          console.log(
+            '🚪 [SAKUKU BOT] Sesi telah logout dari Linked Devices HP. Worker tetap standby/idle dan tidak looping QR di background.'
+          );
+          console.log(
+            '💡 [SAKUKU BOT] Menunggu instruksi "Buat Kode QR" / "Restart Worker" dari Web Dashboard SakuKu.'
+          );
+        }
+      } else if (connection === 'open') {
+        if (reconnectTimeout) {
+          clearTimeout(reconnectTimeout);
+          reconnectTimeout = null;
+        }
+        botStatus = 'CONNECTED';
+        await setDbLiveQR(null);
+        const userPhone = sock?.user?.id?.split(':')[0]?.split('@')[0];
+        if (sock?.user?.lid) {
+          cachedOwnerLid = sock.user.lid.split('@')[0].split(':')[0];
+        }
+        await setDbBotStatus('CONNECTED', { phone: userPhone, name: 'SakuKu', disconnectReason: null });
+        console.log('\n==========================================================');
+        console.log('✅ [SAKUKU BOT] WhatsApp Bot BERHASIL TERHUBUNG!');
+        console.log(`👤 Whitelist aktif untuk pemilik: ${process.env.MY_PHONE_NUMBER}`);
+        console.log(`🔑 Owner LID aktif: ${cachedOwnerLid}`);
+        console.log('==========================================================\n');
+
+        // Update WhatsApp profile name to "SakuKu" automatically
+        try {
+          await sock?.updateProfileName('SakuKu');
+          console.log('🤖 [SAKUKU BOT] Nama profil WhatsApp berhasil diperbarui menjadi: "SakuKu"');
+        } catch (profileErr: any) {
+          console.warn('ℹ️ [SAKUKU BOT] Info nama profil (mungkin dibatasi frekuensi oleh WA):', profileErr.message);
+        }
       }
-    }
-  });
+    });
 
-  // Handle incoming messages
-  sock.ev.on('messages.upsert', async ({ messages, type }) => {
-    // Process messages (handles both 'notify' and 'append' so self-chat / Message Yourself works)
-    for (const msg of messages) {
-      await processIncomingMessage(msg);
-    }
-  });
+    // Handle incoming messages
+    sock.ev.on('messages.upsert', async ({ messages, type }) => {
+      // Process messages (handles both 'notify' and 'append' so self-chat / Message Yourself works)
+      for (const msg of messages) {
+        await processIncomingMessage(msg);
+      }
+    });
 
-  return sock;
+    return sock;
+  } finally {
+    isStartingBot = false;
+  }
 }
 
 /**
@@ -363,17 +396,31 @@ export async function sendDirectMessage(
  * Safely closes the Baileys WhatsApp socket and clears listeners
  */
 export async function closeWhatsAppSocket(): Promise<void> {
+  if (reconnectTimeout) {
+    clearTimeout(reconnectTimeout);
+    reconnectTimeout = null;
+  }
   if (sock) {
     try {
       sock.ev.removeAllListeners('connection.update');
       sock.ev.removeAllListeners('creds.update');
       sock.ev.removeAllListeners('messages.upsert');
+      if (sock.ws) {
+        try {
+          sock.ws.close();
+        } catch {}
+        try {
+          (sock.ws as any).terminate?.();
+        } catch {}
+      }
       sock.end(undefined);
     } catch {
       // Ignore close error
     }
     sock = null;
   }
+  // Cooldown delay so WhatsApp server releases the socket session cleanly
+  await new Promise((resolve) => setTimeout(resolve, 2000));
 }
 
 /**

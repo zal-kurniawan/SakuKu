@@ -11,8 +11,15 @@ export const metadata: Metadata = {
   description:
     'SakuKu - Modern Multi-Wallet Personal Finance Management Dashboard with WhatsApp Bot Integration via Baileys & Scheduled Cron Reminders.',
   icons: {
-    icon: '/icon.svg',
-    apple: '/apple-icon.svg',
+    icon: [
+      { url: '/favicon.ico', sizes: '32x32' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/icon.png', sizes: '32x32', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-icon.png', sizes: '180x180', type: 'image/png' },
+      { url: '/apple-icon.svg', type: 'image/svg+xml' },
+    ],
   },
 };
 

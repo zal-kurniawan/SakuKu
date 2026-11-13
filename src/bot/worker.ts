@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import http from 'http';
-import { startWhatsAppBot, getBotStatus, restartWhatsAppBot } from './whatsapp';
+import { startWhatsAppBot, getBotStatus, restartWhatsAppBot, closeWhatsAppSocket } from './whatsapp';
 import { initCronSchedulers } from './cron';
 import { prisma } from '../lib/prisma';
 import { getDbWorkerCommand, setDbWorkerCommand } from './prisma-auth';
@@ -145,6 +145,11 @@ const shutdown = async (signal: string) => {
   console.log(`\n🛑 Menerima ${signal}. Mematikan SakuKu Worker secara aman...`);
   if (commandPollInterval) {
     clearInterval(commandPollInterval);
+  }
+  try {
+    await closeWhatsAppSocket();
+  } catch (err) {
+    console.error('Error saat menutup socket WhatsApp:', err);
   }
   server.close(() => {
     console.log('💤 Health check server dihentikan.');
