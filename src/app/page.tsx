@@ -207,7 +207,7 @@ export default function DashboardPage() {
       {/* Footer */}
       <footer className="border-t border-gray-200 dark:border-gray-800 py-6 text-center text-xs text-gray-500 dark:text-gray-400">
         <p>
-          SakuKu • Personal Multi-Wallet Finance Tracker & WhatsApp Bot • Built with Baileys, Prisma & Next.js
+          SakuKu • Personal Multi-Wallet Finance Tracker
         </p>
       </footer>
 
