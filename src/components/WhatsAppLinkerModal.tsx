@@ -1,15 +1,18 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from '@/context/LanguageContext';
 import { useConfirm } from '@/context/ConfirmContext';
 import { useToast } from '@/context/ToastContext';
 import { useModalEscape } from '@/hooks/useModalEscape';
+import { useBotStatus } from '@/context/BotStatusContext';
 import {
   QrCode,
   CheckCircle2,
   AlertCircle,
   RefreshCw,
+  RotateCw,
+  Loader2,
   LogOut,
   Smartphone,
   ShieldCheck,
@@ -20,12 +23,14 @@ import {
 
 interface BotQRResponse {
   success?: boolean;
-  status: 'DISCONNECTED' | 'SCANNING_QR' | 'CONNECTED';
+  status: 'CONNECTED' | 'SCANNING_QR' | 'DISCONNECTED' | 'RESTARTING';
   connected: boolean;
   qrImage?: string | null;
   rawQr?: string | null;
   phone?: string | null;
   name?: string | null;
+  disconnectReason?: 'loggedOut' | 'network' | null;
+  hasSession?: boolean;
   updatedAt?: string;
   error?: string;
 }
@@ -42,15 +47,21 @@ export const WhatsAppLinkerModal: React.FC<WhatsAppLinkerModalProps> = ({
   const { t, locale } = useTranslation();
   const confirm = useConfirm();
   const toast = useToast();
+  const { setBotStatus: setGlobalBotStatus } = useBotStatus();
 
   const [data, setData] = useState<BotQRResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [secretKey, setSecretKey] = useState('');
   const [showSecretInput, setShowSecretInput] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
+  const [isRestarting, setIsRestarting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Initialize secret from query param or localStorage
+  const adminInputRef = useRef<HTMLInputElement>(null);
+  const autoPollRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Initialize secret from localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const storedSecret = localStorage.getItem('sakuku_admin_secret');
@@ -60,40 +71,62 @@ export const WhatsAppLinkerModal: React.FC<WhatsAppLinkerModalProps> = ({
     }
   }, []);
 
-  const fetchBotStatus = useCallback(async () => {
+  // Cleanup auto poll on unmount
+  useEffect(() => {
+    return () => {
+      if (autoPollRef.current) {
+        clearInterval(autoPollRef.current);
+      }
+    };
+  }, []);
+
+  const fetchBotStatus = useCallback(async (silent = false): Promise<BotQRResponse | null> => {
     try {
-      const query = secretKey ? `?secret=${encodeURIComponent(secretKey)}` : '';
+      const storedSecret =
+        secretKey ||
+        (typeof window !== 'undefined'
+          ? localStorage.getItem('sakuku_admin_secret') || ''
+          : '');
+      const query = storedSecret ? `?secret=${encodeURIComponent(storedSecret)}` : '';
       const res = await fetch(`/api/bot/qr${query}`, {
-        headers: secretKey ? { 'x-admin-secret': secretKey } : {},
+        headers: storedSecret ? { 'x-admin-secret': storedSecret } : {},
       });
 
       if (res.status === 401) {
         setShowSecretInput(true);
         setData(null);
-        setLoading(false);
-        return;
+        if (!silent) setLoading(false);
+        setGlobalBotStatus('DISCONNECTED');
+        return null;
       }
 
-      const result = await res.json();
+      const result: BotQRResponse = await res.json();
       setData(result);
       if (result.success) {
-        setShowSecretInput(false);
+        setGlobalBotStatus(result.status);
       }
+      return result;
     } catch (err: any) {
       console.error('Fetch error:', err);
+      return null;
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
-  }, [secretKey]);
+  }, [secretKey, setGlobalBotStatus]);
 
-  // Polling loop when open
+  // Polling loop when modal is open and not in manual restart progress
   useEffect(() => {
     if (!isOpen) return;
 
     fetchBotStatus();
-    const interval = setInterval(fetchBotStatus, 3000);
+    const interval = setInterval(() => {
+      if (!isRestarting) {
+        fetchBotStatus(true);
+      }
+    }, 3000);
+
     return () => clearInterval(interval);
-  }, [isOpen, fetchBotStatus]);
+  }, [isOpen, fetchBotStatus, isRestarting]);
 
   // Unified modal escape handler
   useModalEscape({ isOpen, onClose });
@@ -118,6 +151,123 @@ export const WhatsAppLinkerModal: React.FC<WhatsAppLinkerModalProps> = ({
     toast.success(t('botLinker.keySavedToast') || 'Kunci akses admin disimpan');
     setLoading(true);
     fetchBotStatus();
+  };
+
+  // Re-check Status with real visual feedback & status toasts
+  const handleRecheckStatus = async () => {
+    const currentSecret =
+      secretKey ||
+      (typeof window !== 'undefined'
+        ? localStorage.getItem('sakuku_admin_secret') || ''
+        : '');
+
+    if (!currentSecret) {
+      setShowSecretInput(true);
+      toast.info(
+        t('botLinker.enterAdminKeyFirst') || 'Masukkan ADMIN_SECRET_KEY terlebih dahulu'
+      );
+      setTimeout(() => adminInputRef.current?.focus(), 150);
+      return;
+    }
+
+    setIsChecking(true);
+    try {
+      const result = await fetchBotStatus();
+      if (!result) {
+        setShowSecretInput(true);
+        toast.info(
+          t('botLinker.enterAdminKeyFirst') || 'Masukkan ADMIN_SECRET_KEY terlebih dahulu'
+        );
+        setTimeout(() => adminInputRef.current?.focus(), 150);
+        return;
+      }
+
+      if (result.status === 'CONNECTED') {
+        toast.success(t('botLinker.toastOnline') || 'WhatsApp Bot aktif dan terhubung');
+      } else if (result.status === 'SCANNING_QR') {
+        toast.info(t('botLinker.toastQrReady') || 'Kode QR baru siap dipindai');
+      } else {
+        toast.info(t('botLinker.toastStillOffline') || 'Status diperbarui: Worker masih offline');
+      }
+    } catch {
+      toast.error('Gagal memeriksa status bot');
+    } finally {
+      setIsChecking(false);
+    }
+  };
+
+  // Dynamic Primary Action (Buat Kode QR / Restart Worker) with Database Command Dispatching
+  const handleRestartWorker = async () => {
+    const currentSecret =
+      secretKey ||
+      (typeof window !== 'undefined'
+        ? localStorage.getItem('sakuku_admin_secret') || ''
+        : '');
+
+    if (!currentSecret) {
+      setShowSecretInput(true);
+      toast.info(
+        t('botLinker.enterAdminKeyFirst') || 'Masukkan ADMIN_SECRET_KEY terlebih dahulu'
+      );
+      setTimeout(() => adminInputRef.current?.focus(), 150);
+      return;
+    }
+
+    const isNeedQR = data?.disconnectReason === 'loggedOut' || !data?.hasSession;
+
+    setIsRestarting(true);
+    if (isNeedQR) {
+      toast.info(t('botLinker.toastRequestingQr') || 'Meminta kode QR baru ke worker...');
+    } else {
+      toast.info(t('botLinker.toastDispatchedRestart') || 'Perintah restart dikirim ke worker Render...');
+    }
+
+    try {
+      const res = await fetch('/api/bot/restart', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-secret': currentSecret,
+        },
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || 'Gagal mengirim instruksi restart.');
+      }
+
+      setGlobalBotStatus('RESTARTING');
+
+      // Auto-polling every 2s up to 30s
+      if (autoPollRef.current) clearInterval(autoPollRef.current);
+      let tickCount = 0;
+
+      autoPollRef.current = setInterval(async () => {
+        tickCount += 1;
+        const freshData = await fetchBotStatus(true);
+
+        if (freshData?.status === 'CONNECTED') {
+          if (autoPollRef.current) clearInterval(autoPollRef.current);
+          setIsRestarting(false);
+          toast.success(t('botLinker.toastOnline') || 'WhatsApp Bot aktif dan terhubung');
+        } else if (freshData?.status === 'SCANNING_QR' && freshData?.qrImage) {
+          if (autoPollRef.current) clearInterval(autoPollRef.current);
+          setIsRestarting(false);
+          toast.info(t('botLinker.toastQrReady') || 'Kode QR baru siap dipindai');
+        } else if (tickCount >= 15) {
+          if (autoPollRef.current) clearInterval(autoPollRef.current);
+          setIsRestarting(false);
+          toast.info(
+            t('botLinker.toastWorkerTimeout') ||
+              'Worker belum merespons, periksa status service di dashboard Render'
+          );
+        }
+      }, 2000);
+    } catch (err: any) {
+      console.error('Restart worker error:', err);
+      toast.error(err.message || 'Gagal merestart worker');
+      setIsRestarting(false);
+    }
   };
 
   const handleResetSession = async () => {
@@ -158,14 +308,17 @@ export const WhatsAppLinkerModal: React.FC<WhatsAppLinkerModalProps> = ({
         toast.error(errMsg);
       }
     } catch (err: any) {
-      setMessage({ type: 'error', text: err.message });
-      toast.error(err.message);
+      const errMsg = err.message || 'Terjadi kesalahan jaringan.';
+      setMessage({ type: 'error', text: errMsg });
+      toast.error(errMsg);
     } finally {
       setResetting(false);
     }
   };
 
   if (!isOpen) return null;
+
+  const isNeedQR = data?.disconnectReason === 'loggedOut' || !data?.hasSession;
 
   return (
     <div
@@ -232,6 +385,7 @@ export const WhatsAppLinkerModal: React.FC<WhatsAppLinkerModalProps> = ({
               </p>
               <div className="flex gap-2 pt-1">
                 <input
+                  ref={adminInputRef}
                   type="password"
                   placeholder={t('botLinker.adminKeyPlaceholder') || 'Masukkan ADMIN_SECRET_KEY...'}
                   value={secretKey}
@@ -240,7 +394,7 @@ export const WhatsAppLinkerModal: React.FC<WhatsAppLinkerModalProps> = ({
                 />
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold rounded-lg transition shrink-0 active:scale-98"
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold rounded-lg transition shrink-0 active:scale-98 cursor-pointer"
                 >
                   {t('botLinker.saveKeyButton') || 'Simpan'}
                 </button>
@@ -261,7 +415,7 @@ export const WhatsAppLinkerModal: React.FC<WhatsAppLinkerModalProps> = ({
               <button
                 type="button"
                 onClick={() => setMessage(null)}
-                className="text-xs underline ml-2 opacity-75 hover:opacity-100 shrink-0"
+                className="text-xs underline ml-2 opacity-75 hover:opacity-100 shrink-0 cursor-pointer"
               >
                 {t('botLinker.closeButton') || 'Tutup'}
               </button>
@@ -329,7 +483,7 @@ export const WhatsAppLinkerModal: React.FC<WhatsAppLinkerModalProps> = ({
                   type="button"
                   onClick={handleResetSession}
                   disabled={resetting}
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl text-xs sm:text-sm font-semibold transition active:scale-98 disabled:opacity-60"
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl text-xs sm:text-sm font-semibold transition active:scale-98 disabled:opacity-60 cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" />
                   <span>
@@ -358,7 +512,7 @@ export const WhatsAppLinkerModal: React.FC<WhatsAppLinkerModalProps> = ({
                 </p>
               </div>
 
-              {/* QR Image Container: w-52 h-52 sm:w-60 sm:h-60 mx-auto bg-white p-3 rounded-xl */}
+              {/* QR Image Container */}
               <div className="bg-white p-3 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm inline-block mx-auto">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -413,7 +567,7 @@ export const WhatsAppLinkerModal: React.FC<WhatsAppLinkerModalProps> = ({
                 </h4>
                 <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-sm mx-auto">
                   {t('botLinker.statusOfflineDesc') ||
-                    'Layanan background worker WhatsApp belum mendeteksi sesi atau sedang offline di cloud provider Anda (Koyeb / Render).'}
+                    'Sesi WhatsApp sedang terputus atau layanan background worker di Render belum aktif.'}
                 </p>
               </div>
 
@@ -423,19 +577,66 @@ export const WhatsAppLinkerModal: React.FC<WhatsAppLinkerModalProps> = ({
                   <AlertCircle className="w-4 h-4 text-amber-500" />
                   <span>{t('botLinker.troubleshootTitle') || 'Langkah Pemeriksaan:'}</span>
                 </p>
-                <p>1. {t('botLinker.troubleshootStep1') || 'Pastikan container worker di Koyeb atau Render sudah berjalan ("Healthy").'}</p>
-                <p>2. {t('botLinker.troubleshootStep2') || 'Pastikan environment variable DATABASE_URL di worker sama dengan Vercel.'}</p>
-                <p>3. {t('botLinker.troubleshootStep3') || 'Jika menguji lokal, jalankan perintah: npm run worker di terminal.'}</p>
+                <p>1. {t('botLinker.troubleshootStep1') || 'Klik tombol "Buat Kode QR" atau "Restart Worker" di bawah untuk memulihkan sesi maupun menautkan ulang perangkat.'}</p>
+                <p>2. {t('botLinker.troubleshootStep2') || 'Pastikan service worker di dashboard Render berstatus "Live" dan variabel DATABASE_URL sama dengan Vercel.'}</p>
+                <p>3. {t('botLinker.troubleshootStep3') || 'Jika menguji secara lokal, pastikan perintah npm run worker sedang berjalan di terminal.'}</p>
               </div>
 
-              <div className="pt-2">
+              {/* Dynamic Action Buttons: Mobile Vertical, Desktop Horizontal */}
+              <div className="pt-2 flex flex-col sm:flex-row items-center gap-2.5 sm:gap-3 w-full">
+                {/* 1. Primary Dynamic Button (Buat Kode QR / Restart Worker) */}
                 <button
                   type="button"
-                  onClick={fetchBotStatus}
-                  className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-gray-900 hover:bg-gray-800 dark:bg-gray-800 dark:hover:bg-gray-700 text-white rounded-xl text-xs sm:text-sm font-semibold transition active:scale-98"
+                  onClick={handleRestartWorker}
+                  disabled={isRestarting || isChecking}
+                  className={`w-full sm:flex-1 h-10 inline-flex items-center justify-center gap-2 rounded-xl text-sm font-semibold transition active:scale-98 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${
+                    isNeedQR
+                      ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm shadow-emerald-500/20'
+                      : 'bg-blue-600 hover:bg-blue-500 text-white shadow-sm shadow-blue-500/20'
+                  }`}
                 >
-                  <RefreshCw className="w-4 h-4" />
-                  <span>{t('botLinker.recheckStatus') || 'Cek Ulang Status'}</span>
+                  {isRestarting ? (
+                    <>
+                      {isNeedQR ? (
+                        <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                      ) : (
+                        <RotateCw className="w-4 h-4 animate-spin shrink-0" />
+                      )}
+                      <span>
+                        {isNeedQR
+                          ? t('botLinker.generatingQr') || 'Membuat Kode QR...'
+                          : t('botLinker.restartingWorker') || 'Merestart Worker...'}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      {isNeedQR ? (
+                        <QrCode className="w-4 h-4 shrink-0" />
+                      ) : (
+                        <RotateCw className="w-4 h-4 shrink-0" />
+                      )}
+                      <span>
+                        {isNeedQR
+                          ? t('botLinker.generateQr') || 'Buat Kode QR'
+                          : t('botLinker.restartWorker') || 'Restart Worker'}
+                      </span>
+                    </>
+                  )}
+                </button>
+
+                {/* 2. Secondary Re-check Status Button */}
+                <button
+                  type="button"
+                  onClick={handleRecheckStatus}
+                  disabled={isRestarting || isChecking}
+                  className="w-full sm:flex-1 h-10 inline-flex items-center justify-center gap-2 px-4 rounded-xl text-sm font-semibold bg-gray-100 hover:bg-gray-200 text-gray-800 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 transition active:scale-98 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  <RefreshCw className={`w-4 h-4 shrink-0 ${isChecking ? 'animate-spin' : ''}`} />
+                  <span>
+                    {isChecking
+                      ? t('botLinker.checking') || 'Memeriksa...'
+                      : t('botLinker.recheckStatus') || 'Cek Ulang Status'}
+                  </span>
                 </button>
               </div>
             </div>

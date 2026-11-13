@@ -14,6 +14,8 @@ import {
   setDbBotStatus,
   getDbBotStatus,
   getDbLiveQR,
+  hasDbSessionCreds,
+  clearDbSessionCreds,
 } from './prisma-auth';
 
 let sock: WASocket | null = null;
@@ -164,16 +166,19 @@ export async function startWhatsAppBot(): Promise<WASocket> {
     if (connection === 'close') {
       botStatus = 'DISCONNECTED';
       await setDbLiveQR(null);
-      await setDbBotStatus('DISCONNECTED');
       const statusCode = (lastDisconnect?.error as any)?.output?.statusCode;
-      const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+      const isLoggedOut = statusCode === DisconnectReason.loggedOut;
+      const shouldReconnect = !isLoggedOut;
+      const disconnectReason: 'loggedOut' | 'network' = isLoggedOut ? 'loggedOut' : 'network';
+
+      await setDbBotStatus('DISCONNECTED', { disconnectReason });
 
       console.log(
-        `❌ [SAKUKU BOT] Koneksi terputus. Status Code: ${statusCode}. Auto-reconnect: ${shouldReconnect}`
+        `❌ [SAKUKU BOT] Koneksi terputus. Status Code: ${statusCode}. Alasan: ${disconnectReason}. Auto-reconnect: ${shouldReconnect}`
       );
 
       if (shouldReconnect) {
-        console.log('🔄 [SAKUKU BOT] Menghubungkan ulang dalam 5 detik...');
+        console.log('🔄 [SAKUKU BOT] Gangguan sementara/network glitch. Menghubungkan ulang dalam 5 detik...');
         setTimeout(() => {
           startWhatsAppBot().catch((err) =>
             console.error('Error saat reconnect Baileys:', err)
@@ -181,7 +186,10 @@ export async function startWhatsAppBot(): Promise<WASocket> {
         }, 5000);
       } else {
         console.log(
-          '🚪 [SAKUKU BOT] Sesi telah logout. Silakan reset sesi via pop-up WA Bot di Web Dashboard atau jalankan ulang untuk scan QR baru.'
+          '🚪 [SAKUKU BOT] Sesi telah logout dari Linked Devices HP. Worker tetap standby/idle dan tidak looping QR di background.'
+        );
+        console.log(
+          '💡 [SAKUKU BOT] Menunggu instruksi "Buat Kode QR" / "Restart Worker" dari Web Dashboard SakuKu.'
         );
       }
     } else if (connection === 'open') {
@@ -191,7 +199,7 @@ export async function startWhatsAppBot(): Promise<WASocket> {
       if (sock?.user?.lid) {
         cachedOwnerLid = sock.user.lid.split('@')[0].split(':')[0];
       }
-      await setDbBotStatus('CONNECTED', { phone: userPhone, name: 'SakuKu' });
+      await setDbBotStatus('CONNECTED', { phone: userPhone, name: 'SakuKu', disconnectReason: null });
       console.log('\n==========================================================');
       console.log('✅ [SAKUKU BOT] WhatsApp Bot BERHASIL TERHUBUNG!');
       console.log(`👤 Whitelist aktif untuk pemilik: ${process.env.MY_PHONE_NUMBER}`);
@@ -348,5 +356,56 @@ export async function sendDirectMessage(
   } catch (err) {
     console.error(`❌ [GAGAL KIRIM NOTIFIKASI SAKUKU] Ke ${targetPhone}:`, err);
     return false;
+  }
+}
+
+/**
+ * Safely closes the Baileys WhatsApp socket and clears listeners
+ */
+export async function closeWhatsAppSocket(): Promise<void> {
+  if (sock) {
+    try {
+      sock.ev.removeAllListeners('connection.update');
+      sock.ev.removeAllListeners('creds.update');
+      sock.ev.removeAllListeners('messages.upsert');
+      sock.end(undefined);
+    } catch {
+      // Ignore close error
+    }
+    sock = null;
+  }
+}
+
+/**
+ * Smart restart handler for Baileys bot based on disconnectReason
+ * - Scenario A: Valid credentials exist & not logged out -> reconnects session without new QR
+ * - Scenario B: Logged out from mobile or empty creds -> wipes stale creds & produces new QR
+ */
+export async function restartWhatsAppBot(): Promise<void> {
+  console.log('\n==========================================================');
+  console.log('⚡ [SAKUKU BOT] Mengeksekusi perintah RESTART dari Web Dashboard...');
+  console.log('==========================================================');
+
+  await closeWhatsAppSocket();
+
+  const status = await getDbBotStatus();
+  const hasCreds = await hasDbSessionCreds();
+  const isLoggedOut = status?.disconnectReason === 'loggedOut' || !hasCreds;
+
+  if (isLoggedOut) {
+    console.log('🧹 [SAKUKU BOT] Skenario B: Logout terdeteksi atau sesi kosong.');
+    console.log('🧹 [SAKUKU BOT] Membersihkan kredensial lama dan membuat QR Code baru...');
+    await clearDbSessionCreds();
+    await setDbBotStatus('SCANNING_QR', { disconnectReason: null });
+  } else {
+    console.log('⚡ [SAKUKU BOT] Skenario A: Kredensial masih valid.');
+    console.log('⚡ [SAKUKU BOT] Menghubungkan kembali sesi tanpa scan QR ulang...');
+    await setDbBotStatus('DISCONNECTED', { disconnectReason: null });
+  }
+
+  try {
+    await startWhatsAppBot();
+  } catch (err) {
+    console.error('❌ [SAKUKU BOT] Gagal inisialisasi bot saat restart:', err);
   }
 }

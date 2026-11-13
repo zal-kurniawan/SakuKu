@@ -4,6 +4,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { ConfirmProvider } from '@/context/ConfirmContext';
 import { ToastProvider } from '@/context/ToastContext';
+import { BotStatusProvider } from '@/context/BotStatusContext';
 
 export const metadata: Metadata = {
   title: 'SakuKu',
@@ -26,7 +27,9 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <LanguageProvider>
             <ConfirmProvider>
-              <ToastProvider>{children}</ToastProvider>
+              <ToastProvider>
+                <BotStatusProvider>{children}</BotStatusProvider>
+              </ToastProvider>
             </ConfirmProvider>
           </LanguageProvider>
         </ThemeProvider>

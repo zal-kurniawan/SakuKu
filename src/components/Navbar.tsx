@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useTheme } from 'next-themes';
 import { useTranslation } from '@/context/LanguageContext';
 import { useModalEscape } from '@/hooks/useModalEscape';
+import { useBotStatus } from '@/context/BotStatusContext';
 import {
   Wallet,
   Sun,
@@ -46,6 +47,30 @@ export const Navbar: React.FC<NavbarProps> = ({
   const iconControlClass =
     'h-9 w-9 inline-flex items-center justify-center rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/70 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer shrink-0';
 
+  const { status: botStatus } = useBotStatus();
+
+  let badgeStyle =
+    'bg-rose-500/10 text-rose-500 border-rose-500/25 hover:bg-rose-500/20';
+  let dotStyle = 'bg-rose-500';
+  let badgeTitle = t('botLinker.badgeOffline') || 'WA Bot: Terputus / Offline';
+
+  if (botStatus === 'CONNECTED') {
+    badgeStyle =
+      'bg-emerald-500/10 text-emerald-500 border-emerald-500/25 hover:bg-emerald-500/20';
+    dotStyle = 'bg-emerald-500 animate-pulse';
+    badgeTitle = t('botLinker.badgeOnline') || 'WA Bot: Online & Aktif';
+  } else if (botStatus === 'SCANNING_QR') {
+    badgeStyle =
+      'bg-amber-500/10 text-amber-500 border-amber-500/25 hover:bg-amber-500/20';
+    dotStyle = 'bg-amber-500 animate-pulse';
+    badgeTitle = t('botLinker.badgeWaitingQr') || 'WA Bot: Menunggu Scan QR';
+  } else if (botStatus === 'RESTARTING') {
+    badgeStyle =
+      'bg-blue-500/10 text-blue-500 border-blue-500/25 hover:bg-blue-500/20';
+    dotStyle = 'bg-blue-500 animate-spin';
+    badgeTitle = t('botLinker.badgeRestarting') || 'WA Bot: Merestart...';
+  }
+
   return (
     <>
       <header className="sticky top-0 z-40 w-full border-b border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md">
@@ -71,12 +96,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                   type="button"
                   onClick={onOpenBotLinker}
-                  title={t('botLinker.title') || 'Status Bot WhatsApp'}
-                  aria-label={t('botLinker.title') || 'Status Bot WhatsApp'}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-500 border border-emerald-500/25 hover:bg-emerald-500/20 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                  title={badgeTitle}
+                  aria-label={badgeTitle}
+                  className={`inline-flex items-center gap-1.5 px-1.5 sm:px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-medium border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${badgeStyle}`}
                 >
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  WA Bot
+                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotStyle}`} />
+                  <span>WA Bot</span>
                 </button>
               </div>
               <p className="hidden lg:block text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">

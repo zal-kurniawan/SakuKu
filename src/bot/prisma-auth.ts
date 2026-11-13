@@ -16,10 +16,79 @@ export interface BotQRState {
 }
 
 export interface BotStatusState {
-  status: 'DISCONNECTED' | 'SCANNING_QR' | 'CONNECTED';
+  status: 'DISCONNECTED' | 'SCANNING_QR' | 'CONNECTED' | 'RESTARTING';
   updatedAt: string;
   phone?: string;
   name?: string;
+  disconnectReason?: 'loggedOut' | 'network' | null;
+}
+
+export interface WorkerCommandState {
+  command: 'IDLE' | 'RESTART';
+  updatedAt: string;
+}
+
+/**
+ * Updates the worker command in the database for Cloud Worker consumption
+ */
+export async function setDbWorkerCommand(command: 'IDLE' | 'RESTART'): Promise<void> {
+  try {
+    const payload = JSON.stringify({
+      command,
+      updatedAt: new Date().toISOString(),
+    });
+    await prisma.whatsAppSession.upsert({
+      where: { id: 'worker_command' },
+      create: { id: 'worker_command', data: payload },
+      update: { data: payload },
+    });
+  } catch (err) {
+    console.error('⚠️ [PRISMA AUTH] Gagal menyimpan worker command:', err);
+  }
+}
+
+/**
+ * Gets the current worker command from the database
+ */
+export async function getDbWorkerCommand(): Promise<WorkerCommandState | null> {
+  try {
+    const record = await prisma.whatsAppSession.findUnique({
+      where: { id: 'worker_command' },
+    });
+    if (!record?.data) return null;
+    return JSON.parse(record.data);
+  } catch (err) {
+    return null;
+  }
+}
+
+/**
+ * Checks if WhatsApp session credentials exist in the database
+ */
+export async function hasDbSessionCreds(): Promise<boolean> {
+  try {
+    const record = await prisma.whatsAppSession.findUnique({
+      where: { id: 'creds' },
+    });
+    return !!record?.data;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Clears WhatsApp session credentials from the database, keeping metadata intact
+ */
+export async function clearDbSessionCreds(): Promise<void> {
+  try {
+    await prisma.whatsAppSession.deleteMany({
+      where: {
+        id: { notIn: ['meta_bot_status', 'meta_qr_code', 'worker_command'] },
+      },
+    });
+  } catch (err) {
+    console.error('⚠️ [PRISMA AUTH] Gagal membersihkan creds sesi:', err);
+  }
 }
 
 /**
@@ -60,8 +129,8 @@ export async function getDbLiveQR(): Promise<BotQRState | null> {
  * Updates the bot connection status in the database
  */
 export async function setDbBotStatus(
-  status: 'DISCONNECTED' | 'SCANNING_QR' | 'CONNECTED',
-  details?: { phone?: string; name?: string }
+  status: 'DISCONNECTED' | 'SCANNING_QR' | 'CONNECTED' | 'RESTARTING',
+  details?: { phone?: string; name?: string; disconnectReason?: 'loggedOut' | 'network' | null }
 ): Promise<void> {
   try {
     const payload = JSON.stringify({
@@ -97,7 +166,7 @@ export async function getDbBotStatus(): Promise<BotStatusState | null> {
 /**
  * Custom Baileys auth state that stores credentials and cryptographic keys
  * directly in the database (WhatsAppSession model).
- * Enables 100% zero-file auth suitable for ephemeral cloud containers (Koyeb, Render).
+ * Enables 100% zero-file auth suitable for ephemeral cloud containers (Render).
  */
 export async function usePrismaAuthState(): Promise<{
   state: AuthenticationState;

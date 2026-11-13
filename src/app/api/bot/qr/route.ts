@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import QRCode from 'qrcode';
-import { getDbLiveQR, getDbBotStatus, setDbLiveQR, setDbBotStatus } from '@/bot/prisma-auth';
+import { getDbLiveQR, getDbBotStatus, setDbLiveQR, setDbBotStatus, hasDbSessionCreds } from '@/bot/prisma-auth';
 import prisma from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
@@ -24,9 +24,10 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const [qrRecord, statusRecord] = await Promise.all([
+    const [qrRecord, statusRecord, hasSession] = await Promise.all([
       getDbLiveQR(),
       getDbBotStatus(),
+      hasDbSessionCreds(),
     ]);
 
     const status = statusRecord?.status || 'DISCONNECTED';
@@ -55,6 +56,8 @@ export async function GET(req: NextRequest) {
       rawQr: qrRecord?.qr || null,
       phone: statusRecord?.phone || null,
       name: statusRecord?.name || 'SakuKu Bot',
+      disconnectReason: statusRecord?.disconnectReason || null,
+      hasSession,
       updatedAt: qrRecord?.updatedAt || statusRecord?.updatedAt || new Date().toISOString(),
     });
   } catch (error: any) {
