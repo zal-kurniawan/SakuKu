@@ -6,7 +6,7 @@ import { ConfirmProvider } from '@/context/ConfirmContext';
 import { ToastProvider } from '@/context/ToastContext';
 
 export const metadata: Metadata = {
-  title: 'SakuKu - Personal Multi-Wallet Finance Tracker & WhatsApp Bot',
+  title: 'SakuKu',
   description:
     'SakuKu - Modern Multi-Wallet Personal Finance Management Dashboard with WhatsApp Bot Integration via Baileys & Scheduled Cron Reminders.',
   icons: {
