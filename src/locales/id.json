@@ -24,7 +24,9 @@
     "switchLanguage": "Ganti Bahasa",
     "theme": "Tema",
     "toggleTheme": "Ganti Tema",
-    "mobileFooter": "Versi Mobile • Cloud Sync"
+    "mobileFooter": "Versi Mobile • Cloud Sync",
+    "transferFunds": "Transfer Saldo",
+    "addTransaction": "Catat Transaksi"
   },
   "kpi": {
     "totalNetWorth": "Total Kekayaan Bersih",
@@ -256,5 +258,39 @@
     "cmdRekapMonthTitle": "Evaluasi Cashflow Bulanan",
     "cmdRekapMonthSyntax": "/rekap bulan ini",
     "cmdRekapMonthDesc": "Evaluasi pemasukan, pengeluaran, savings rate %, dan Top 3 kategori belanja terbesar."
+  },
+  "botLinker": {
+    "title": "SakuKu WhatsApp Bot Linker",
+    "subtitle": "Tautkan WhatsApp Anda ke SakuKu Cloud 24/7 tanpa perlu terminal server",
+    "adminKeyTitle": "Kunci Akses Admin (ADMIN_SECRET_KEY)",
+    "adminKeyDesc": "Endpoint ini dilindungi. Masukkan kunci yang dikonfigurasi pada environment variable Anda.",
+    "adminKeyPlaceholder": "Masukkan ADMIN_SECRET_KEY...",
+    "saveKeyButton": "Simpan",
+    "keySavedToast": "Kunci akses admin disimpan",
+    "statusOnlineTitle": "WhatsApp Bot Terhubung & Aktif",
+    "statusOnlineDesc": "Sesi WhatsApp aktif dan siap menerima perintah pencatatan keuangan 24/7.",
+    "statusQrTitle": "Pindai Kode QR dengan WhatsApp",
+    "statusQrDesc": "Buka WhatsApp di ponsel Anda > Perangkat Tertaut > Tautkan Perangkat.",
+    "statusOfflineTitle": "Worker Bot Belum Aktif / Offline",
+    "statusOfflineDesc": "Layanan background worker WhatsApp belum mendeteksi sesi atau sedang offline di cloud provider Anda (Koyeb / Render).",
+    "troubleshootTitle": "Langkah Pemeriksaan:",
+    "troubleshootStep1": "Pastikan container worker di Koyeb atau Render sudah berjalan (\"Healthy\").",
+    "troubleshootStep2": "Pastikan environment variable DATABASE_URL di worker sama dengan Vercel.",
+    "troubleshootStep3": "Jika menguji lokal, jalankan perintah: npm run worker di terminal.",
+    "closeButton": "Tutup",
+    "connectedNumber": "Nomor Terhubung:",
+    "serverStatus": "Status Server:",
+    "onlineStatus": "Online & Aktif",
+    "lastUpdate": "Pembaruan Terakhir:",
+    "disconnectButton": "Putuskan Tautan",
+    "disconnecting": "Memutuskan...",
+    "recheckStatus": "Cek Ulang Status",
+    "checkingStatus": "Memeriksa status koneksi WhatsApp Bot...",
+    "autoRefreshNote": "Memperbarui otomatis setiap 3 detik...",
+    "qrRealtimeDesc": "Kode QR ini diperbarui otomatis secara real-time dari database",
+    "waitingQr": "Menunggu Scan Perangkat WhatsApp",
+    "step1": "Buka aplikasi WhatsApp di ponsel Anda.",
+    "step2": "Masuk ke menu Perangkat Tertaut (Linked Devices) di Pengaturan atau Titik Tiga.",
+    "step3": "Ketuk Tautkan Perangkat dan arahkan kamera HP ke QR Code di atas."
   }
 }

@@ -20,6 +20,7 @@ import {
 import { useTranslation } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
 import { formatCurrency } from '@/lib/utils';
+import { isExcelImportEnabled } from '@/lib/features';
 
 export default function ImportPage() {
   const { t, locale } = useTranslation();
@@ -42,6 +43,17 @@ export default function ImportPage() {
   const [commitProgress, setCommitProgress] = useState(0);
   const [commitSuccess, setCommitSuccess] = useState<string | null>(null);
   const [commitError, setCommitError] = useState('');
+
+  // Feature flag protection
+  React.useEffect(() => {
+    if (!isExcelImportEnabled) {
+      router.replace('/');
+    }
+  }, [router]);
+
+  if (!isExcelImportEnabled) {
+    return null;
+  }
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();

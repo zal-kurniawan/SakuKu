@@ -24,7 +24,9 @@
     "switchLanguage": "Switch Language",
     "theme": "Theme",
     "toggleTheme": "Toggle Theme",
-    "mobileFooter": "Mobile Version • Cloud Sync"
+    "mobileFooter": "Mobile Version • Cloud Sync",
+    "transferFunds": "Transfer Funds",
+    "addTransaction": "Add Transaction"
   },
   "kpi": {
     "totalNetWorth": "Total Net Worth",
@@ -256,5 +258,39 @@
     "cmdRekapMonthTitle": "Monthly Cashflow Evaluation",
     "cmdRekapMonthSyntax": "/rekap bulan ini",
     "cmdRekapMonthDesc": "Evaluation of income, expense, savings rate %, and Top 3 spending categories."
+  },
+  "botLinker": {
+    "title": "SakuKu WhatsApp Bot Linker",
+    "subtitle": "Link your WhatsApp to SakuKu Cloud 24/7 without needing a server terminal",
+    "adminKeyTitle": "Admin Access Key (ADMIN_SECRET_KEY)",
+    "adminKeyDesc": "This endpoint is protected. Enter the key configured in your environment variables.",
+    "adminKeyPlaceholder": "Enter ADMIN_SECRET_KEY...",
+    "saveKeyButton": "Save",
+    "keySavedToast": "Admin access key saved",
+    "statusOnlineTitle": "WhatsApp Bot Connected & Active",
+    "statusOnlineDesc": "WhatsApp session is active and ready to receive finance commands 24/7.",
+    "statusQrTitle": "Scan QR Code with WhatsApp",
+    "statusQrDesc": "Open WhatsApp on your phone > Linked Devices > Link a Device.",
+    "statusOfflineTitle": "Bot Worker Inactive / Offline",
+    "statusOfflineDesc": "The WhatsApp background worker has not detected a session or is currently offline on your cloud provider (Koyeb / Render).",
+    "troubleshootTitle": "Troubleshooting Steps:",
+    "troubleshootStep1": "Ensure the worker container on Koyeb or Render is running (\"Healthy\").",
+    "troubleshootStep2": "Ensure the DATABASE_URL environment variable on the worker matches Vercel.",
+    "troubleshootStep3": "If testing locally, run the command: npm run worker in your terminal.",
+    "closeButton": "Close",
+    "connectedNumber": "Connected Number:",
+    "serverStatus": "Server Status:",
+    "onlineStatus": "Online & Active",
+    "lastUpdate": "Last Update:",
+    "disconnectButton": "Disconnect Session",
+    "disconnecting": "Disconnecting...",
+    "recheckStatus": "Re-check Status",
+    "checkingStatus": "Checking WhatsApp bot connection status...",
+    "autoRefreshNote": "Auto-refreshing every 3 seconds...",
+    "qrRealtimeDesc": "This QR code is automatically updated in real-time from the database",
+    "waitingQr": "Waiting for WhatsApp Device Scan",
+    "step1": "Open WhatsApp on your mobile phone.",
+    "step2": "Go to Linked Devices in Settings or the three-dots menu.",
+    "step3": "Tap Link a Device and point your phone's camera at the QR code above."
   }
 }

@@ -21,6 +21,7 @@ import {
   ChevronsRight,
 } from 'lucide-react';
 import { WalletItem } from './WalletList';
+import { isExcelImportEnabled } from '@/lib/features';
 
 export interface TransactionItem {
   id: number | string;
@@ -134,19 +135,21 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center space-x-2 self-stretch sm:self-auto">
-          <Link
-            href="/import"
-            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 transition min-h-[38px]"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-            <span>Import Excel</span>
-          </Link>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 self-stretch sm:self-auto">
+          {isExcelImportEnabled && (
+            <Link
+              href="/import"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 transition min-h-[38px]"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+              <span>Import Excel</span>
+            </Link>
+          )}
           <button
             onClick={handleExportCsv}
-            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition min-h-[38px]"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-10 sm:h-9 px-4 text-sm font-medium rounded-xl whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition active:scale-98"
           >
-            <Download className="w-3.5 h-3.5" />
+            <Download className="w-4 h-4" />
             <span>{t('transactions.exportCsv')}</span>
           </button>
         </div>

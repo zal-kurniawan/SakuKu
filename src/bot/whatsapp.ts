@@ -156,7 +156,7 @@ export async function startWhatsAppBot(): Promise<WASocket> {
       console.log('📲 [SAKUKU WHATSAPP BOT] Silakan scan QR code di bawah:');
       console.log('==========================================================\n');
       qrcode.generate(qr, { small: true });
-      console.log('\n💡 Atau scan dari Web Dashboard di /admin/qr');
+      console.log('\n💡 Atau scan dari Web Dashboard via badge WA Bot');
       console.log('💡 Buka WhatsApp > Perangkat Tertaut (Linked Devices) > Tautkan Perangkat');
       console.log('==========================================================\n');
     }
@@ -181,7 +181,7 @@ export async function startWhatsAppBot(): Promise<WASocket> {
         }, 5000);
       } else {
         console.log(
-          '🚪 [SAKUKU BOT] Sesi telah logout. Silakan reset sesi di /admin/qr atau jalankan ulang untuk scan QR baru.'
+          '🚪 [SAKUKU BOT] Sesi telah logout. Silakan reset sesi via pop-up WA Bot di Web Dashboard atau jalankan ulang untuk scan QR baru.'
         );
       }
     } else if (connection === 'open') {

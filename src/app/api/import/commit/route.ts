@@ -5,6 +5,13 @@ import { CleanedTransactionItem, DetectedWallet, InitialBalanceItem } from '@/li
 
 export async function POST(req: Request) {
   try {
+    if (
+      process.env.ENABLE_EXCEL_IMPORT !== 'true' &&
+      process.env.NEXT_PUBLIC_ENABLE_EXCEL_IMPORT !== 'true'
+    ) {
+      return NextResponse.json({ error: 'Feature disabled' }, { status: 403 });
+    }
+
     const user = await getActiveUser();
     const body = await req.json();
 

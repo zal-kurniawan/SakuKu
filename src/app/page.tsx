@@ -13,6 +13,7 @@ import { WalletDistributionChart } from '@/components/WalletDistributionChart';
 import { BudgetLimitCard, BudgetItem } from '@/components/BudgetLimitCard';
 import { TransactionTable, TransactionItem } from '@/components/TransactionTable';
 import { BotGuideModal } from '@/components/BotGuideModal';
+import { WhatsAppLinkerModal } from '@/components/WhatsAppLinkerModal';
 import { useTranslation } from '@/context/LanguageContext';
 import { useConfirm } from '@/context/ConfirmContext';
 import { useToast } from '@/context/ToastContext';
@@ -47,6 +48,7 @@ export default function DashboardPage() {
   const [txToEdit, setTxToEdit] = useState<TransactionItem | null>(null);
   const [isEditTxOpen, setIsEditTxOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [isBotLinkerOpen, setIsBotLinkerOpen] = useState(false);
 
   // Load Data
   const fetchData = useCallback(async () => {
@@ -157,6 +159,7 @@ export default function DashboardPage() {
         onOpenTransfer={() => handleOpenTransfer()}
         onOpenAddTransaction={() => setIsAddTxOpen(true)}
         onOpenGuide={() => setIsGuideOpen(true)}
+        onOpenBotLinker={() => setIsBotLinkerOpen(true)}
       />
 
       {/* Main Container */}
@@ -248,6 +251,11 @@ export default function DashboardPage() {
       <BotGuideModal
         isOpen={isGuideOpen}
         onClose={() => setIsGuideOpen(false)}
+      />
+
+      <WhatsAppLinkerModal
+        isOpen={isBotLinkerOpen}
+        onClose={() => setIsBotLinkerOpen(false)}
       />
     </div>
   );
