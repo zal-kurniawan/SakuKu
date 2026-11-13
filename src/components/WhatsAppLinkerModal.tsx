@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from '@/context/LanguageContext';
 import { useConfirm } from '@/context/ConfirmContext';
 import { useToast } from '@/context/ToastContext';
+import { useModalEscape } from '@/hooks/useModalEscape';
 import {
   QrCode,
   CheckCircle2,
@@ -94,14 +95,8 @@ export const WhatsAppLinkerModal: React.FC<WhatsAppLinkerModalProps> = ({
     return () => clearInterval(interval);
   }, [isOpen, fetchBotStatus]);
 
-  // Handle escape key
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  // Unified modal escape handler
+  useModalEscape({ isOpen, onClose });
 
   // Prevent background scroll
   useEffect(() => {
@@ -173,36 +168,36 @@ export const WhatsAppLinkerModal: React.FC<WhatsAppLinkerModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+    >
       <div
         className="w-[calc(100vw-1.5rem)] sm:w-full max-w-lg max-h-[88dvh] flex flex-col overflow-hidden rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-2xl animate-in zoom-in-95 duration-200"
         role="dialog"
         aria-modal="true"
         aria-labelledby="bot-linker-title"
       >
-        {/* Fixed Header */}
-        <div className="flex items-start justify-between p-4 sm:p-5 border-b border-gray-100 dark:border-gray-800 shrink-0">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-gray-100 dark:border-gray-800 shrink-0">
           <div className="flex items-center gap-3 min-w-0 pr-2">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20 shrink-0">
               <Smartphone className="w-5 h-5" />
             </div>
-            <div className="min-w-0">
-              <h3
-                id="bot-linker-title"
-                className="font-bold text-sm sm:text-base text-gray-900 dark:text-white truncate"
-              >
-                {t('botLinker.title') || 'SakuKu WhatsApp Bot Linker'}
-              </h3>
-              <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
-                {t('botLinker.subtitle') || 'Tautkan WhatsApp Anda ke SakuKu Cloud 24/7 tanpa perlu terminal server'}
-              </p>
-            </div>
+            <h3
+              id="bot-linker-title"
+              className="text-base sm:text-lg font-bold text-gray-900 dark:text-white leading-tight truncate"
+            >
+              {t('botLinker.title') || 'SakuKu WhatsApp Bot Linker'}
+            </h3>
           </div>
           <div className="flex items-center gap-1 shrink-0">
             <button
               type="button"
               onClick={() => setShowSecretInput(!showSecretInput)}
-              className="p-2 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+              className="h-8 w-8 inline-flex items-center justify-center rounded-lg shrink-0 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
               title={t('botLinker.adminKeyTitle') || 'Kunci Akses Admin'}
               aria-label={t('botLinker.adminKeyTitle') || 'Kunci Akses Admin'}
             >
@@ -211,16 +206,16 @@ export const WhatsAppLinkerModal: React.FC<WhatsAppLinkerModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-              aria-label={t('botLinker.closeButton') || 'Tutup'}
+              aria-label={t('common.close') || t('botLinker.closeButton') || 'Tutup'}
+              className="h-8 w-8 inline-flex items-center justify-center rounded-lg shrink-0 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
         {/* Scrollable Body */}
-        <div className="overflow-y-auto p-4 sm:p-6 space-y-4 flex-1">
+        <div className="overflow-y-auto p-4 sm:p-6 pb-5 sm:pb-6 space-y-4 flex-1 min-w-0">
           {/* Secret Key Input if requested or required */}
           {showSecretInput && (
             <form
@@ -445,17 +440,6 @@ export const WhatsAppLinkerModal: React.FC<WhatsAppLinkerModalProps> = ({
               </div>
             </div>
           )}
-        </div>
-
-        {/* Fixed Footer */}
-        <div className="p-3 sm:p-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 flex justify-end shrink-0">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-          >
-            {t('botLinker.closeButton') || 'Tutup'}
-          </button>
         </div>
       </div>
     </div>

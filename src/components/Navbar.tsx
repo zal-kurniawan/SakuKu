@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useTheme } from 'next-themes';
 import { useTranslation } from '@/context/LanguageContext';
+import { useModalEscape } from '@/hooks/useModalEscape';
 import {
   Wallet,
   Sun,
@@ -37,13 +38,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   }, []);
 
   // Close speed dial when pressing Escape
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isSpeedDialOpen) setIsSpeedDialOpen(false);
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isSpeedDialOpen]);
+  useModalEscape({
+    isOpen: isSpeedDialOpen,
+    onClose: () => setIsSpeedDialOpen(false),
+  });
 
   const iconControlClass =
     'h-9 w-9 inline-flex items-center justify-center rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/70 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer shrink-0';
@@ -202,7 +200,9 @@ export const Navbar: React.FC<NavbarProps> = ({
         {isSpeedDialOpen && (
           <div
             className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-30 transition-opacity animate-in fade-in duration-200"
-            onClick={() => setIsSpeedDialOpen(false)}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setIsSpeedDialOpen(false);
+            }}
           />
         )}
 

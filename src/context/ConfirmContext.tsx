@@ -1,7 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react';
-import { AlertTriangle, Trash2, Info, Loader2 } from 'lucide-react';
+import { AlertTriangle, Trash2, Info, Loader2, X } from 'lucide-react';
+import { useModalEscape } from '@/hooks/useModalEscape';
 
 export interface ConfirmOptions {
   title: string;
@@ -75,16 +76,13 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  // Keyboard accessibility: ESC key to cancel
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen && !isLoading) {
-        handleCancel();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isLoading]);
+  // Unified modal escape handler (highest priority for confirm dialog)
+  useModalEscape({
+    isOpen,
+    onClose: handleCancel,
+    disabled: isLoading,
+    priority: 100,
+  });
 
   // Auto focus confirm button when opened
   useEffect(() => {
@@ -119,32 +117,43 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
             className="w-[94vw] max-w-md rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-2xl p-5 sm:p-6 space-y-4 sm:space-y-5 animate-in zoom-in-95 duration-150 text-gray-900 dark:text-gray-100"
           >
             {/* Header & Icon */}
-            <div className="flex items-start gap-3.5 sm:gap-4">
-              <div
-                className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${
-                  variant === 'danger'
-                    ? 'bg-rose-100 text-rose-600 dark:bg-rose-950/70 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60'
-                    : variant === 'warning'
-                    ? 'bg-amber-100 text-amber-600 dark:bg-amber-950/70 dark:text-amber-400 border border-amber-200 dark:border-amber-900/60'
-                    : 'bg-blue-100 text-blue-600 dark:bg-blue-950/70 dark:text-blue-400 border border-blue-200 dark:border-blue-900/60'
-                }`}
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3.5 sm:gap-4 flex-1 min-w-0">
+                <div
+                  className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${
+                    variant === 'danger'
+                      ? 'bg-rose-100 text-rose-600 dark:bg-rose-950/70 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60'
+                      : variant === 'warning'
+                      ? 'bg-amber-100 text-amber-600 dark:bg-amber-950/70 dark:text-amber-400 border border-amber-200 dark:border-amber-900/60'
+                      : 'bg-blue-100 text-blue-600 dark:bg-blue-950/70 dark:text-blue-400 border border-blue-200 dark:border-blue-900/60'
+                  }`}
+                >
+                  {iconType === 'trash' ? (
+                    <Trash2 className="w-5 h-5 sm:w-6 sm:h-6 text-rose-600 dark:text-rose-400" />
+                  ) : iconType === 'alert' ? (
+                    <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600 dark:text-amber-400" />
+                  ) : (
+                    <Info className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400" />
+                  )}
+                </div>
+                <div className="space-y-1 sm:space-y-1.5 flex-1 min-w-0">
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white leading-snug break-words">
+                    {options.title}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 leading-relaxed break-words">
+                    {options.message}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleCancel}
+                disabled={isLoading}
+                aria-label={options.cancelText || 'Tutup'}
+                className="h-8 w-8 inline-flex items-center justify-center rounded-lg shrink-0 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer disabled:opacity-50"
               >
-                {iconType === 'trash' ? (
-                  <Trash2 className="w-5 h-5 sm:w-6 sm:h-6 text-rose-600 dark:text-rose-400" />
-                ) : iconType === 'alert' ? (
-                  <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600 dark:text-amber-400" />
-                ) : (
-                  <Info className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400" />
-                )}
-              </div>
-              <div className="space-y-1 sm:space-y-1.5 flex-1 min-w-0">
-                <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white leading-snug break-words">
-                  {options.title}
-                </h3>
-                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 leading-relaxed break-words">
-                  {options.message}
-                </p>
-              </div>
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
             {/* Action Buttons: Side-by-side or stacked cleanly on all screen sizes */}
