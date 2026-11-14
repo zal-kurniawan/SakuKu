@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   BarChart,
   Bar,
@@ -11,20 +11,27 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { Calendar } from 'lucide-react';
 import { CustomSelect } from './ui/CustomSelect';
 import { useTranslation } from '@/context/LanguageContext';
 import { formatCurrency } from '@/lib/utils';
+import { getCachedData, mutateCache } from '@/hooks/useSakuKuCache';
 
-interface CashflowPoint {
+export interface CashflowPoint {
   name: string;
   income: number;
   expense: number;
   net: number;
 }
 
+export interface CashflowPayload {
+  availableYears: number[];
+  selectedYear: number;
+  months: { month: number; income: number; expense: number; net: number }[];
+}
+
 interface CashflowChartProps {
   data?: CashflowPoint[];
+  initialCashflow?: CashflowPayload;
 }
 
 const MONTH_NAMES_ID = [
@@ -37,46 +44,103 @@ const MONTH_NAMES_EN = [
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
 ];
 
-export const CashflowChart: React.FC<CashflowChartProps> = ({ data: initialData }) => {
+export const CashflowChart: React.FC<CashflowChartProps> = ({
+  data: initialData,
+  initialCashflow,
+}) => {
   const { t, locale } = useTranslation();
   const [mounted, setMounted] = useState(false);
   const currentYear = new Date().getFullYear();
 
-  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
-  const [availableYears, setAvailableYears] = useState<number[]>([currentYear]);
-  const [chartData, setChartData] = useState<CashflowPoint[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [selectedYear, setSelectedYear] = useState<number>(
+    initialCashflow?.selectedYear || currentYear
+  );
+  const [availableYears, setAvailableYears] = useState<number[]>(
+    initialCashflow?.availableYears || [currentYear]
+  );
 
   const monthNames = locale === 'en' ? MONTH_NAMES_EN : MONTH_NAMES_ID;
 
-  const fetchCashflow = useCallback(async (year: number) => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/stats/cashflow?year=${year}`);
-      if (res.ok) {
-        const json = await res.json();
-        if (json.availableYears && Array.isArray(json.availableYears)) {
-          setAvailableYears(json.availableYears);
-        }
-        if (json.months && Array.isArray(json.months)) {
-          const formatted = json.months.map((m: any, idx: number) => ({
-            name: monthNames[idx] || `M${m.month}`,
-            income: m.income || 0,
-            expense: m.expense || 0,
-            net: (m.income || 0) - (m.expense || 0),
-          }));
-          setChartData(formatted);
-        }
-      }
-    } catch (err) {
-      console.error('Failed to fetch cashflow data:', err);
-    } finally {
-      setLoading(false);
+  // Format month list to chart points
+  const formatMonthsToPoints = useCallback(
+    (months: any[]): CashflowPoint[] => {
+      return months.map((m: any, idx: number) => ({
+        name: monthNames[idx] || `M${m.month}`,
+        income: m.income || 0,
+        expense: m.expense || 0,
+        net: (m.income || 0) - (m.expense || 0),
+      }));
+    },
+    [monthNames]
+  );
+
+  const [chartData, setChartData] = useState<CashflowPoint[]>(() => {
+    if (initialCashflow?.months) {
+      return formatMonthsToPoints(initialCashflow.months);
     }
-  }, [monthNames]);
+    return [];
+  });
+  const [loading, setLoading] = useState<boolean>(!initialCashflow);
+
+  // Synchronize when initialCashflow arrives or changes from parent
+  useEffect(() => {
+    if (initialCashflow) {
+      if (initialCashflow.availableYears) {
+        setAvailableYears(initialCashflow.availableYears);
+      }
+      if (initialCashflow.months && initialCashflow.selectedYear === selectedYear) {
+        setChartData(formatMonthsToPoints(initialCashflow.months));
+        setLoading(false);
+      }
+      // Seed client-side cache
+      mutateCache(`/api/stats/cashflow?year=${initialCashflow.selectedYear}`, initialCashflow);
+    }
+  }, [initialCashflow, selectedYear, formatMonthsToPoints]);
+
+  const hasLoadedInitial = useRef(Boolean(initialCashflow));
+
+  const fetchCashflow = useCallback(
+    async (year: number) => {
+      const cacheKey = `/api/stats/cashflow?year=${year}`;
+      const cached = getCachedData<CashflowPayload>(cacheKey);
+
+      // 1. Instant Cache Hit (0ms latency, no loading spinner)
+      if (cached) {
+        if (cached.availableYears) setAvailableYears(cached.availableYears);
+        if (cached.months) setChartData(formatMonthsToPoints(cached.months));
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const res = await fetch(cacheKey);
+        if (res.ok) {
+          const json = await res.json();
+          mutateCache(cacheKey, json);
+          if (json.availableYears && Array.isArray(json.availableYears)) {
+            setAvailableYears(json.availableYears);
+          }
+          if (json.months && Array.isArray(json.months)) {
+            setChartData(formatMonthsToPoints(json.months));
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch cashflow data:', err);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [formatMonthsToPoints]
+  );
 
   useEffect(() => {
     setMounted(true);
+    // If we already have initial data from dashboard aggregator, do NOT double-fetch on mount!
+    if (hasLoadedInitial.current) {
+      hasLoadedInitial.current = false;
+      return;
+    }
     fetchCashflow(selectedYear);
   }, [fetchCashflow, selectedYear]);
 

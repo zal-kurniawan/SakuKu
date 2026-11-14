@@ -8,7 +8,7 @@ import { AddWalletModal } from '@/components/AddWalletModal';
 import { TransferModal } from '@/components/TransferModal';
 import { AddTransactionModal } from '@/components/AddTransactionModal';
 import { EditTransactionModal } from '@/components/EditTransactionModal';
-import { CashflowChart } from '@/components/CashflowChart';
+import { CashflowChart, CashflowPayload } from '@/components/CashflowChart';
 import { WalletDistributionChart } from '@/components/WalletDistributionChart';
 import { BudgetLimitCard, BudgetItem } from '@/components/BudgetLimitCard';
 import { TransactionTable, TransactionItem } from '@/components/TransactionTable';
@@ -17,11 +17,17 @@ import { WhatsAppLinkerModal } from '@/components/WhatsAppLinkerModal';
 import { useTranslation } from '@/context/LanguageContext';
 import { useConfirm } from '@/context/ConfirmContext';
 import { useToast } from '@/context/ToastContext';
+import {
+  getCachedData,
+  mutateCache,
+  invalidateDashboardCache,
+} from '@/hooks/useSakuKuCache';
 
 export default function DashboardPage() {
   const { t } = useTranslation();
   const confirm = useConfirm();
   const toast = useToast();
+  const currentYear = new Date().getFullYear();
 
   // State
   const [stats, setStats] = useState({
@@ -36,7 +42,10 @@ export default function DashboardPage() {
 
   const [wallets, setWallets] = useState<WalletItem[]>([]);
   const [transactions, setTransactions] = useState<TransactionItem[]>([]);
+  const [totalTxCount, setTotalTxCount] = useState<number>(0);
   const [budgets, setBudgets] = useState<BudgetItem[]>([]);
+  const [cashflowData, setCashflowData] = useState<CashflowPayload | undefined>(undefined);
+  const [walletHistoryData, setWalletHistoryData] = useState<any>(undefined);
   const [loading, setLoading] = useState(true);
 
   // Modals state
@@ -50,29 +59,56 @@ export default function DashboardPage() {
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isBotLinkerOpen, setIsBotLinkerOpen] = useState(false);
 
-  // Load Data
+  // Load Data: Aggregated Single Initial Request (Replaces 7 simultaneous requests)
   const fetchData = useCallback(async () => {
-    try {
-      const [statsRes, walletsRes, txRes, budgetRes] = await Promise.all([
-        fetch('/api/stats'),
-        fetch('/api/wallets'),
-        fetch('/api/transactions?limit=1000'),
-        fetch('/api/budgets'),
-      ]);
+    const dashboardUrl = `/api/dashboard?year=${currentYear}&txLimit=50&txPage=1`;
+    const cached = getCachedData<any>(dashboardUrl);
 
-      if (statsRes.ok) setStats(await statsRes.json());
-      if (walletsRes.ok) setWallets(await walletsRes.json());
-      if (txRes.ok) setTransactions(await txRes.json());
-      if (budgetRes.ok) setBudgets(await budgetRes.json());
+    // 1. Instant Cache Hit (Stale-While-Revalidate with zero UI flicker)
+    if (cached) {
+      if (cached.stats) setStats(cached.stats);
+      if (cached.wallets) setWallets(cached.wallets);
+      if (cached.transactions) {
+        setTransactions(cached.transactions.transactions || []);
+        setTotalTxCount(cached.transactions.totalCount || 0);
+      }
+      if (cached.budgets) setBudgets(cached.budgets);
+      if (cached.cashflow) setCashflowData(cached.cashflow);
+      if (cached.walletHistory) setWalletHistoryData(cached.walletHistory);
+      setLoading(false);
+    }
+
+    try {
+      const res = await fetch(dashboardUrl);
+      if (res.ok) {
+        const json = await res.json();
+        mutateCache(dashboardUrl, json);
+
+        if (json.stats) setStats(json.stats);
+        if (json.wallets) setWallets(json.wallets);
+        if (json.transactions) {
+          setTransactions(json.transactions.transactions || []);
+          setTotalTxCount(json.transactions.totalCount || 0);
+        }
+        if (json.budgets) setBudgets(json.budgets);
+        if (json.cashflow) setCashflowData(json.cashflow);
+        if (json.walletHistory) setWalletHistoryData(json.walletHistory);
+      }
     } catch (err) {
       console.error('Gagal mengambil data dashboard:', err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentYear]);
 
   useEffect(() => {
     fetchData();
+  }, [fetchData]);
+
+  // Mutation handler: Invalidates all dashboard caches and pulls fresh data
+  const handleMutationSuccess = useCallback(async () => {
+    invalidateDashboardCache();
+    await fetchData();
   }, [fetchData]);
 
   // Live Single Source of Truth metrics derived directly from `wallets`:
@@ -96,7 +132,10 @@ export default function DashboardPage() {
   const handleDeleteWallet = async (id: string) => {
     const isConfirmed = await confirm({
       title: t('dialog.deleteWalletTitle', 'Hapus Dompet?'),
-      message: t('dialog.deleteWalletDesc', 'Hapus dompet ini beserta seluruh transaksinya? Tindakan ini tidak dapat dibatalkan.'),
+      message: t(
+        'dialog.deleteWalletDesc',
+        'Hapus dompet ini beserta seluruh transaksinya? Tindakan ini tidak dapat dibatalkan.'
+      ),
       confirmText: t('common.delete', 'Hapus'),
       cancelText: t('common.cancel', 'Batal'),
       variant: 'danger',
@@ -104,21 +143,21 @@ export default function DashboardPage() {
     });
     if (!isConfirmed) return;
 
-    // Optimistic instant UI update (re-renders KPI and Chart immediately)
+    // Optimistic instant UI update
     setWallets((prev) => prev.filter((w) => w.id !== id));
     try {
       const res = await fetch(`/api/wallets/${id}`, { method: 'DELETE' });
       if (res.ok) {
         toast.success(t('dialog.walletDeleted', 'Dompet berhasil dihapus'));
-        await fetchData();
+        await handleMutationSuccess();
       } else {
         toast.error(t('dialog.walletDeleteFailed', 'Gagal menghapus dompet'));
-        await fetchData();
+        await handleMutationSuccess();
       }
     } catch (err) {
       console.error(err);
       toast.error(t('dialog.walletDeleteFailed', 'Gagal menghapus dompet'));
-      await fetchData();
+      await handleMutationSuccess();
     }
   };
 
@@ -140,15 +179,15 @@ export default function DashboardPage() {
       const res = await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
       if (res.ok) {
         toast.success(t('dialog.txDeleted', 'Transaksi berhasil dihapus'));
-        await fetchData();
+        await handleMutationSuccess();
       } else {
         toast.error(t('dialog.txDeleteFailed', 'Gagal menghapus transaksi'));
-        await fetchData();
+        await handleMutationSuccess();
       }
     } catch (err) {
       console.error(err);
       toast.error(t('dialog.txDeleteFailed', 'Gagal menghapus transaksi'));
-      await fetchData();
+      await handleMutationSuccess();
     }
   };
 
@@ -182,8 +221,14 @@ export default function DashboardPage() {
 
         {/* Charts Section: 1 col on mobile/tablet, 2 cols on desktop */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-          <CashflowChart data={stats.cashflowHistory} />
-          <WalletDistributionChart data={liveWalletDistribution} />
+          <CashflowChart
+            data={stats.cashflowHistory}
+            initialCashflow={cashflowData}
+          />
+          <WalletDistributionChart
+            data={liveWalletDistribution}
+            availableYears={walletHistoryData?.availableYears}
+          />
         </div>
 
         {/* Transactions & Budget Section */}
@@ -191,24 +236,23 @@ export default function DashboardPage() {
           <div className="lg:col-span-2 space-y-6">
             <TransactionTable
               transactions={transactions}
+              totalCount={totalTxCount}
               wallets={wallets}
               onDelete={handleDeleteTransaction}
               onEdit={handleEditTransaction}
-              onRefresh={fetchData}
+              onRefresh={handleMutationSuccess}
             />
           </div>
 
           <div className="space-y-6">
-            <BudgetLimitCard budgets={budgets} onRefresh={fetchData} />
+            <BudgetLimitCard budgets={budgets} onRefresh={handleMutationSuccess} />
           </div>
         </div>
       </main>
 
       {/* Footer */}
       <footer className="border-t border-gray-200 dark:border-gray-800 py-6 text-center text-xs text-gray-500 dark:text-gray-400">
-        <p>
-          SakuKu • Personal Multi-Wallet Finance Tracker
-        </p>
+        <p>SakuKu • Personal Multi-Wallet Finance Tracker</p>
       </footer>
 
       {/* Modals */}
@@ -218,14 +262,14 @@ export default function DashboardPage() {
           setIsAddWalletOpen(false);
           setWalletToEdit(null);
         }}
-        onSuccess={fetchData}
+        onSuccess={handleMutationSuccess}
         walletToEdit={walletToEdit}
       />
 
       <TransferModal
         isOpen={isTransferOpen}
         onClose={() => setIsTransferOpen(false)}
-        onSuccess={fetchData}
+        onSuccess={handleMutationSuccess}
         wallets={wallets}
         defaultFromWalletId={transferFromId}
       />
@@ -233,7 +277,7 @@ export default function DashboardPage() {
       <AddTransactionModal
         isOpen={isAddTxOpen}
         onClose={() => setIsAddTxOpen(false)}
-        onSuccess={fetchData}
+        onSuccess={handleMutationSuccess}
         wallets={wallets}
       />
 
@@ -243,7 +287,7 @@ export default function DashboardPage() {
           setIsEditTxOpen(false);
           setTxToEdit(null);
         }}
-        onSuccess={fetchData}
+        onSuccess={handleMutationSuccess}
         wallets={wallets}
         transaction={txToEdit}
       />

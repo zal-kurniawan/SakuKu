@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getActiveUser } from '@/lib/current-user';
 import { getMonthRange } from '@/lib/timezone';
+import { getBudgetsQuery } from '@/lib/dashboard-queries';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -12,53 +13,14 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
 
     const current = getMonthRange();
-    const month = parseInt(searchParams.get('month') || String(current.month), 10);
-    const year = parseInt(searchParams.get('year') || String(current.year), 10);
+    const month = searchParams.get('month')
+      ? parseInt(searchParams.get('month')!, 10)
+      : current.month;
+    const year = searchParams.get('year')
+      ? parseInt(searchParams.get('year')!, 10)
+      : current.year;
 
-    const { startOfMonth, endOfMonth } = getMonthRange(year, month);
-
-    // Fetch budget limits
-    const budgets = await prisma.budgetLimit.findMany({
-      where: { userId: user.id, month, year },
-    });
-
-    // Fetch actual expenses per category this month
-    const expenseGroups = await prisma.transaction.groupBy({
-      by: ['category'],
-      where: {
-        userId: user.id,
-        type: 'EXPENSE',
-        date: { gte: startOfMonth, lte: endOfMonth },
-      },
-      _sum: { amount: true },
-    });
-
-    const expenseMap = new Map<string, number>();
-    expenseGroups.forEach((eg) => {
-      expenseMap.set(eg.category, eg._sum.amount || 0);
-    });
-
-    // Merge budgets with spent amount
-    const result = budgets.map((b) => {
-      const spent = expenseMap.get(b.category) || 0;
-      const percentage = b.monthlyLimit > 0 ? (spent / b.monthlyLimit) * 100 : 0;
-      let status: 'SAFE' | 'WARNING' | 'DANGER' = 'SAFE';
-      if (percentage >= 100) status = 'DANGER';
-      else if (percentage >= 75) status = 'WARNING';
-
-      return {
-        id: b.id,
-        category: b.category,
-        monthlyLimit: b.monthlyLimit,
-        spent,
-        remaining: Math.max(0, b.monthlyLimit - spent),
-        percentage: Math.round(percentage),
-        status,
-        month: b.month,
-        year: b.year,
-      };
-    });
-
+    const result = await getBudgetsQuery(user.id, month, year);
     return NextResponse.json(result);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

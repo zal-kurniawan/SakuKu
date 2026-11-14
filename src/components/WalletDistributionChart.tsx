@@ -12,6 +12,7 @@ import {
 import { CustomSelect } from './ui/CustomSelect';
 import { useTranslation } from '@/context/LanguageContext';
 import { formatCurrency } from '@/lib/utils';
+import { getCachedData, mutateCache } from '@/hooks/useSakuKuCache';
 
 interface WalletDistPoint {
   id?: string;
@@ -23,6 +24,7 @@ interface WalletDistPoint {
 
 interface WalletDistributionChartProps {
   data: WalletDistPoint[];
+  availableYears?: number[];
 }
 
 const FULL_MONTHS_ID = [
@@ -37,6 +39,7 @@ const FULL_MONTHS_EN = [
 
 export const WalletDistributionChart: React.FC<WalletDistributionChartProps> = ({
   data: liveData,
+  availableYears: initialAvailableYears,
 }) => {
   const { t, locale } = useTranslation();
   const [mounted, setMounted] = useState(false);
@@ -46,34 +49,58 @@ export const WalletDistributionChart: React.FC<WalletDistributionChartProps> = (
 
   const [selectedMonth, setSelectedMonth] = useState<string>('current'); // 'current' or '1'..'12'
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
-  const [availableYears, setAvailableYears] = useState<number[]>([currentYear]);
+  const [availableYears, setAvailableYears] = useState<number[]>(
+    initialAvailableYears && initialAvailableYears.length > 0
+      ? initialAvailableYears
+      : [currentYear]
+  );
   const [historicalWallets, setHistoricalWallets] = useState<WalletDistPoint[] | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
 
   const fullMonths = locale === 'en' ? FULL_MONTHS_EN : FULL_MONTHS_ID;
 
+  // Synchronize availableYears when received from initial dashboard load
+  useEffect(() => {
+    if (initialAvailableYears && initialAvailableYears.length > 0) {
+      setAvailableYears(initialAvailableYears);
+    }
+  }, [initialAvailableYears]);
+
   // Fetch available years & historical distribution when month !== 'current'
   const fetchDistribution = useCallback(async (month: string, year: number) => {
     if (month === 'current') {
       setHistoricalWallets(null);
-      // Still fetch available years if we don't have them
-      try {
-        const res = await fetch('/api/stats/wallet-history');
-        if (res.ok) {
-          const json = await res.json();
-          if (json.availableYears) setAvailableYears(json.availableYears);
+      // Only fetch if availableYears has not been provided from initial dashboard data
+      if (!initialAvailableYears || initialAvailableYears.length === 0) {
+        try {
+          const res = await fetch('/api/stats/wallet-history');
+          if (res.ok) {
+            const json = await res.json();
+            if (json.availableYears) setAvailableYears(json.availableYears);
+          }
+        } catch (e) {
+          console.error(e);
         }
-      } catch (e) {
-        console.error(e);
       }
+      return;
+    }
+
+    const cacheKey = `/api/stats/wallet-history?month=${month}&year=${year}`;
+    const cached = getCachedData<{ availableYears?: number[]; wallets?: WalletDistPoint[] }>(cacheKey);
+
+    if (cached) {
+      if (cached.availableYears) setAvailableYears(cached.availableYears);
+      if (cached.wallets) setHistoricalWallets(cached.wallets);
+      setLoading(false);
       return;
     }
 
     setLoading(true);
     try {
-      const res = await fetch(`/api/stats/wallet-history?month=${month}&year=${year}`);
+      const res = await fetch(cacheKey);
       if (res.ok) {
         const json = await res.json();
+        mutateCache(cacheKey, json);
         if (json.availableYears) setAvailableYears(json.availableYears);
         if (json.wallets) setHistoricalWallets(json.wallets);
       }
@@ -82,7 +109,7 @@ export const WalletDistributionChart: React.FC<WalletDistributionChartProps> = (
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [initialAvailableYears]);
 
   useEffect(() => {
     setMounted(true);

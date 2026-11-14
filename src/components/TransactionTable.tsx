@@ -25,6 +25,7 @@ import { CustomSelect } from './ui/CustomSelect';
 import { CustomDatePicker } from './ui/CustomDatePicker';
 import { WalletItem } from './WalletList';
 import { isExcelImportEnabled } from '@/lib/features';
+import { getCachedData, mutateCache } from '@/hooks/useSakuKuCache';
 
 export interface TransactionItem {
   id: number | string;
@@ -44,6 +45,7 @@ export interface TransactionItem {
 interface TransactionTableProps {
   transactions: TransactionItem[];
   wallets: WalletItem[];
+  totalCount?: number;
   onDelete: (id: string | number) => void;
   onEdit?: (tx: TransactionItem) => void;
   onRefresh: () => void;
@@ -65,6 +67,7 @@ function getPageNumbers(current: number, total: number): (number | string)[] {
 export const TransactionTable: React.FC<TransactionTableProps> = ({
   transactions,
   wallets,
+  totalCount: initialTotalCount,
   onDelete,
   onEdit,
 }) => {
@@ -72,6 +75,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   const confirm = useConfirm();
 
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedWallet, setSelectedWallet] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -83,16 +87,65 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  // Extract unique categories dynamically from transactions
+  // Server-side loaded data
+  const [items, setItems] = useState<TransactionItem[]>(() => transactions.slice(0, 10));
+  const [totalCount, setTotalCount] = useState<number>(() =>
+    initialTotalCount !== undefined ? initialTotalCount : transactions.length
+  );
+  const [loading, setLoading] = useState<boolean>(false);
+
+  // Search debounce (~300ms)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Synchronize when initial transactions or totalCount prop updates from parent
+  useEffect(() => {
+    if (
+      currentPage === 1 &&
+      !debouncedSearch &&
+      selectedWallet === 'all' &&
+      selectedType === 'all' &&
+      selectedCategory === 'all' &&
+      selectedDateFilter === 'all' &&
+      !customDateFrom &&
+      !customDateTo
+    ) {
+      setItems(transactions.slice(0, rowsPerPage));
+      if (initialTotalCount !== undefined) {
+        setTotalCount(initialTotalCount);
+      } else {
+        setTotalCount(transactions.length);
+      }
+    }
+  }, [
+    transactions,
+    initialTotalCount,
+    currentPage,
+    rowsPerPage,
+    debouncedSearch,
+    selectedWallet,
+    selectedType,
+    selectedCategory,
+    selectedDateFilter,
+    customDateFrom,
+    customDateTo,
+  ]);
+
+  // Extract unique categories dynamically from both initial transactions and current items
   const uniqueCategories = React.useMemo(() => {
     const set = new Set<string>();
     transactions.forEach((tx) => {
-      if (tx.category && tx.category.trim()) {
-        set.add(tx.category.trim());
-      }
+      if (tx.category && tx.category.trim()) set.add(tx.category.trim());
+    });
+    items.forEach((tx) => {
+      if (tx.category && tx.category.trim()) set.add(tx.category.trim());
     });
     return Array.from(set).sort();
-  }, [transactions]);
+  }, [transactions, items]);
 
   const handleDelete = async (id: string | number) => {
     const isConfirmed = await confirm({
@@ -119,73 +172,131 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
 
   const handleResetFilter = () => {
     setSearch('');
+    setDebouncedSearch('');
     setSelectedWallet('all');
     setSelectedType('all');
     setSelectedCategory('all');
     setSelectedDateFilter('all');
     setCustomDateFrom('');
     setCustomDateTo('');
+    setCurrentPage(1);
   };
-
-  const filtered = transactions.filter((tx) => {
-    const matchesSearch =
-      tx.title.toLowerCase().includes(search.toLowerCase()) ||
-      tx.category.toLowerCase().includes(search.toLowerCase());
-
-    const matchesWallet =
-      selectedWallet === 'all' ||
-      tx.walletId === selectedWallet ||
-      tx.destinationWalletId === selectedWallet;
-
-    const matchesType = selectedType === 'all' || tx.type === selectedType;
-
-    const matchesCategory =
-      selectedCategory === 'all' || tx.category === selectedCategory;
-
-    // Date filtering
-    let matchesDate = true;
-    if (selectedDateFilter === 'today') {
-      const todayStr = new Date().toISOString().slice(0, 10);
-      matchesDate = tx.date.startsWith(todayStr);
-    } else if (selectedDateFilter === 'last7days') {
-      const now = new Date();
-      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      const txDate = new Date(tx.date);
-      matchesDate = txDate >= sevenDaysAgo;
-    } else if (selectedDateFilter === 'thisMonth') {
-      const now = new Date();
-      const yyyy = now.getFullYear();
-      const mm = String(now.getMonth() + 1).padStart(2, '0');
-      const prefix = `${yyyy}-${mm}`;
-      matchesDate = tx.date.startsWith(prefix);
-    } else if (selectedDateFilter === 'lastMonth') {
-      const now = new Date();
-      const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const yyyy = lastMonth.getFullYear();
-      const mm = String(lastMonth.getMonth() + 1).padStart(2, '0');
-      const prefix = `${yyyy}-${mm}`;
-      matchesDate = tx.date.startsWith(prefix);
-    } else if (selectedDateFilter === 'custom') {
-      const txDateStr = tx.date.slice(0, 10);
-      if (customDateFrom && txDateStr < customDateFrom) matchesDate = false;
-      if (customDateTo && txDateStr > customDateTo) matchesDate = false;
-    }
-
-    return matchesSearch && matchesWallet && matchesType && matchesCategory && matchesDate;
-  });
 
   // Reset to page 1 whenever filters or search query changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, selectedWallet, selectedType, selectedCategory, selectedDateFilter, customDateFrom, customDateTo, rowsPerPage]);
+  }, [debouncedSearch, selectedWallet, selectedType, selectedCategory, selectedDateFilter, customDateFrom, customDateTo, rowsPerPage]);
 
-  const totalItems = filtered.length;
+  // Fetch / Query transactions with Server-Side Pagination & Caching
+  const isInitialLoad = React.useRef(true);
+  useEffect(() => {
+    // If it's the very first render and we have initial transactions for page 1 without filters, skip network call!
+    if (
+      isInitialLoad.current &&
+      currentPage === 1 &&
+      !debouncedSearch &&
+      selectedWallet === 'all' &&
+      selectedType === 'all' &&
+      selectedCategory === 'all' &&
+      selectedDateFilter === 'all' &&
+      !customDateFrom &&
+      !customDateTo
+    ) {
+      isInitialLoad.current = false;
+      return;
+    }
+    isInitialLoad.current = false;
+
+    let isCancelled = false;
+
+    const fetchServerTransactions = async () => {
+      const params = new URLSearchParams();
+      params.set('page', String(currentPage));
+      params.set('limit', String(rowsPerPage));
+      if (selectedWallet !== 'all') params.set('walletId', selectedWallet);
+      if (selectedType !== 'all') params.set('type', selectedType);
+      if (selectedCategory !== 'all') params.set('category', selectedCategory);
+      if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
+
+      if (selectedDateFilter === 'today') {
+        const todayStr = new Date().toISOString().slice(0, 10);
+        params.set('dateFrom', todayStr);
+        params.set('dateTo', todayStr);
+      } else if (selectedDateFilter === 'last7days') {
+        const now = new Date();
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        params.set('dateFrom', sevenDaysAgo.toISOString().slice(0, 10));
+        params.set('dateTo', now.toISOString().slice(0, 10));
+      } else if (selectedDateFilter === 'thisMonth') {
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const lastDay = new Date(yyyy, now.getMonth() + 1, 0).getDate();
+        params.set('dateFrom', `${yyyy}-${mm}-01`);
+        params.set('dateTo', `${yyyy}-${mm}-${lastDay}`);
+      } else if (selectedDateFilter === 'lastMonth') {
+        const now = new Date();
+        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const yyyy = lastMonth.getFullYear();
+        const mm = String(lastMonth.getMonth() + 1).padStart(2, '0');
+        const lastDay = new Date(yyyy, lastMonth.getMonth() + 1, 0).getDate();
+        params.set('dateFrom', `${yyyy}-${mm}-01`);
+        params.set('dateTo', `${yyyy}-${mm}-${lastDay}`);
+      } else if (selectedDateFilter === 'custom') {
+        if (customDateFrom) params.set('dateFrom', customDateFrom);
+        if (customDateTo) params.set('dateTo', customDateTo);
+      }
+
+      const cacheKey = `/api/transactions?${params.toString()}`;
+      const cached = getCachedData<{ transactions: TransactionItem[]; totalCount: number }>(cacheKey);
+
+      if (cached) {
+        setItems(cached.transactions || []);
+        if (cached.totalCount !== undefined) setTotalCount(cached.totalCount);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const res = await fetch(cacheKey);
+        if (res.ok && !isCancelled) {
+          const json = await res.json();
+          mutateCache(cacheKey, json);
+          setItems(json.transactions || []);
+          if (json.totalCount !== undefined) setTotalCount(json.totalCount);
+        }
+      } catch (err) {
+        console.error('Failed to fetch transactions:', err);
+      } finally {
+        if (!isCancelled) setLoading(false);
+      }
+    };
+
+    fetchServerTransactions();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [
+    currentPage,
+    rowsPerPage,
+    debouncedSearch,
+    selectedWallet,
+    selectedType,
+    selectedCategory,
+    selectedDateFilter,
+    customDateFrom,
+    customDateTo,
+  ]);
+
+  const totalItems = totalCount;
   const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
   const validCurrentPage = Math.min(currentPage, totalPages);
 
-  const startIndex = (validCurrentPage - 1) * rowsPerPage;
-  const endIndex = Math.min(startIndex + rowsPerPage, totalItems);
-  const paginatedItems = filtered.slice(startIndex, endIndex);
+  const startIndex = totalItems === 0 ? 0 : (validCurrentPage - 1) * rowsPerPage;
+  const endIndex = Math.min(startIndex + items.length, totalItems);
+  const paginatedItems = items;
 
   const handleExportCsv = () => {
     const params = new URLSearchParams();
@@ -517,7 +628,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
           );
         })}
 
-        {filtered.length === 0 && (
+        {paginatedItems.length === 0 && (
           <div className="p-8 text-center rounded-xl border border-dashed border-gray-200 dark:border-gray-700 text-gray-400 text-xs">
             {t('transactions.empty')}
           </div>
@@ -669,7 +780,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
               );
             })}
 
-            {filtered.length === 0 && (
+            {paginatedItems.length === 0 && (
               <tr>
                 <td colSpan={8} className="px-4 py-8 text-center text-gray-400">
                   {t('transactions.empty')}

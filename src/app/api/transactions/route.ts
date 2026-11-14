@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getActiveUser } from '@/lib/current-user';
 import { formatTransactionTitle } from '@/lib/formatters';
+import { getTransactionsQuery } from '@/lib/dashboard-queries';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -17,52 +18,21 @@ export async function GET(req: Request) {
     const search = searchParams.get('search');
     const dateFrom = searchParams.get('dateFrom');
     const dateTo = searchParams.get('dateTo');
-    const limit = parseInt(searchParams.get('limit') || '50', 10);
+    const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
+    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!, 10) : 50;
 
-    const whereClause: any = {
-      userId: user.id,
-    };
-
-    if (walletId && walletId !== 'all') {
-      whereClause.OR = [{ walletId }, { destinationWalletId: walletId }];
-    }
-
-    if (type && type !== 'all') {
-      whereClause.type = type;
-    }
-
-    if (category && category !== 'all') {
-      whereClause.category = category;
-    }
-
-    if (dateFrom || dateTo) {
-      whereClause.date = {};
-      if (dateFrom) {
-        whereClause.date.gte = new Date(`${dateFrom}T00:00:00.000Z`);
-      }
-      if (dateTo) {
-        whereClause.date.lte = new Date(`${dateTo}T23:59:59.999Z`);
-      }
-    }
-
-    if (search) {
-      whereClause.title = {
-        contains: search,
-        mode: 'insensitive',
-      };
-    }
-
-    const transactions = await prisma.transaction.findMany({
-      where: whereClause,
-      include: {
-        wallet: true,
-        destinationWallet: true,
-      },
-      orderBy: { date: 'desc' },
-      take: limit,
+    const result = await getTransactionsQuery(user.id, {
+      walletId,
+      type,
+      category,
+      search,
+      dateFrom,
+      dateTo,
+      page,
+      limit,
     });
 
-    return NextResponse.json(transactions);
+    return NextResponse.json(result);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

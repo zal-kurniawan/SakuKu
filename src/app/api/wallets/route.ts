@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getActiveUser } from '@/lib/current-user';
+import { getWalletsQuery } from '@/lib/dashboard-queries';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -8,10 +9,7 @@ export const revalidate = 0;
 export async function GET() {
   try {
     const user = await getActiveUser();
-    const wallets = await prisma.wallet.findMany({
-      where: { userId: user.id },
-      orderBy: { createdAt: 'asc' },
-    });
+    const wallets = await getWalletsQuery(user.id);
     return NextResponse.json(wallets);
   } catch (error: any) {
     console.error('API WALLETS ERROR STACK:', error.stack || error);
