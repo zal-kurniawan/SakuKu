@@ -1,7 +1,7 @@
 {
   "app": {
     "title": "SakuKu",
-    "subtitle": "Personal Multi-Wallet Finance & WhatsApp Bot",
+    "subtitle": "Personal Multi-Wallet Finance",
     "statusConnected": "WhatsApp Connected",
     "statusWaiting": "Waiting for QR Scan"
   },
