@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useTranslation } from '@/context/LanguageContext';
 import { useConfirm } from '@/context/ConfirmContext';
+import { useToast } from '@/context/ToastContext';
 import { formatCurrency } from '@/lib/utils';
 import {
   Download,
@@ -77,6 +78,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
 }) => {
   const { t, locale } = useTranslation();
   const confirm = useConfirm();
+  const toast = useToast();
 
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -340,6 +342,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
 
     const qs = params.toString();
     window.open(`/api/export${qs ? `?${qs}` : ''}`, '_blank');
+    toast.success(t('transactions.exportSuccess', 'Data transaksi berhasil diekspor'));
   };
 
   const walletOptions = [

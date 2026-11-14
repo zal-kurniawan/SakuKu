@@ -109,6 +109,7 @@
     "recordNew": "Record New Transaction",
     "recordDesc": "Record income or expense",
     "exportCsv": "Export to CSV",
+    "exportSuccess": "Transaction data exported successfully",
     "filterWallet": "All Wallets",
     "filterType": "All Types",
     "filterCategory": "All Categories",

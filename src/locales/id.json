@@ -109,6 +109,7 @@
     "recordNew": "Catat Transaksi Baru",
     "recordDesc": "Catat pemasukan atau pengeluaran",
     "exportCsv": "Export CSV",
+    "exportSuccess": "Data transaksi berhasil diekspor",
     "filterWallet": "Semua Dompet",
     "filterType": "Semua Tipe",
     "filterCategory": "Semua Kategori",

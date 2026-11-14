@@ -104,7 +104,7 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       {isOpen && options && (
         <div
-          className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150"
+          className="fixed inset-0 z-[90] bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150"
           onClick={(e) => {
             if (e.target === e.currentTarget && !isLoading) {
               handleCancel();
