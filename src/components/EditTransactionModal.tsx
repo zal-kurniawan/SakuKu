@@ -10,6 +10,7 @@ import { CustomDatePicker } from './ui/CustomDatePicker';
 import { CurrencyInput } from './ui/CurrencyInput';
 import { WalletItem } from './WalletList';
 import { TransactionItem } from './TransactionTable';
+import { getCategoryLabel } from '@/lib/categories';
 
 interface EditTransactionModalProps {
   isOpen: boolean;
@@ -48,7 +49,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
   wallets,
   transaction,
 }) => {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const toast = useToast();
 
   const [title, setTitle] = useState('');
@@ -91,13 +92,27 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !amount) {
-      setError('Judul dan nominal transaksi wajib diisi.');
+      setError(
+        t(
+          'transactions.titleAndAmountRequired',
+          locale === 'en'
+            ? 'Transaction title and amount are required.'
+            : 'Judul dan nominal transaksi wajib diisi.'
+        )
+      );
       return;
     }
 
     if (type === 'TRANSFER') {
       if (!destinationWalletId) {
-        setError('Dompet tujuan wajib dipilih untuk transaksi transfer.');
+        setError(
+          t(
+            'transactions.destWalletRequired',
+            locale === 'en'
+              ? 'Destination wallet is required for transfer transactions.'
+              : 'Dompet tujuan wajib dipilih untuk transaksi transfer.'
+          )
+        );
         return;
       }
       if (destinationWalletId === walletId) {
@@ -274,13 +289,14 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
               <div>
                 <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                   {type === 'TRANSFER'
-                    ? (t('transfer.fromWallet') || 'Dompet Asal')
-                    : (t('transactions.formWallet') || 'Pilih Dompet / Rekening')}
+                    ? (t('transfer.fromWallet') || (locale === 'en' ? 'Source Wallet' : 'Dompet Asal'))
+                    : (t('transactions.formWallet') || (locale === 'en' ? 'Select Wallet / Account' : 'Pilih Dompet / Rekening'))}
                 </label>
                 <CustomSelect
                   value={walletId}
                   onChange={setWalletId}
                   options={wallets.map((w) => ({ value: w.id, label: w.name }))}
+                  placeholder={t('transactions.formWallet', locale === 'en' ? 'Select Wallet / Account' : 'Pilih Dompet / Rekening')}
                   size="lg"
                 />
               </div>
@@ -289,7 +305,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
               {type === 'TRANSFER' ? (
                 <div>
                   <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                    {t('transfer.toWallet') || 'Dompet Tujuan'}
+                    {t('transfer.toWallet') || (locale === 'en' ? 'Destination Wallet' : 'Dompet Tujuan')}
                   </label>
                   <CustomSelect
                     value={destinationWalletId || ''}
@@ -297,6 +313,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
                     options={wallets
                       .filter((w) => w.id !== walletId)
                       .map((w) => ({ value: w.id, label: w.name }))}
+                    placeholder={t('transactions.selectDestWallet', locale === 'en' ? 'Select Destination Wallet' : 'Pilih Dompet Tujuan')}
                     size="lg"
                   />
                 </div>
@@ -304,12 +321,13 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
                 /* Category */
                 <div>
                   <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                    {t('transactions.formCategory') || 'Kategori'}
+                    {t('transactions.formCategory') || (locale === 'en' ? 'Category' : 'Kategori')}
                   </label>
                   <CustomSelect
                     value={category}
                     onChange={setCategory}
-                    options={currentCategories.map((c) => ({ value: c, label: c }))}
+                    options={currentCategories.map((c) => ({ value: c, label: getCategoryLabel(c, locale, t) }))}
+                    placeholder={t('transactions.formCategory', locale === 'en' ? 'Select Category' : 'Pilih Kategori')}
                     size="lg"
                   />
                 </div>

@@ -74,7 +74,14 @@ export const TransferModal: React.FC<TransferModalProps> = ({
 
     const numAmount = parseFloat(amount);
     if (!numAmount || numAmount <= 0) {
-      setError('Nominal transfer harus lebih dari 0.');
+      setError(
+        t(
+          'transfer.amountPositive',
+          locale === 'en'
+            ? 'Transfer amount must be greater than 0.'
+            : 'Nominal transfer harus lebih dari 0.'
+        )
+      );
       return;
     }
 
@@ -173,6 +180,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
                     value: w.id,
                     label: `${w.name} (${formatCurrency(w.balance, locale)})`,
                   }))}
+                  placeholder={t('transfer.fromWallet', locale === 'en' ? 'Source Wallet' : 'Dompet Asal')}
                   size="lg"
                 />
               </div>
@@ -180,7 +188,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
               {/* To Wallet */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                  {t('transfer.toWallet') || 'Dompet Tujuan'}
+                  {t('transfer.toWallet') || (locale === 'en' ? 'Destination Wallet' : 'Dompet Tujuan')}
                 </label>
                 <CustomSelect
                   value={toWalletId}
@@ -190,6 +198,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
                     label: `${w.name} (${formatCurrency(w.balance, locale)})`,
                     disabled: w.id === fromWalletId,
                   }))}
+                  placeholder={t('transfer.toWallet', locale === 'en' ? 'Destination Wallet' : 'Dompet Tujuan')}
                   size="lg"
                 />
               </div>

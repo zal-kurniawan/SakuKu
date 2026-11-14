@@ -24,7 +24,7 @@ export const AddWalletModal: React.FC<AddWalletModalProps> = ({
   onSuccess,
   walletToEdit,
 }) => {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const toast = useToast();
 
   const [name, setName] = useState('');
@@ -56,7 +56,12 @@ export const AddWalletModal: React.FC<AddWalletModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      setError('Nama dompet wajib diisi.');
+      setError(
+        t(
+          'wallets.nameRequired',
+          locale === 'en' ? 'Wallet name is required.' : 'Nama dompet wajib diisi.'
+        )
+      );
       return;
     }
 

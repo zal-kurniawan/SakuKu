@@ -31,6 +31,7 @@ import { CustomDatePicker } from './ui/CustomDatePicker';
 import { WalletItem } from './WalletList';
 import { isExcelImportEnabled } from '@/lib/features';
 import { getCachedData, mutateCache } from '@/hooks/useSakuKuCache';
+import { getCategoryLabel } from '@/lib/categories';
 
 export interface TransactionItem {
   id: number | string;
@@ -346,29 +347,29 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   };
 
   const walletOptions = [
-    { value: 'all', label: t('transactions.filterWallet') || 'Semua Dompet' },
+    { value: 'all', label: t('transactions.filterWallet') || (locale === 'id' ? 'Semua Dompet' : 'All Wallets') },
     ...wallets.map((w) => ({ value: w.id, label: w.name })),
   ];
 
   const typeOptions = [
-    { value: 'all', label: t('transactions.filterType') || 'Semua Tipe' },
-    { value: 'INCOME', label: t('transactions.income') || 'Pemasukan' },
-    { value: 'EXPENSE', label: t('transactions.expense') || 'Pengeluaran' },
-    { value: 'TRANSFER', label: t('transactions.typeTransfer') || 'Transfer' },
+    { value: 'all', label: t('transactions.filterType') || (locale === 'id' ? 'Semua Tipe' : 'All Types') },
+    { value: 'INCOME', label: t('transactions.income') || (locale === 'id' ? 'Pemasukan' : 'Income') },
+    { value: 'EXPENSE', label: t('transactions.expense') || (locale === 'id' ? 'Pengeluaran' : 'Expense') },
+    { value: 'TRANSFER', label: t('transactions.typeTransfer') || (locale === 'id' ? 'Transfer' : 'Transfer') },
   ];
 
   const categoryOptions = [
-    { value: 'all', label: t('transactions.filterCategory') || 'Semua Kategori' },
-    ...uniqueCategories.map((c) => ({ value: c, label: c })),
+    { value: 'all', label: t('transactions.filterCategory') || (locale === 'id' ? 'Semua Kategori' : 'All Categories') },
+    ...uniqueCategories.map((c) => ({ value: c, label: getCategoryLabel(c, locale, t) })),
   ];
 
   const dateFilterOptions = [
-    { value: 'all', label: t('transactions.filterDate') || 'Semua Tanggal' },
-    { value: 'today', label: t('transactions.dateToday') || 'Hari Ini' },
-    { value: 'last7days', label: t('transactions.dateLast7Days') || '7 Hari Terakhir' },
-    { value: 'thisMonth', label: t('transactions.dateThisMonth') || 'Bulan Ini' },
-    { value: 'lastMonth', label: t('transactions.dateLastMonth') || 'Bulan Lalu' },
-    { value: 'custom', label: t('transactions.dateCustom') || 'Rentang Kustom...' },
+    { value: 'all', label: t('transactions.filterDate') || (locale === 'id' ? 'Semua Tanggal' : 'All Dates') },
+    { value: 'today', label: t('transactions.dateToday') || (locale === 'id' ? 'Hari Ini' : 'Today') },
+    { value: 'last7days', label: t('transactions.dateLast7Days') || (locale === 'id' ? '7 Hari Terakhir' : 'Last 7 Days') },
+    { value: 'thisMonth', label: t('transactions.dateThisMonth') || (locale === 'id' ? 'Bulan Ini' : 'This Month') },
+    { value: 'lastMonth', label: t('transactions.dateLastMonth') || (locale === 'id' ? 'Bulan Lalu' : 'Last Month') },
+    { value: 'custom', label: t('transactions.dateCustom') || (locale === 'id' ? 'Rentang Kustom...' : 'Custom Range...') },
   ];
 
   const rowsPerPageOptions = [
@@ -387,7 +388,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
             {t('transactions.title')}
           </h3>
           <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
-            {t('transactions.subtitle') || 'Daftar transaksi masuk, keluar, dan transfer multi-dompet'}
+            {t('transactions.subtitle') || (locale === 'id' ? 'Daftar transaksi masuk, keluar, dan transfer multi-dompet' : 'List of income, expense, and multi-wallet transfer transactions')}
           </p>
         </div>
 
@@ -421,7 +422,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder={t('transactions.search') || 'Cari transaksi...'}
+              placeholder={t('transactions.search') || (locale === 'id' ? 'Cari transaksi...' : 'Search transactions...')}
               className="w-full pl-9 pr-3 h-10 rounded-xl text-xs sm:text-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0f1623] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
             />
           </div>
@@ -496,7 +497,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
               <CustomDatePicker
                 value={customDateFrom}
                 onChange={setCustomDateFrom}
-                placeholder={t('transactions.dateFrom') || 'Dari Tanggal'}
+                placeholder={t('transactions.dateFrom') || (locale === 'id' ? 'Dari Tanggal' : 'From Date')}
                 maxDate={customDateTo || undefined}
                 clearable
                 size="md"
@@ -505,7 +506,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
               <CustomDatePicker
                 value={customDateTo}
                 onChange={setCustomDateTo}
-                placeholder={t('transactions.dateTo') || 'Sampai Tanggal'}
+                placeholder={t('transactions.dateTo') || (locale === 'id' ? 'Sampai Tanggal' : 'To Date')}
                 minDate={customDateFrom || undefined}
                 clearable
                 size="md"
@@ -565,7 +566,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
               {/* Row 2: Badges (Category + Wallet) */}
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-gray-200/70 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
-                  {tx.category}
+                  {getCategoryLabel(tx.category, locale, t)}
                 </span>
 
                 {isTransfer ? (
@@ -696,7 +697,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                   {/* Category */}
                   <td className="px-4 py-3 whitespace-nowrap">
                     <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                      {tx.category}
+                      {getCategoryLabel(tx.category, locale, t)}
                     </span>
                   </td>
 

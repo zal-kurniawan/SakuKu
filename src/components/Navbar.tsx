@@ -76,23 +76,23 @@ export const Navbar: React.FC<NavbarProps> = ({
   let badgeStyle =
     'bg-rose-500/10 text-rose-500 border-rose-500/25 hover:bg-rose-500/20';
   let dotStyle = 'bg-rose-500';
-  let badgeTitle = t('botLinker.badgeOffline') || 'WA Bot: Terputus / Offline';
+  let badgeTitle = t('botLinker.badgeOffline') || (locale === 'en' ? 'WA Bot: Disconnected / Offline' : 'WA Bot: Terputus / Offline');
 
   if (botStatus === 'CONNECTED') {
     badgeStyle =
       'bg-emerald-500/10 text-emerald-500 border-emerald-500/25 hover:bg-emerald-500/20';
     dotStyle = 'bg-emerald-500 animate-pulse';
-    badgeTitle = t('botLinker.badgeOnline') || 'WA Bot: Online & Aktif';
+    badgeTitle = t('botLinker.badgeOnline') || (locale === 'en' ? 'WA Bot: Online & Active' : 'WA Bot: Online & Aktif');
   } else if (botStatus === 'SCANNING_QR') {
     badgeStyle =
       'bg-amber-500/10 text-amber-500 border-amber-500/25 hover:bg-amber-500/20';
     dotStyle = 'bg-amber-500 animate-pulse';
-    badgeTitle = t('botLinker.badgeWaitingQr') || 'WA Bot: Menunggu Scan QR';
+    badgeTitle = t('botLinker.badgeWaitingQr') || (locale === 'en' ? 'WA Bot: Waiting for QR Scan' : 'WA Bot: Menunggu Scan QR');
   } else if (botStatus === 'RESTARTING') {
     badgeStyle =
       'bg-blue-500/10 text-blue-500 border-blue-500/25 hover:bg-blue-500/20';
     dotStyle = 'bg-blue-500 animate-spin';
-    badgeTitle = t('botLinker.badgeRestarting') || 'WA Bot: Merestart...';
+    badgeTitle = t('botLinker.badgeRestarting') || (locale === 'en' ? 'WA Bot: Restarting...' : 'WA Bot: Merestart...');
   }
 
   return (
@@ -173,8 +173,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={() => setLocale(locale === 'id' ? 'en' : 'id')}
-                title={t('nav.switchLanguage') || 'Ganti Bahasa'}
-                aria-label={t('nav.switchLanguage') || 'Ganti Bahasa'}
+                title={t('nav.switchLanguage') || (locale === 'en' ? 'Switch Language' : 'Ganti Bahasa')}
+                aria-label={t('nav.switchLanguage') || (locale === 'en' ? 'Switch Language' : 'Ganti Bahasa')}
                 className={`${iconControlClass} text-xs font-bold tracking-wide uppercase`}
               >
                 <span>{locale}</span>
@@ -184,8 +184,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={toggleTheme}
-                title={t('nav.toggleTheme', isDark ? 'Mode Terang' : 'Mode Gelap')}
-                aria-label={t('nav.toggleTheme', isDark ? 'Mode Terang' : 'Mode Gelap')}
+                title={t('nav.toggleTheme', isDark ? (locale === 'en' ? 'Light Mode' : 'Mode Terang') : (locale === 'en' ? 'Dark Mode' : 'Mode Gelap'))}
+                aria-label={t('nav.toggleTheme', isDark ? (locale === 'en' ? 'Light Mode' : 'Mode Terang') : (locale === 'en' ? 'Dark Mode' : 'Mode Gelap'))}
                 className={iconControlClass}
               >
                 {mounted ? (
@@ -218,8 +218,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               type="button"
               onClick={() => setLocale(locale === 'id' ? 'en' : 'id')}
-              title={t('nav.switchLanguage') || 'Ganti Bahasa'}
-              aria-label={t('nav.switchLanguage') || 'Ganti Bahasa'}
+              title={t('nav.switchLanguage') || (locale === 'en' ? 'Switch Language' : 'Ganti Bahasa')}
+              aria-label={t('nav.switchLanguage') || (locale === 'en' ? 'Switch Language' : 'Ganti Bahasa')}
               className="h-7 px-2 inline-flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/70 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer text-[11px] font-bold tracking-wide uppercase active:scale-95 shrink-0"
             >
               <span>{locale}</span>
@@ -229,8 +229,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               type="button"
               onClick={toggleTheme}
-              title={t('nav.toggleTheme', isDark ? 'Mode Terang' : 'Mode Gelap')}
-              aria-label={t('nav.toggleTheme', isDark ? 'Mode Terang' : 'Mode Gelap')}
+              title={t('nav.toggleTheme', isDark ? (locale === 'en' ? 'Light Mode' : 'Mode Terang') : (locale === 'en' ? 'Dark Mode' : 'Mode Gelap'))}
+              aria-label={t('nav.toggleTheme', isDark ? (locale === 'en' ? 'Light Mode' : 'Mode Terang') : (locale === 'en' ? 'Dark Mode' : 'Mode Gelap'))}
               className="h-7 w-7 inline-flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/70 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer active:scale-95 shrink-0"
             >
               {mounted ? (
@@ -326,8 +326,8 @@ export const Navbar: React.FC<NavbarProps> = ({
         <button
           type="button"
           onClick={() => setIsSpeedDialOpen(!isSpeedDialOpen)}
-          aria-label={t('transactions.quickAdd') || 'Menu Aksi Cepat'}
-          title={t('transactions.quickAdd') || 'Menu Aksi Cepat'}
+          aria-label={t('transactions.quickAdd') || (locale === 'en' ? 'Quick Actions Menu' : 'Menu Aksi Cepat')}
+          title={t('transactions.quickAdd') || (locale === 'en' ? 'Quick Actions Menu' : 'Menu Aksi Cepat')}
           className={`relative z-40 h-14 w-14 rounded-full bg-blue-600 hover:bg-blue-700 active:scale-90 text-white shadow-xl shadow-blue-600/40 flex items-center justify-center transition-all duration-200 ${
             isSpeedDialOpen ? 'rotate-45 bg-gray-800 dark:bg-gray-700 shadow-none' : ''
           }`}

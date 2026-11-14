@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect, useId, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown, Check } from 'lucide-react';
+import { useTranslation } from '@/context/LanguageContext';
 
 const useIsomorphicLayoutEffect =
   typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
@@ -36,7 +37,7 @@ export function CustomSelect<T extends string | number = string>({
   value,
   onChange,
   options,
-  placeholder = 'Pilih opsi...',
+  placeholder,
   disabled = false,
   className = '',
   triggerClassName = '',
@@ -49,6 +50,10 @@ export function CustomSelect<T extends string | number = string>({
   isActive = false,
   usePortal = true,
 }: CustomSelectProps<T>) {
+  const { t, locale } = useTranslation();
+  const defaultPlaceholder = t('common.selectOption', locale === 'en' ? 'Select an option...' : 'Pilih opsi...');
+  const effectivePlaceholder = placeholder !== undefined ? placeholder : defaultPlaceholder;
+
   const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -72,8 +77,8 @@ export function CustomSelect<T extends string | number = string>({
   const selectedLabel =
     typeof selectedOption?.label === 'string'
       ? selectedOption.label
-      : typeof placeholder === 'string'
-      ? placeholder
+      : typeof effectivePlaceholder === 'string'
+      ? effectivePlaceholder
       : undefined;
 
   useEffect(() => {
@@ -358,7 +363,7 @@ export function CustomSelect<T extends string | number = string>({
             <span className="shrink-0 flex items-center">{selectedOption.icon}</span>
           ) : null}
           <span className="truncate">
-            {selectedOption ? selectedOption.label : placeholder}
+            {selectedOption ? selectedOption.label : effectivePlaceholder}
           </span>
         </span>
 
@@ -398,7 +403,7 @@ export function CustomSelect<T extends string | number = string>({
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 font-bold text-xs sm:text-sm text-gray-900 dark:text-white truncate">
-                  {placeholder || 'Pilih opsi...'}
+                  {effectivePlaceholder}
                 </div>
                 <div className="overflow-y-auto overscroll-contain flex-1">
                   {renderList}

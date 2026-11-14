@@ -39,7 +39,7 @@ export const SakuKuErrorView: React.FC<SakuKuErrorViewProps> = ({
   useEffect(() => {
     // Sync Language
     try {
-      const savedLang = localStorage.getItem('sakuku_lang') as 'id' | 'en';
+      const savedLang = (localStorage.getItem('app_locale') || localStorage.getItem('sakuku_lang')) as 'id' | 'en';
       if (savedLang === 'id' || savedLang === 'en') {
         setLocale(savedLang);
       } else if (navigator.language.startsWith('en')) {
@@ -52,6 +52,7 @@ export const SakuKuErrorView: React.FC<SakuKuErrorViewProps> = ({
     const nextLang = locale === 'id' ? 'en' : 'id';
     setLocale(nextLang);
     try {
+      localStorage.setItem('app_locale', nextLang);
       localStorage.setItem('sakuku_lang', nextLang);
       window.dispatchEvent(new Event('language-change'));
     } catch {}

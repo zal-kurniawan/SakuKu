@@ -80,7 +80,8 @@
     "addSuccess": "Wallet added successfully",
     "addFailed": "Failed to add wallet",
     "updateSuccess": "Wallet updated successfully",
-    "updateFailed": "Failed to update wallet"
+    "updateFailed": "Failed to update wallet",
+    "nameRequired": "Wallet name is required."
   },
   "transfer": {
     "title": "Inter-Wallet Transfer",
@@ -99,7 +100,8 @@
     "sameWalletError": "Source and destination wallets must be different",
     "insufficientBalance": "Insufficient balance in source wallet",
     "transferSuccess": "Funds transferred successfully",
-    "transferFailed": "Failed to transfer funds"
+    "transferFailed": "Failed to transfer funds",
+    "amountPositive": "Transfer amount must be greater than 0."
   },
   "transactions": {
     "title": "Transaction History",
@@ -165,7 +167,9 @@
     "updateSuccess": "Transaction updated successfully",
     "updateFailed": "Failed to update transaction",
     "destinationWallet": "Destination Wallet",
-    "selectDestWallet": "Select Destination Wallet"
+    "selectDestWallet": "Select Destination Wallet",
+    "titleAndAmountRequired": "Transaction title and amount are required.",
+    "destWalletRequired": "Destination wallet is required for transfer transactions."
   },
   "budgets": {
     "title": "Monthly Category Budget Limits",
@@ -218,7 +222,9 @@
     "all": "All",
     "cancel": "Cancel",
     "save": "Save",
-    "logout": "Sign Out"
+    "logout": "Sign Out",
+    "selectOption": "Select an option...",
+    "networkError": "Network error occurred."
   },
   "dialog": {
     "deleteWalletTitle": "Delete Wallet?",
@@ -329,6 +335,36 @@
     "waitingQr": "Waiting for WhatsApp Device Scan",
     "step1": "Open WhatsApp on your mobile phone.",
     "step2": "Go to Linked Devices in Settings or the three-dots menu.",
-    "step3": "Tap Link a Device and point your phone's camera at the QR code above."
+    "step3": "Tap Link a Device and point your phone's camera at the QR code above.",
+    "checkStatusFailed": "Failed to check bot status",
+    "dispatchRestartFailed": "Failed to send restart instruction.",
+    "restartFailed": "Failed to restart worker",
+    "resetSessionSuccess": "WhatsApp session reset successfully.",
+    "resetSessionFailed": "Failed to reset session."
+  },
+  "categories": {
+    "Makanan & Minuman": "Food & Beverages",
+    "Transportasi": "Transportation",
+    "Belanja": "Shopping",
+    "Hiburan": "Entertainment",
+    "Tagihan & Utilitas": "Bills & Utilities",
+    "Kesehatan": "Healthcare",
+    "Pendidikan": "Education",
+    "Investasi": "Investment",
+    "Gaji": "Salary",
+    "Bonus": "Bonus",
+    "Penjualan": "Sales",
+    "Keluarga": "Family",
+    "Donasi": "Donation",
+    "Sedekah": "Charity",
+    "Hobi": "Hobby",
+    "Pribadi": "Personal",
+    "Lain-lain": "Other",
+    "Makanan": "Food",
+    "Minuman": "Beverages",
+    "Pulsa & Paket Data": "Mobile & Data Plans",
+    "Transfer Saldo": "Balance Transfer",
+    "Operasional": "Operations",
+    "Hutang / Piutang": "Debt & Loan"
   }
 }

@@ -35,7 +35,7 @@ export default function LoginPage() {
   // Initialize Locale from localStorage
   useEffect(() => {
     try {
-      const savedLang = localStorage.getItem('sakuku_lang') as 'id' | 'en';
+      const savedLang = (localStorage.getItem('app_locale') || localStorage.getItem('sakuku_lang')) as 'id' | 'en';
       if (savedLang === 'id' || savedLang === 'en') {
         setLocale(savedLang);
       } else if (navigator.language.startsWith('en')) {
@@ -64,6 +64,7 @@ export default function LoginPage() {
     const next = locale === 'id' ? 'en' : 'id';
     setLocale(next);
     try {
+      localStorage.setItem('app_locale', next);
       localStorage.setItem('sakuku_lang', next);
       window.dispatchEvent(new Event('language-change'));
     } catch {}

@@ -29,15 +29,23 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({
   const [locale, setLocaleState] = useState<Locale>('id');
 
   useEffect(() => {
-    const saved = localStorage.getItem('app_locale') as Locale | null;
-    if (saved && (saved === 'id' || saved === 'en')) {
-      setLocaleState(saved);
-    }
+    try {
+      const saved = (localStorage.getItem('app_locale') || localStorage.getItem('sakuku_lang')) as Locale | null;
+      if (saved && (saved === 'id' || saved === 'en')) {
+        setLocaleState(saved);
+      } else if (navigator.language.startsWith('en')) {
+        setLocaleState('en');
+      }
+    } catch {}
   }, []);
 
   const setLocale = (newLocale: Locale) => {
     setLocaleState(newLocale);
-    localStorage.setItem('app_locale', newLocale);
+    try {
+      localStorage.setItem('app_locale', newLocale);
+      localStorage.setItem('sakuku_lang', newLocale);
+      window.dispatchEvent(new Event('language-change'));
+    } catch {}
   };
 
   const t = (key: string, fallback?: string): string => {
@@ -64,3 +72,4 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({
 };
 
 export const useTranslation = () => useContext(LanguageContext);
+export const useLanguage = useTranslation;

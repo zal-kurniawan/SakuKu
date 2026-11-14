@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { CustomSelect } from './ui/CustomSelect';
 import { CurrencyInput } from './ui/CurrencyInput';
+import { getCategoryLabel } from '@/lib/categories';
 
 export interface BudgetItem {
   id: string;
@@ -87,7 +88,7 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
   const handleDeleteBudget = async (id: string, categoryName: string) => {
     const isConfirmed = await confirm({
       title: t('dialog.deleteBudgetTitle', 'Hapus Target Budget?'),
-      message: `${t('dialog.deleteBudgetDesc', 'Hapus batas anggaran bulanan untuk kategori ini?')} (${categoryName})`,
+      message: `${t('dialog.deleteBudgetDesc', locale === 'en' ? 'Remove the monthly budget limit for this category?' : 'Hapus batas anggaran bulanan untuk kategori ini?')} (${getCategoryLabel(categoryName, locale, t)})`,
       confirmText: t('common.delete', 'Hapus'),
       cancelText: t('common.cancel', 'Batal'),
       variant: 'danger',
@@ -131,7 +132,7 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
 
         if (!res.ok) {
           const data = await res.json();
-          throw new Error(data.error || 'Gagal memperbarui target budget.');
+          throw new Error(data.error || (locale === 'en' ? 'Failed to update budget limit.' : 'Gagal memperbarui target budget.'));
         }
       } else {
         // Create or upsert budget
@@ -146,7 +147,7 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
 
         if (!res.ok) {
           const data = await res.json();
-          throw new Error(data.error || 'Gagal menyimpan target budget.');
+          throw new Error(data.error || (locale === 'en' ? 'Failed to save budget limit.' : 'Gagal menyimpan target budget.'));
         }
       }
 
@@ -221,7 +222,7 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center space-x-1.5 flex-wrap gap-1">
                   <span className="font-bold text-gray-800 dark:text-gray-200">
-                    {b.category}
+                    {getCategoryLabel(b.category, locale, t)}
                   </span>
                   <span
                     className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border flex items-center gap-1 ${badgeBg}`}
@@ -371,12 +372,13 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
               <form onSubmit={handleSaveBudget} id="budget-form" className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                    {t('transactions.formCategory') || 'Kategori'}
+                    {t('transactions.formCategory') || (locale === 'en' ? 'Category' : 'Kategori')}
                   </label>
                   <CustomSelect
                     value={category}
                     onChange={setCategory}
-                    options={COMMON_CATEGORIES.map((c) => ({ value: c, label: c }))}
+                    options={COMMON_CATEGORIES.map((c) => ({ value: c, label: getCategoryLabel(c, locale, t) }))}
+                    placeholder={t('transactions.formCategory', locale === 'en' ? 'Select Category' : 'Pilih Kategori')}
                     disabled={!!editingId}
                     size="lg"
                   />
@@ -400,7 +402,7 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
               {budgets.length > 0 && (
                 <div className="pt-2 border-t border-gray-100 dark:border-gray-800 space-y-2.5">
                   <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    {t('budgets.activeTargets') || 'Daftar Target Aktif'} ({budgets.length})
+                    {t('budgets.activeTargets') || (locale === 'en' ? 'Active Targets List' : 'Daftar Target Aktif')} ({budgets.length})
                   </h4>
                   <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
                     {budgets.map((b) => (
@@ -414,7 +416,7 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
                       >
                         <div>
                           <div className="font-semibold text-gray-800 dark:text-gray-200">
-                            {b.category}
+                            {getCategoryLabel(b.category, locale, t)}
                           </div>
                           <div className="text-[11px] text-gray-500 dark:text-gray-400">
                             {formatCurrency(b.monthlyLimit, locale)}

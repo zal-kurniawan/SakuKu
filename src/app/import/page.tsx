@@ -97,12 +97,12 @@ export default function ImportPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'Gagal memproses berkas Excel.');
+        throw new Error(data.error || (locale === 'en' ? 'Failed to process Excel file.' : 'Gagal memproses berkas Excel.'));
       }
 
       setPreviewData(data);
     } catch (err: any) {
-      setParseError(err.message || 'Terjadi kesalahan saat memproses berkas.');
+      setParseError(err.message || (locale === 'en' ? 'An error occurred while processing the file.' : 'Terjadi kesalahan saat memproses berkas.'));
       setPreviewData(null);
     } finally {
       setParsing(false);
@@ -133,7 +133,7 @@ export default function ImportPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || 'Gagal menyimpan transaksi ke basis data.');
+        throw new Error(data.error || (locale === 'en' ? 'Failed to save transactions to database.' : 'Gagal menyimpan transaksi ke basis data.'));
       }
 
       setCommitProgress(100);

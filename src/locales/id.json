@@ -80,7 +80,8 @@
     "addSuccess": "Dompet berhasil ditambahkan",
     "addFailed": "Gagal menambahkan dompet",
     "updateSuccess": "Dompet berhasil diperbarui",
-    "updateFailed": "Gagal memperbarui dompet"
+    "updateFailed": "Gagal memperbarui dompet",
+    "nameRequired": "Nama dompet wajib diisi."
   },
   "transfer": {
     "title": "Transfer Antar Dompet",
@@ -99,7 +100,8 @@
     "sameWalletError": "Dompet asal dan tujuan tidak boleh sama",
     "insufficientBalance": "Saldo dompet asal tidak mencukupi",
     "transferSuccess": "Transfer saldo berhasil",
-    "transferFailed": "Gagal melakukan transfer"
+    "transferFailed": "Gagal melakukan transfer",
+    "amountPositive": "Nominal transfer harus lebih dari 0."
   },
   "transactions": {
     "title": "Riwayat Transaksi",
@@ -165,7 +167,9 @@
     "updateSuccess": "Transaksi berhasil diperbarui",
     "updateFailed": "Gagal memperbarui transaksi",
     "destinationWallet": "Dompet Tujuan",
-    "selectDestWallet": "Pilih Dompet Tujuan"
+    "selectDestWallet": "Pilih Dompet Tujuan",
+    "titleAndAmountRequired": "Judul dan nominal transaksi wajib diisi.",
+    "destWalletRequired": "Dompet tujuan wajib dipilih untuk transaksi transfer."
   },
   "budgets": {
     "title": "Target Batas Budget Bulanan",
@@ -218,7 +222,9 @@
     "all": "Semua",
     "cancel": "Batal",
     "save": "Simpan",
-    "logout": "Keluar"
+    "logout": "Keluar",
+    "selectOption": "Pilih opsi...",
+    "networkError": "Terjadi kesalahan jaringan."
   },
   "dialog": {
     "deleteWalletTitle": "Hapus Dompet?",
@@ -329,6 +335,36 @@
     "waitingQr": "Menunggu Scan Perangkat WhatsApp",
     "step1": "Buka aplikasi WhatsApp di ponsel Anda.",
     "step2": "Masuk ke menu Perangkat Tertaut (Linked Devices) di Pengaturan atau Titik Tiga.",
-    "step3": "Ketuk Tautkan Perangkat dan arahkan kamera HP ke QR Code di atas."
+    "step3": "Ketuk Tautkan Perangkat dan arahkan kamera HP ke QR Code di atas.",
+    "checkStatusFailed": "Gagal memeriksa status bot",
+    "dispatchRestartFailed": "Gagal mengirim instruksi restart.",
+    "restartFailed": "Gagal merestart worker",
+    "resetSessionSuccess": "Sesi WhatsApp berhasil direset.",
+    "resetSessionFailed": "Gagal mereset sesi."
+  },
+  "categories": {
+    "Makanan & Minuman": "Makanan & Minuman",
+    "Transportasi": "Transportasi",
+    "Belanja": "Belanja",
+    "Hiburan": "Hiburan",
+    "Tagihan & Utilitas": "Tagihan & Utilitas",
+    "Kesehatan": "Kesehatan",
+    "Pendidikan": "Pendidikan",
+    "Investasi": "Investasi",
+    "Gaji": "Gaji",
+    "Bonus": "Bonus",
+    "Penjualan": "Penjualan",
+    "Keluarga": "Keluarga",
+    "Donasi": "Donasi",
+    "Sedekah": "Sedekah",
+    "Hobi": "Hobi",
+    "Pribadi": "Pribadi",
+    "Lain-lain": "Lain-lain",
+    "Makanan": "Makanan",
+    "Minuman": "Minuman",
+    "Pulsa & Paket Data": "Pulsa & Paket Data",
+    "Transfer Saldo": "Transfer Saldo",
+    "Operasional": "Operasional",
+    "Hutang / Piutang": "Hutang / Piutang"
   }
 }

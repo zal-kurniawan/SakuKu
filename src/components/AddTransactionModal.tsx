@@ -9,6 +9,7 @@ import { CustomSelect } from './ui/CustomSelect';
 import { CustomDatePicker } from './ui/CustomDatePicker';
 import { CurrencyInput } from './ui/CurrencyInput';
 import { WalletItem } from './WalletList';
+import { getCategoryLabel } from '@/lib/categories';
 
 interface AddTransactionModalProps {
   isOpen: boolean;
@@ -45,7 +46,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   onSuccess,
   wallets,
 }) => {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const toast = useToast();
 
   const [title, setTitle] = useState('');
@@ -68,7 +69,14 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !amount) {
-      setError('Judul dan nominal transaksi wajib diisi.');
+      setError(
+        t(
+          'transactions.titleAndAmountRequired',
+          locale === 'en'
+            ? 'Transaction title and amount are required.'
+            : 'Judul dan nominal transaksi wajib diisi.'
+        )
+      );
       return;
     }
 
@@ -224,12 +232,13 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               {/* Wallet */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                  {t('transactions.formWallet') || 'Pilih Dompet / Rekening'}
+                  {t('transactions.formWallet') || (locale === 'en' ? 'Select Wallet / Account' : 'Pilih Dompet / Rekening')}
                 </label>
                 <CustomSelect
                   value={walletId}
                   onChange={setWalletId}
                   options={wallets.map((w) => ({ value: w.id, label: w.name }))}
+                  placeholder={t('transactions.formWallet', locale === 'en' ? 'Select Wallet / Account' : 'Pilih Dompet / Rekening')}
                   size="lg"
                 />
               </div>
@@ -237,12 +246,13 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               {/* Category */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                  {t('transactions.formCategory') || 'Kategori'}
+                  {t('transactions.formCategory') || (locale === 'en' ? 'Category' : 'Kategori')}
                 </label>
                 <CustomSelect
                   value={category}
                   onChange={setCategory}
-                  options={currentCategories.map((c) => ({ value: c, label: c }))}
+                  options={currentCategories.map((c) => ({ value: c, label: getCategoryLabel(c, locale, t) }))}
+                  placeholder={t('transactions.formCategory', locale === 'en' ? 'Select Category' : 'Pilih Kategori')}
                   size="lg"
                 />
               </div>

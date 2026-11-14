@@ -190,7 +190,7 @@ export const WhatsAppLinkerModal: React.FC<WhatsAppLinkerModalProps> = ({
         toast.info(t('botLinker.toastStillOffline') || 'Status diperbarui: Worker masih offline');
       }
     } catch {
-      toast.error('Gagal memeriksa status bot');
+      toast.error(t('botLinker.checkStatusFailed') || (locale === 'id' ? 'Gagal memeriksa status bot' : 'Failed to check bot status'));
     } finally {
       setIsChecking(false);
     }
@@ -233,7 +233,7 @@ export const WhatsAppLinkerModal: React.FC<WhatsAppLinkerModalProps> = ({
 
       if (!res.ok) {
         const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.error || 'Gagal mengirim instruksi restart.');
+        throw new Error(errJson.error || t('botLinker.dispatchRestartFailed') || (locale === 'id' ? 'Gagal mengirim instruksi restart.' : 'Failed to send restart instruction.'));
       }
 
       setGlobalBotStatus('RESTARTING');
@@ -265,7 +265,7 @@ export const WhatsAppLinkerModal: React.FC<WhatsAppLinkerModalProps> = ({
       }, 2000);
     } catch (err: any) {
       console.error('Restart worker error:', err);
-      toast.error(err.message || 'Gagal merestart worker');
+      toast.error(err.message || t('botLinker.restartFailed') || (locale === 'id' ? 'Gagal merestart worker' : 'Failed to restart worker'));
       setIsRestarting(false);
     }
   };
@@ -298,17 +298,17 @@ export const WhatsAppLinkerModal: React.FC<WhatsAppLinkerModalProps> = ({
 
       const resData = await res.json();
       if (res.ok) {
-        const successMsg = resData.message || 'Sesi WhatsApp berhasil direset.';
+        const successMsg = resData.message || t('botLinker.resetSessionSuccess') || (locale === 'id' ? 'Sesi WhatsApp berhasil direset.' : 'WhatsApp session reset successfully.');
         setMessage({ type: 'success', text: successMsg });
         toast.success(successMsg);
         fetchBotStatus();
       } else {
-        const errMsg = resData.error || 'Gagal mereset sesi.';
+        const errMsg = resData.error || t('botLinker.resetSessionFailed') || (locale === 'id' ? 'Gagal mereset sesi.' : 'Failed to reset session.');
         setMessage({ type: 'error', text: errMsg });
         toast.error(errMsg);
       }
     } catch (err: any) {
-      const errMsg = err.message || 'Terjadi kesalahan jaringan.';
+      const errMsg = err.message || t('common.networkError') || (locale === 'id' ? 'Terjadi kesalahan jaringan.' : 'Network error occurred.');
       setMessage({ type: 'error', text: errMsg });
       toast.error(errMsg);
     } finally {
