@@ -20,6 +20,10 @@ import {
   ChevronsLeft,
   ChevronsRight,
   RotateCcw,
+  Wallet,
+  ArrowUpDown,
+  Tag,
+  Calendar,
 } from 'lucide-react';
 import { CustomSelect } from './ui/CustomSelect';
 import { CustomDatePicker } from './ui/CustomDatePicker';
@@ -404,12 +408,11 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
         </div>
       </div>
 
-      {/* Filter Toolbar: Responsive Layout (Mobile, Tablet, Desktop) */}
+      {/* Filter Toolbar: 2-Row Responsive Layout + Conditional Custom Date */}
       <div className="space-y-2.5 pt-1">
-        {/* Main Grid: Desktop (12 cols) / Tablet (Search full + 4 cols) / Mobile (Search full + 2x2 cols) */}
-        <div className="flex flex-col lg:grid lg:grid-cols-12 gap-2.5 items-stretch">
-          {/* 1. Search */}
-          <div className="relative w-full lg:col-span-4">
+        {/* Row 1: Full-Width Search Bar + Conditional Reset Filter Button */}
+        <div className="flex items-center gap-2.5 w-full">
+          <div className="relative flex-1">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
@@ -420,94 +423,86 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
             />
           </div>
 
-          {/* 2. Four Dropdowns Container */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:contents gap-2 sm:gap-2.5">
-            {/* Wallet Filter */}
-            <div className="lg:col-span-2">
-              <CustomSelect
-                value={selectedWallet}
-                onChange={setSelectedWallet}
-                options={walletOptions}
-                size="md"
-                aria-label={t('transactions.filterWallet')}
-              />
-            </div>
-
-            {/* Type Filter */}
-            <div className="lg:col-span-2">
-              <CustomSelect
-                value={selectedType}
-                onChange={setSelectedType}
-                options={typeOptions}
-                size="md"
-                aria-label={t('transactions.filterType')}
-              />
-            </div>
-
-            {/* Category Filter */}
-            <div className="lg:col-span-2">
-              <CustomSelect
-                value={selectedCategory}
-                onChange={setSelectedCategory}
-                options={categoryOptions}
-                size="md"
-                aria-label={t('transactions.filterCategory')}
-              />
-            </div>
-
-            {/* Date Preset Filter */}
-            <div className="lg:col-span-2">
-              <CustomSelect
-                value={selectedDateFilter}
-                onChange={setSelectedDateFilter}
-                options={dateFilterOptions}
-                size="md"
-                aria-label={t('transactions.filterDate')}
-              />
-            </div>
-          </div>
+          {isFiltered && (
+            <button
+              type="button"
+              onClick={handleResetFilter}
+              className="h-10 px-3.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0f1623] text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-rose-500 hover:border-rose-500/40 transition-colors inline-flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95 shadow-xs"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>{t('transactions.resetFilter') || 'Reset Filter'}</span>
+            </button>
+          )}
         </div>
 
-        {/* Sub-bar: Custom Date Range (when 'custom' is active) + Reset Button */}
-        {(selectedDateFilter === 'custom' || isFiltered) && (
-          <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
-            {/* Custom Date Pickers */}
-            {selectedDateFilter === 'custom' ? (
-              <div className="grid grid-cols-1 min-[380px]:grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-2.5 w-full sm:w-auto flex-1">
-                <div className="w-full sm:w-[170px]">
-                  <CustomDatePicker
-                    value={customDateFrom}
-                    onChange={setCustomDateFrom}
-                    placeholder={t('transactions.dateFrom') || 'Dari Tanggal'}
-                    maxDate={customDateTo || undefined}
-                    clearable
-                    size="md"
-                  />
-                </div>
-                <div className="w-full sm:w-[170px]">
-                  <CustomDatePicker
-                    value={customDateTo}
-                    onChange={setCustomDateTo}
-                    placeholder={t('transactions.dateTo') || 'Sampai Tanggal'}
-                    minDate={customDateFrom || undefined}
-                    clearable
-                    size="md"
-                  />
-                </div>
-              </div>
-            ) : <div />}
+        {/* Row 2: 4-Column Grid for Dropdowns (no label truncation) */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5 w-full">
+          {/* 1. Wallet Filter */}
+          <CustomSelect
+            value={selectedWallet}
+            onChange={setSelectedWallet}
+            options={walletOptions}
+            icon={<Wallet className="w-3.5 h-3.5" />}
+            isActive={selectedWallet !== 'all'}
+            size="md"
+            aria-label={t('transactions.filterWallet') || 'Semua Dompet'}
+          />
 
-            {/* Reset Filter Button */}
-            {isFiltered && (
-              <button
-                type="button"
-                onClick={handleResetFilter}
-                className="h-10 px-3 rounded-xl border border-gray-200 dark:border-gray-800 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:text-rose-600 dark:hover:text-rose-400 hover:border-rose-300 dark:hover:border-rose-900/50 bg-gray-50/50 dark:bg-gray-900/50 transition inline-flex items-center gap-1.5 cursor-pointer ml-auto active:scale-95"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>{t('transactions.resetFilter') || 'Reset Filter'}</span>
-              </button>
-            )}
+          {/* 2. Type Filter */}
+          <CustomSelect
+            value={selectedType}
+            onChange={setSelectedType}
+            options={typeOptions}
+            icon={<ArrowUpDown className="w-3.5 h-3.5" />}
+            isActive={selectedType !== 'all'}
+            size="md"
+            aria-label={t('transactions.filterType') || 'Semua Tipe'}
+          />
+
+          {/* 3. Category Filter */}
+          <CustomSelect
+            value={selectedCategory}
+            onChange={setSelectedCategory}
+            options={categoryOptions}
+            icon={<Tag className="w-3.5 h-3.5" />}
+            isActive={selectedCategory !== 'all'}
+            size="md"
+            aria-label={t('transactions.filterCategory') || 'Semua Kategori'}
+          />
+
+          {/* 4. Date Preset Filter */}
+          <CustomSelect
+            value={selectedDateFilter}
+            onChange={setSelectedDateFilter}
+            options={dateFilterOptions}
+            icon={<Calendar className="w-3.5 h-3.5" />}
+            isActive={selectedDateFilter !== 'all'}
+            size="md"
+            aria-label={t('transactions.filterDate') || 'Semua Tanggal'}
+          />
+        </div>
+
+        {/* Row 3 (Conditional): Custom Date Range Pickers */}
+        {selectedDateFilter === 'custom' && (
+          <div className="pt-0.5">
+            <div className="grid grid-cols-1 min-[380px]:grid-cols-2 sm:max-w-md gap-2 sm:gap-2.5 w-full">
+              <CustomDatePicker
+                value={customDateFrom}
+                onChange={setCustomDateFrom}
+                placeholder={t('transactions.dateFrom') || 'Dari Tanggal'}
+                maxDate={customDateTo || undefined}
+                clearable
+                size="md"
+              />
+              <CustomDatePicker
+                value={customDateTo}
+                onChange={setCustomDateTo}
+                placeholder={t('transactions.dateTo') || 'Sampai Tanggal'}
+                minDate={customDateFrom || undefined}
+                clearable
+                size="md"
+              />
+            </div>
           </div>
         )}
       </div>
