@@ -161,18 +161,20 @@ export const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
   const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
-  const initialColorRef = useRef<string>(isValidHex(value) ? normalizeHex(value) : '#005CAA');
+  const initialNorm = isValidHex(value) ? normalizeHex(value) : '#005CAA';
+  const initialColorRef = useRef<string>(initialNorm);
+  const lastEmittedHexRef = useRef<string>(initialNorm);
 
-  // Internal color state
-  const [currentColor, setCurrentColor] = useState<string>(() =>
-    isValidHex(value) ? normalizeHex(value) : '#005CAA'
-  );
-  const [hsv, setHsv] = useState<{ h: number; s: number; v: number }>(() =>
-    hexToHsv(isValidHex(value) ? normalizeHex(value) : '#005CAA')
-  );
-  const [hexInput, setHexInput] = useState<string>(() =>
-    (isValidHex(value) ? normalizeHex(value) : '#005CAA').replace('#', '')
-  );
+  // Internal color state (HSV as single source of truth during interaction)
+  const [currentColor, setCurrentColor] = useState<string>(initialNorm);
+  const [hsv, setHsv] = useState<{ h: number; s: number; v: number }>(() => {
+    const parsed = hexToHsv(initialNorm);
+    if (parsed.s === 0 || parsed.v === 0) {
+      return { h: 207, s: parsed.s, v: parsed.v };
+    }
+    return parsed;
+  });
+  const [hexInput, setHexInput] = useState<string>(() => initialNorm.replace('#', ''));
 
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
@@ -187,14 +189,29 @@ export const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
     setMounted(true);
   }, []);
 
-  // Sync when value prop changes from outside
+  // Sync when value prop changes from outside (not from internal pointer dragging/emits)
   useEffect(() => {
-    if (value && isValidHex(value)) {
-      const norm = normalizeHex(value);
-      setCurrentColor(norm);
-      setHsv(hexToHsv(norm));
-      setHexInput(norm.replace('#', ''));
+    if (!value || !isValidHex(value)) return;
+    const norm = normalizeHex(value);
+
+    // If this change was already emitted by our component, ignore it to prevent round-trip jitter
+    if (lastEmittedHexRef.current && norm.toUpperCase() === lastEmittedHexRef.current.toUpperCase()) {
+      return;
     }
+
+    lastEmittedHexRef.current = norm;
+    setCurrentColor(norm);
+    setHexInput(norm.replace('#', ''));
+    setHsv((prev) => {
+      const parsed = hexToHsv(norm);
+      // Achromatic protection: keep existing hue if incoming color is pure grayscale/black/white
+      const preservedHue = parsed.s === 0 || parsed.v === 0 ? prev.h : parsed.h;
+      return {
+        h: preservedHue,
+        s: parsed.s,
+        v: parsed.v,
+      };
+    });
   }, [value]);
 
   // Handle open state: capture initial color for Cancel
@@ -202,20 +219,31 @@ export const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
     if (disabled) return;
     const current = isValidHex(value) ? normalizeHex(value) : '#005CAA';
     initialColorRef.current = current;
+    lastEmittedHexRef.current = current;
     setCurrentColor(current);
-    setHsv(hexToHsv(current));
     setHexInput(current.replace('#', ''));
+    setHsv((prev) => {
+      const parsed = hexToHsv(current);
+      const preservedHue = parsed.s === 0 || parsed.v === 0 ? prev.h : parsed.h;
+      return {
+        h: preservedHue,
+        s: parsed.s,
+        v: parsed.v,
+      };
+    });
     setIsOpen(true);
   };
 
   // Close & Cancel: revert color
   const handleCancel = () => {
+    lastEmittedHexRef.current = initialColorRef.current;
     onChange(initialColorRef.current);
     setIsOpen(false);
   };
 
   // Close & Apply: confirm current color
   const handleApply = () => {
+    lastEmittedHexRef.current = currentColor;
     onChange(currentColor);
     setIsOpen(false);
   };
@@ -236,20 +264,22 @@ export const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, currentColor]);
 
-  // Update Saturation & Value from 2D square pointer position
+  // Update Saturation & Value from 2D square pointer position (LOCK HUE)
   const updateSatVal = useCallback(
     (e: React.PointerEvent | PointerEvent) => {
       if (!satValRef.current) return;
       const rect = satValRef.current.getBoundingClientRect();
-      const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-      const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+      const x = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+      const y = Math.min(1, Math.max(0, (e.clientY - rect.top) / rect.height));
 
       const newS = x;
       const newV = 1 - y;
 
       setHsv((prev) => {
-        const nextHsv = { ...prev, s: newS, v: newV };
+        // Strictly lock Hue: prev.h is NEVER modified or recomputed from hex during 2D drag!
+        const nextHsv = { h: prev.h, s: newS, v: newV };
         const newHex = hsvToHex(nextHsv.h, nextHsv.s, nextHsv.v);
+        lastEmittedHexRef.current = newHex;
         setCurrentColor(newHex);
         setHexInput(newHex.replace('#', ''));
         onChange(newHex);
@@ -262,7 +292,9 @@ export const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
   const handleSatValDown = (e: React.PointerEvent<HTMLDivElement>) => {
     e.preventDefault();
     isDraggingSatVal.current = true;
-    e.currentTarget.setPointerCapture(e.pointerId);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
     updateSatVal(e);
   };
 
@@ -275,21 +307,25 @@ export const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
   const handleSatValUp = (e: React.PointerEvent<HTMLDivElement>) => {
     isDraggingSatVal.current = false;
     try {
-      e.currentTarget.releasePointerCapture(e.pointerId);
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
     } catch {}
   };
 
-  // Update Hue from slider pointer position
+  // Update Hue from slider pointer position (LOCK SATURATION & VALUE)
   const updateHue = useCallback(
     (e: React.PointerEvent | PointerEvent) => {
       if (!hueRef.current) return;
       const rect = hueRef.current.getBoundingClientRect();
-      const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-      const newH = Math.round(x * 360) % 360;
+      const x = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+      const newH = Math.min(360, Math.max(0, Math.round(x * 360)));
 
       setHsv((prev) => {
-        const nextHsv = { ...prev, h: newH };
+        // Strictly lock Saturation and Value: prev.s and prev.v are preserved!
+        const nextHsv = { h: newH, s: prev.s, v: prev.v };
         const newHex = hsvToHex(nextHsv.h, nextHsv.s, nextHsv.v);
+        lastEmittedHexRef.current = newHex;
         setCurrentColor(newHex);
         setHexInput(newHex.replace('#', ''));
         onChange(newHex);
@@ -302,7 +338,9 @@ export const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
   const handleHueDown = (e: React.PointerEvent<HTMLDivElement>) => {
     e.preventDefault();
     isDraggingHue.current = true;
-    e.currentTarget.setPointerCapture(e.pointerId);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
     updateHue(e);
   };
 
@@ -315,16 +353,27 @@ export const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
   const handleHueUp = (e: React.PointerEvent<HTMLDivElement>) => {
     isDraggingHue.current = false;
     try {
-      e.currentTarget.releasePointerCapture(e.pointerId);
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
     } catch {}
   };
 
   // Select quick preset color
   const handleSelectPreset = (presetHex: string) => {
     const norm = normalizeHex(presetHex);
+    lastEmittedHexRef.current = norm;
     setCurrentColor(norm);
-    setHsv(hexToHsv(norm));
     setHexInput(norm.replace('#', ''));
+    setHsv((prev) => {
+      const parsed = hexToHsv(norm);
+      const preservedHue = parsed.s === 0 || parsed.v === 0 ? prev.h : parsed.h;
+      return {
+        h: preservedHue,
+        s: parsed.s,
+        v: parsed.v,
+      };
+    });
     onChange(norm);
   };
 
@@ -335,8 +384,17 @@ export const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
 
     if (raw.length === 6 || raw.length === 3) {
       const norm = normalizeHex(raw);
+      lastEmittedHexRef.current = norm;
       setCurrentColor(norm);
-      setHsv(hexToHsv(norm));
+      setHsv((prev) => {
+        const parsed = hexToHsv(norm);
+        const preservedHue = parsed.s === 0 || parsed.v === 0 ? prev.h : parsed.h;
+        return {
+          h: preservedHue,
+          s: parsed.s,
+          v: parsed.v,
+        };
+      });
       onChange(norm);
     }
   };
@@ -344,6 +402,7 @@ export const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
   const handleHexInputBlur = () => {
     if (isValidHex(hexInput)) {
       const norm = normalizeHex(hexInput);
+      lastEmittedHexRef.current = norm;
       setHexInput(norm.replace('#', ''));
       setCurrentColor(norm);
     } else {
@@ -381,17 +440,18 @@ export const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
         onPointerDown={handleSatValDown}
         onPointerMove={handleSatValMove}
         onPointerUp={handleSatValUp}
+        onPointerCancel={handleSatValUp}
         className="w-full h-36 sm:h-40 rounded-xl relative cursor-crosshair select-none touch-none border border-gray-200/80 dark:border-gray-700/80 overflow-hidden shadow-inner"
         style={{ backgroundColor: pureHueColor }}
       >
         {/* Saturation gradient: white to transparent horizontally */}
-        <div className="absolute inset-0 bg-gradient-to-r from-white to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-r from-white to-transparent pointer-events-none select-none" />
         {/* Brightness gradient: transparent to black vertically */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent pointer-events-none select-none" />
 
         {/* 2D Indicator thumb */}
         <div
-          className="absolute w-4 h-4 rounded-full border-2 border-white shadow-md -translate-x-1/2 -translate-y-1/2 pointer-events-none ring-1 ring-black/25"
+          className="absolute w-4 h-4 rounded-full border-2 border-white shadow-md -translate-x-1/2 -translate-y-1/2 pointer-events-none select-none ring-1 ring-black/25"
           style={{
             left: `${hsv.s * 100}%`,
             top: `${(1 - hsv.v) * 100}%`,
@@ -407,6 +467,7 @@ export const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
           onPointerDown={handleHueDown}
           onPointerMove={handleHueMove}
           onPointerUp={handleHueUp}
+          onPointerCancel={handleHueUp}
           className="w-full h-3.5 rounded-full relative cursor-pointer select-none touch-none shadow-inner border border-gray-200/60 dark:border-gray-700/60"
           style={{
             background:
@@ -415,7 +476,7 @@ export const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
         >
           {/* Hue slider thumb */}
           <div
-            className="absolute w-4 h-4 rounded-full bg-white border-2 border-gray-900/30 shadow-md -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+            className="absolute w-4 h-4 rounded-full bg-white border-2 border-gray-900/30 shadow-md -translate-x-1/2 -translate-y-1/2 pointer-events-none select-none"
             style={{
               left: `${(hsv.h / 360) * 100}%`,
               top: '50%',

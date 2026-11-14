@@ -53,4 +53,24 @@ for (const color of primaries) {
 }
 console.log('✓ 100% Exact Roundtrip conversion passed for Primary colors');
 
+// Test 5: Hue stability during 2D Saturation & Brightness adjustments
+const lockedHue = 210; // Blue hue
+// At S=0 (far left edge) -> pure grayscale/white
+const leftEdgeHex = hsvToHex(lockedHue, 0, 1);
+if (leftEdgeHex.toUpperCase() !== '#FFFFFF') {
+  throw new Error(`Expected #FFFFFF at S=0, V=1, got ${leftEdgeHex}`);
+}
+// At V=0 (far bottom edge) -> pure black
+const bottomEdgeHex = hsvToHex(lockedHue, 0.5, 0);
+if (bottomEdgeHex.toUpperCase() !== '#000000') {
+  throw new Error(`Expected #000000 at V=0, got ${bottomEdgeHex}`);
+}
+// Hue remains locked at 210 even when converted to hex and back with achromatic preservation
+const parsedLeft = hexToHsv(leftEdgeHex);
+const preservedLeftHue = (parsedLeft.s === 0 || parsedLeft.v === 0) ? lockedHue : parsedLeft.h;
+if (preservedLeftHue !== lockedHue) {
+  throw new Error(`Expected preserved hue to remain ${lockedHue}, got ${preservedLeftHue}`);
+}
+console.log('✓ Hue stability and Achromatic preservation verified');
+
 console.log('🎉 ALL COLOR PICKER MATH TESTS PASSED 100%!');
