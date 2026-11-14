@@ -396,7 +396,6 @@
   },
   "export": {
     "title": "Export Riwayat Transaksi (CSV)",
-    "subtitle": "Konfirmasi cakupan data dan periode sebelum mengunduh berkas",
     "scopeLabel": "Cakupan Data",
     "scopeCurrent": "Sesuai Filter Aktif Tabel",
     "scopeCurrentDesc": "Sesuai filter yang sedang aktif pada tabel",

@@ -304,24 +304,14 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({
     >
       <div className="w-full max-w-lg max-h-[90dvh] flex flex-col rounded-2xl bg-white dark:bg-[#131b2c] border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-gray-100 shadow-2xl animate-in fade-in zoom-in-95 duration-150 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-gray-100 dark:border-gray-800 shrink-0">
-          <div className="flex items-center space-x-3 min-w-0 pr-2">
-            <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 shrink-0 border border-emerald-200/50 dark:border-emerald-800/60">
+        <div className="flex items-center justify-between gap-3 p-4 sm:p-5 border-b border-gray-100 dark:border-gray-800 shrink-0">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 shrink-0 border border-emerald-200/50 dark:border-emerald-800/60 flex items-center justify-center">
               <FileSpreadsheet className="w-5 h-5" />
             </div>
-            <div className="min-w-0">
-              <h3 className="text-base font-bold text-gray-900 dark:text-white truncate">
-                {t('export.title', locale === 'en' ? 'Export Transaction History (CSV)' : 'Export Riwayat Transaksi (CSV)')}
-              </h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                {t(
-                  'export.subtitle',
-                  locale === 'en'
-                    ? 'Confirm data scope and period before downloading the file'
-                    : 'Konfirmasi cakupan data dan periode sebelum mengunduh berkas'
-                )}
-              </p>
-            </div>
+            <h3 className="min-w-0 flex-1 text-base sm:text-lg font-bold leading-snug tracking-tight text-gray-900 dark:text-white break-words">
+              {t('export.title', locale === 'en' ? 'Export Transaction History (CSV)' : 'Export Riwayat Transaksi (CSV)')}
+            </h3>
           </div>
           <button
             type="button"

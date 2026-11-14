@@ -396,7 +396,6 @@
   },
   "export": {
     "title": "Export Transaction History (CSV)",
-    "subtitle": "Confirm data scope and period before downloading the file",
     "scopeLabel": "Data Scope",
     "scopeCurrent": "Current Table Filter",
     "scopeCurrentDesc": "Follows filters currently active on the table",
