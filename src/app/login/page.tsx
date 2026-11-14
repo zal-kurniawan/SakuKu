@@ -554,29 +554,27 @@ export default function LoginPage() {
               >
                 <span>
                   {locale === 'id'
-                    ? 'WhatsApp bermasalah? Masuk via Google Authenticator'
-                    : 'WhatsApp issue? Sign in via Google Authenticator'}
+                    ? 'Masuk via Google Authenticator'
+                    : 'Sign in via Google Authenticator'}
                 </span>
                 <ArrowRight className="w-3 h-3" />
               </button>
             ) : (
-              channelStatus?.waAvailable && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthMode('WA_OTP');
-                    setErrorMessage('');
-                    setSuccessMessage('');
-                    setDigits(['', '', '', '', '', '']);
-                  }}
-                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline transition font-medium inline-flex items-center gap-1 cursor-pointer"
-                >
-                  <Smartphone className="w-3 h-3" />
-                  <span>
-                    {locale === 'id' ? 'Gunakan WhatsApp OTP' : 'Use WhatsApp OTP'}
-                  </span>
-                </button>
-              )
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthMode('WA_OTP');
+                  setErrorMessage('');
+                  setSuccessMessage('');
+                  setDigits(['', '', '', '', '', '']);
+                }}
+                className="text-xs text-blue-600 dark:text-blue-400 hover:underline transition font-medium inline-flex items-center gap-1 cursor-pointer"
+              >
+                <Smartphone className="w-3 h-3" />
+                <span>
+                  {locale === 'id' ? 'Gunakan WhatsApp OTP' : 'Use WhatsApp OTP'}
+                </span>
+              </button>
             )}
           </div>
         )}

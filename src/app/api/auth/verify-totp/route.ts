@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getDbBotStatus } from '@/bot/prisma-auth';
 import { verifyTotp } from '@/lib/totp';
 import { createSessionToken, getSessionCookieOptions } from '@/lib/auth';
+import { sendWhatsAppNotification } from '@/lib/whatsapp-notify';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -34,18 +35,9 @@ export async function POST(req: NextRequest) {
     const deviceSummary = formatDeviceSummary(rawUa);
     const now = new Date();
 
-    // 1. Strict Backend Guard: Disallow TOTP while WhatsApp Bot is ONLINE
+    // 1. Fetch current WhatsApp Bot status for notification / recovery routing
     const botStatus = await getDbBotStatus();
-    if (botStatus?.status === 'CONNECTED') {
-      return NextResponse.json(
-        {
-          error:
-            'WhatsApp Bot sedang online normal. Pemulihan offline TOTP (Google Authenticator) dinonaktifkan demi kepatuhan keamanan.',
-          errorCode: 'WA_BOT_ONLINE',
-        },
-        { status: 403 }
-      );
-    }
+    const isBotOnline = botStatus?.status === 'CONNECTED';
 
     // 2. Fetch or create AuthSecurityState singleton
     let secState = await prisma.authSecurityState.findUnique({
@@ -153,24 +145,33 @@ Terdeteksi *5x percobaan login TOTP gagal* pada dashboard web SakuKu saat WhatsA
       timeStyle: 'medium',
     });
 
-    const auditMessage =
-`🛡️ *[LOG PEMULIHAN AKSES SAKUKU]*
+    const auditMessage = isBotOnline
+      ? `🛡️ *[LOG KEAMANAN SAKUKU]*\n\nLogin menggunakan *Google Authenticator (TOTP)* berhasil dilakukan.\n\n• Waktu: ${timeWib} WIB\n• IP Address: ${ip}\n• Perangkat: ${deviceSummary}`
+      : `🛡️ *[LOG PEMULIHAN AKSES SAKUKU]*\n\nLogin darurat menggunakan *Google Authenticator (TOTP)* berhasil dilakukan saat WhatsApp Bot offline.\n\n• Waktu: ${timeWib} WIB\n• IP Address: ${ip}\n• Perangkat: ${deviceSummary}`;
 
-Login darurat menggunakan *Google Authenticator (TOTP)* berhasil dilakukan saat WhatsApp Bot offline.
-
-• Waktu: ${timeWib} WIB
-• IP Address: ${ip}
-• Perangkat: ${deviceSummary}`;
-
-    await prisma.authSecurityState.update({
-      where: { id: 'singleton' },
-      data: {
-        totpAttempts: 0,
-        totpLockedUntil: null,
-        lastUsedTotpStep: result.step,
-        pendingSecurityAlert: auditMessage,
-      },
-    });
+    if (isBotOnline) {
+      // Send alert immediately via WhatsApp bridge if bot is online
+      sendWhatsAppNotification(auditMessage).catch(() => {});
+      await prisma.authSecurityState.update({
+        where: { id: 'singleton' },
+        data: {
+          totpAttempts: 0,
+          totpLockedUntil: null,
+          lastUsedTotpStep: result.step,
+        },
+      });
+    } else {
+      // Queue alert for when bot comes back online
+      await prisma.authSecurityState.update({
+        where: { id: 'singleton' },
+        data: {
+          totpAttempts: 0,
+          totpLockedUntil: null,
+          lastUsedTotpStep: result.step,
+          pendingSecurityAlert: auditMessage,
+        },
+      });
+    }
 
     // Create Smart Session Token (3 days idle, 7 days absolute)
     const ownerPhone = process.env.MY_PHONE_NUMBER || '628563006136';
@@ -178,8 +179,8 @@ Login darurat menggunakan *Google Authenticator (TOTP)* berhasil dilakukan saat 
 
     const response = NextResponse.json({
       success: true,
-      recoveryMode: true,
-      message: 'Pemulihan akses darurat berhasil! Anda akan diarahkan ke dashboard.',
+      recoveryMode: !isBotOnline,
+      message: 'Autentikasi Google Authenticator berhasil! Anda akan diarahkan ke dashboard.',
     });
 
     // Set cookie sakuku_session
