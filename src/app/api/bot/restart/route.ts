@@ -25,19 +25,49 @@ export async function POST(req: NextRequest) {
   try {
     const currentStatus = await getDbBotStatus();
 
-    // 1. Dispatch RESTART command to PostgreSQL for worker listener
-    await setDbWorkerCommand('RESTART');
-
-    // 2. Mark current bot status as RESTARTING so UI and Navbar immediately reflect the state
+    // 1. Mark current bot status as RESTARTING so UI and Navbar immediately reflect the state
     await setDbBotStatus('RESTARTING', {
       phone: currentStatus?.phone,
       name: currentStatus?.name,
       disconnectReason: currentStatus?.disconnectReason || null,
     });
 
+    const renderApiKey = process.env.RENDER_API_KEY;
+    const renderServiceId = process.env.RENDER_WORKER_SERVICE_ID || process.env.RENDER_SERVICE_ID;
+
+    // Method A: Direct Render REST API Call (100% identical to clicking "Restart Service" on Render dashboard)
+    if (renderApiKey && renderServiceId) {
+      try {
+        const renderRes = await fetch(`https://api.render.com/v1/services/${renderServiceId}/restart`, {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            Authorization: `Bearer ${renderApiKey}`,
+          },
+        });
+
+        if (renderRes.ok) {
+          console.log('✅ [RESTART] Layanan Render worker berhasil direstart melalui Render REST API.');
+          return NextResponse.json({
+            success: true,
+            method: 'RENDER_API',
+            message: 'Service restart triggered directly via Render official API',
+          });
+        } else {
+          console.warn('⚠️ Render API restart returned status:', renderRes.status, await renderRes.text());
+        }
+      } catch (renderErr) {
+        console.error('⚠️ Render API restart request error, falling back to database command:', renderErr);
+      }
+    }
+
+    // Method B: Database Command Dispatcher (triggers clean shutdown + process.exit(1) on worker, prompting Render to spin up a fresh container)
+    await setDbWorkerCommand('RESTART');
+
     return NextResponse.json({
       success: true,
-      message: 'Restart command dispatched to worker',
+      method: 'DB_COMMAND',
+      message: 'Restart command dispatched to worker (container process restart)',
     });
   } catch (error: any) {
     console.error('Error dispatching restart command:', error);

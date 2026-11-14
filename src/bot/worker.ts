@@ -5,7 +5,7 @@ import http from 'http';
 import { startWhatsAppBot, getBotStatus, restartWhatsAppBot, closeWhatsAppSocket } from './whatsapp';
 import { initCronSchedulers } from './cron';
 import { prisma } from '../lib/prisma';
-import { getDbWorkerCommand, setDbWorkerCommand } from './prisma-auth';
+import { getDbWorkerCommand, setDbWorkerCommand, setDbBotStatus } from './prisma-auth';
 
 const PORT = parseInt(process.env.PORT || '8080', 10);
 const HOST = '0.0.0.0';
@@ -70,16 +70,24 @@ const server = http.createServer((req, res) => {
       return;
     }
 
-    if (!isExecutingCommand) {
-      isExecutingCommand = true;
-      setDbWorkerCommand('IDLE').catch(() => {});
-      restartWhatsAppBot().finally(() => {
-        isExecutingCommand = false;
-      });
-    }
-
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ success: true, message: 'Restart triggered via HTTP' }));
+    res.end(JSON.stringify({ success: true, message: 'Container process restart triggered' }));
+
+    setTimeout(async () => {
+      console.log('🔄 [HTTP RESTART] Menerima instruksi restart via HTTP endpoint...');
+      if (commandPollInterval) clearInterval(commandPollInterval);
+      await setDbWorkerCommand('IDLE').catch(() => {});
+      await setDbBotStatus('RESTARTING', { disconnectReason: null }).catch(() => {});
+      try {
+        await closeWhatsAppSocket();
+      } catch {}
+      server.close();
+      try {
+        await prisma.$disconnect();
+      } catch {}
+      console.log('💤 Worker keluar (process.exit(1)) untuk full process restart di Render...');
+      process.exit(1);
+    }, 500);
     return;
   }
 
@@ -104,7 +112,25 @@ function initCommandDispatcher() {
         console.log('\n⚡ [COMMAND LISTENER] Mendeteksi instruksi RESTART dari Web Dashboard!');
         // Reset command to IDLE immediately in DB to prevent duplicate executions
         await setDbWorkerCommand('IDLE');
-        await restartWhatsAppBot();
+        await setDbBotStatus('RESTARTING', { disconnectReason: null });
+
+        console.log('🔄 [WORKER RESTART] Mematikan socket & koneksi untuk full container process restart...');
+        if (commandPollInterval) clearInterval(commandPollInterval);
+        try {
+          await closeWhatsAppSocket();
+        } catch (err) {
+          console.error('Error saat menutup socket:', err);
+        }
+        server.close();
+        try {
+          await prisma.$disconnect();
+        } catch {}
+
+        console.log('💤 SakuKu worker keluar (process.exit(1)) agar Render me-restart instance container baru yang 100% fresh!');
+        setTimeout(() => {
+          process.exit(1);
+        }, 800);
+        return;
       }
     } catch (err) {
       console.error('⚠️ [COMMAND LISTENER] Error saat polling worker_command:', err);
