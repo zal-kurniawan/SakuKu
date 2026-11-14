@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   PieChart,
   Pie,
@@ -56,6 +56,8 @@ export const WalletDistributionChart: React.FC<WalletDistributionChartProps> = (
   );
   const [historicalWallets, setHistoricalWallets] = useState<WalletDistPoint[] | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const requestIdRef = useRef(0);
 
   const fullMonths = locale === 'en' ? FULL_MONTHS_EN : FULL_MONTHS_ID;
 
@@ -68,17 +70,25 @@ export const WalletDistributionChart: React.FC<WalletDistributionChartProps> = (
 
   // Fetch available years & historical distribution when month !== 'current'
   const fetchDistribution = useCallback(async (month: string, year: number) => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const currentReqId = ++requestIdRef.current;
+
     if (month === 'current') {
       setHistoricalWallets(null);
       // Only fetch if availableYears has not been provided from initial dashboard data
       if (!initialAvailableYears || initialAvailableYears.length === 0) {
         try {
-          const res = await fetch('/api/stats/wallet-history');
-          if (res.ok) {
+          const res = await fetch('/api/stats/wallet-history', { signal: controller.signal });
+          if (res.ok && currentReqId === requestIdRef.current) {
             const json = await res.json();
             if (json.availableYears) setAvailableYears(json.availableYears);
           }
-        } catch (e) {
+        } catch (e: any) {
+          if (e.name === 'AbortError') return;
           console.error(e);
         }
       }
@@ -89,31 +99,39 @@ export const WalletDistributionChart: React.FC<WalletDistributionChartProps> = (
     const cached = getCachedData<{ availableYears?: number[]; wallets?: WalletDistPoint[] }>(cacheKey);
 
     if (cached) {
-      if (cached.availableYears) setAvailableYears(cached.availableYears);
-      if (cached.wallets) setHistoricalWallets(cached.wallets);
-      setLoading(false);
+      if (currentReqId === requestIdRef.current) {
+        if (cached.availableYears) setAvailableYears(cached.availableYears);
+        if (cached.wallets) setHistoricalWallets(cached.wallets);
+        setLoading(false);
+      }
       return;
     }
 
     setLoading(true);
     try {
-      const res = await fetch(cacheKey);
-      if (res.ok) {
+      const res = await fetch(cacheKey, { signal: controller.signal });
+      if (res.ok && currentReqId === requestIdRef.current) {
         const json = await res.json();
         mutateCache(cacheKey, json);
         if (json.availableYears) setAvailableYears(json.availableYears);
         if (json.wallets) setHistoricalWallets(json.wallets);
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (err.name === 'AbortError') return;
       console.error('Failed to fetch historical wallet distribution:', err);
     } finally {
-      setLoading(false);
+      if (currentReqId === requestIdRef.current) {
+        setLoading(false);
+      }
     }
   }, [initialAvailableYears]);
 
   useEffect(() => {
     setMounted(true);
     fetchDistribution(selectedMonth, selectedYear);
+    return () => {
+      abortControllerRef.current?.abort();
+    };
   }, [fetchDistribution, selectedMonth, selectedYear]);
 
   if (!mounted) {

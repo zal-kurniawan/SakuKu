@@ -25,6 +25,8 @@ import {
   ArrowUpDown,
   Tag,
   Calendar,
+  Loader2,
+  X,
 } from 'lucide-react';
 import { CustomSelect } from './ui/CustomSelect';
 import { CustomDatePicker } from './ui/CustomDatePicker';
@@ -101,15 +103,8 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   );
   const [loading, setLoading] = useState<boolean>(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const wasSearchingRef = useRef(false);
   const requestIdRef = useRef(0);
-
-  // Auto-refocus search input after loading completes if user was searching
-  useEffect(() => {
-    if (!loading && wasSearchingRef.current) {
-      searchInputRef.current?.focus();
-    }
-  }, [loading]);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Search debounce (~300ms)
   useEffect(() => {
@@ -224,7 +219,12 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
     }
     isInitialLoad.current = false;
 
-    let isCancelled = false;
+    // Abort previous in-flight request if any
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
     const fetchServerTransactions = async () => {
       const currentReqId = ++requestIdRef.current;
@@ -269,32 +269,38 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
       const cached = getCachedData<{ transactions: TransactionItem[]; totalCount: number }>(cacheKey);
 
       if (cached) {
-        setItems(cached.transactions || []);
-        if (cached.totalCount !== undefined) setTotalCount(cached.totalCount);
-        setLoading(false);
+        if (currentReqId === requestIdRef.current) {
+          setItems(cached.transactions || []);
+          if (cached.totalCount !== undefined) setTotalCount(cached.totalCount);
+          setLoading(false);
+        }
         return;
       }
 
       setLoading(true);
       try {
-        const res = await fetch(cacheKey);
-        if (res.ok && !isCancelled && currentReqId === requestIdRef.current) {
+        const res = await fetch(cacheKey, { signal: controller.signal });
+        if (res.ok && currentReqId === requestIdRef.current) {
           const json = await res.json();
           mutateCache(cacheKey, json);
           setItems(json.transactions || []);
           if (json.totalCount !== undefined) setTotalCount(json.totalCount);
         }
-      } catch (err) {
+      } catch (err: any) {
+        if (err.name === 'AbortError') {
+          // In-flight request was aborted cleanly - ignore
+          return;
+        }
         console.error('Failed to fetch transactions:', err);
       } finally {
-        if (!isCancelled && currentReqId === requestIdRef.current) setLoading(false);
+        if (currentReqId === requestIdRef.current) setLoading(false);
       }
     };
 
     fetchServerTransactions();
 
     return () => {
-      isCancelled = true;
+      controller.abort();
     };
   }, [
     currentPage,
@@ -428,23 +434,37 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
         {/* Row 1: Full-Width Search Bar + Conditional Reset Filter Button */}
         <div className="flex items-center gap-2.5 w-full">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
             <input
               ref={searchInputRef}
               type="text"
               value={search}
-              disabled={loading}
-              onChange={(e) => {
-                wasSearchingRef.current = true;
-                setSearch(e.target.value);
-              }}
+              onChange={(e) => setSearch(e.target.value)}
               placeholder={t('transactions.search') || (locale === 'id' ? 'Cari transaksi...' : 'Search transactions...')}
-              className={`w-full pl-9 pr-3 h-10 rounded-xl text-xs sm:text-sm border transition-colors ${
-                loading
-                  ? 'bg-gray-100/60 dark:bg-gray-800/60 text-gray-400 dark:text-gray-500 border-gray-200/60 dark:border-gray-800/60 cursor-not-allowed opacity-55'
-                  : 'bg-white dark:bg-[#0f1623] border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'
-              }`}
+              className="w-full pl-9 pr-16 sm:pr-20 h-10 rounded-xl text-xs sm:text-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0f1623] text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
             />
+            {/* Internal right-side status indicators: Loader spinner & Quick Clear button */}
+            {(loading || search.length > 0) && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 pointer-events-auto">
+                {loading && (
+                  <Loader2 className="w-4 h-4 animate-spin text-blue-500 dark:text-blue-400 shrink-0" />
+                )}
+                {search.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearch('');
+                      searchInputRef.current?.focus();
+                    }}
+                    className="p-1 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer shrink-0"
+                    title={locale === 'en' ? 'Clear search' : 'Hapus kata kunci pencarian'}
+                    aria-label={locale === 'en' ? 'Clear search' : 'Hapus kata kunci pencarian'}
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {isFiltered && (

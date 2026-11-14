@@ -98,24 +98,35 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({
   }, [initialCashflow, selectedYear, formatMonthsToPoints]);
 
   const hasLoadedInitial = useRef(Boolean(initialCashflow));
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const requestIdRef = useRef(0);
 
   const fetchCashflow = useCallback(
     async (year: number) => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+      const currentReqId = ++requestIdRef.current;
+
       const cacheKey = `/api/stats/cashflow?year=${year}`;
       const cached = getCachedData<CashflowPayload>(cacheKey);
 
       // 1. Instant Cache Hit (0ms latency, no loading spinner)
       if (cached) {
-        if (cached.availableYears) setAvailableYears(cached.availableYears);
-        if (cached.months) setChartData(formatMonthsToPoints(cached.months));
-        setLoading(false);
+        if (currentReqId === requestIdRef.current) {
+          if (cached.availableYears) setAvailableYears(cached.availableYears);
+          if (cached.months) setChartData(formatMonthsToPoints(cached.months));
+          setLoading(false);
+        }
         return;
       }
 
       setLoading(true);
       try {
-        const res = await fetch(cacheKey);
-        if (res.ok) {
+        const res = await fetch(cacheKey, { signal: controller.signal });
+        if (res.ok && currentReqId === requestIdRef.current) {
           const json = await res.json();
           mutateCache(cacheKey, json);
           if (json.availableYears && Array.isArray(json.availableYears)) {
@@ -125,10 +136,13 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({
             setChartData(formatMonthsToPoints(json.months));
           }
         }
-      } catch (err) {
+      } catch (err: any) {
+        if (err.name === 'AbortError') return;
         console.error('Failed to fetch cashflow data:', err);
       } finally {
-        setLoading(false);
+        if (currentReqId === requestIdRef.current) {
+          setLoading(false);
+        }
       }
     },
     [formatMonthsToPoints]
@@ -142,6 +156,11 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({
       return;
     }
     fetchCashflow(selectedYear);
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, [fetchCashflow, selectedYear]);
 
   if (!mounted) {
