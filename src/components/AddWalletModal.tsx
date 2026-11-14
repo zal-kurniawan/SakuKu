@@ -248,15 +248,16 @@ export const AddWalletModal: React.FC<AddWalletModalProps> = ({
               </div>
 
               {/* 2. Input Hex & Custom Color Picker */}
-              <div className="flex items-center gap-2 pt-1">
-                {/* Left Swatch Button - opens CustomColorPicker */}
+              <div className="flex items-center gap-2.5 pt-1">
+                {/* Single Interactive Left Swatch Button - Live Preview & Trigger */}
                 <CustomColorPicker
                   value={colorCode}
                   onChange={setColorCode}
                 />
 
-                <div className="relative flex-1">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-mono font-semibold text-gray-400">
+                {/* Hex Code Input (flex-1 h-10 flush with inputs above) */}
+                <div className="relative flex-1 h-10">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-mono font-bold text-gray-400 select-none">
                     #
                   </span>
                   <input
@@ -275,28 +276,10 @@ export const AddWalletModal: React.FC<AddWalletModalProps> = ({
                     }}
                     placeholder="005CAA"
                     maxLength={6}
-                    className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg pl-7 pr-3 py-2 text-xs font-mono text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase"
+                    aria-label="Hex color code"
+                    className="w-full h-10 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl pl-8 pr-3 text-xs sm:text-sm font-mono text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase transition-colors"
                   />
                 </div>
-
-                {/* Right Live Preview Badge - also opens CustomColorPicker */}
-                <CustomColorPicker
-                  value={colorCode}
-                  onChange={setColorCode}
-                  trigger={
-                    <button
-                      type="button"
-                      className="w-9 h-9 rounded-lg flex items-center justify-center border border-gray-200 dark:border-gray-700 shadow-sm text-xs cursor-pointer hover:ring-2 hover:ring-blue-500/40 transition-all shrink-0"
-                      style={{
-                        backgroundColor: isValidHex(colorCode)
-                          ? normalizeHex(colorCode)
-                          : DEFAULT_COLOR,
-                      }}
-                      title={colorCode}
-                      aria-label="Buka pemilih warna"
-                    />
-                  }
-                />
               </div>
             </div>
           </form>

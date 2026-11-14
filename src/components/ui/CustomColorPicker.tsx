@@ -511,12 +511,12 @@ export const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
             disabled={disabled}
             aria-haspopup="dialog"
             aria-expanded={isOpen}
-            aria-label={ariaLabel || t('wallets.customColor') || 'Pilih palet warna bebas'}
-            className="w-9 h-9 p-0.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 cursor-pointer flex items-center justify-center hover:ring-2 hover:ring-blue-500/40 transition-all shadow-xs shrink-0"
-            title={t('wallets.customColor') || 'Pilih palet warna bebas'}
+            aria-label={ariaLabel || t('wallets.customColor') || 'Pilih warna kustom'}
+            className="w-10 h-10 rounded-xl shrink-0 border border-gray-200/80 dark:border-white/15 shadow-xs cursor-pointer hover:scale-105 active:scale-95 transition-transform focus:outline-none focus:ring-2 focus:ring-blue-500/40 p-0.5 flex items-center justify-center bg-white dark:bg-gray-900"
+            title={t('wallets.customColor') || 'Pilih warna kustom'}
           >
             <span
-              className="w-full h-full rounded-md shadow-inner transition-colors"
+              className="w-full h-full rounded-lg shadow-inner transition-colors"
               style={{ backgroundColor: currentColor }}
             />
           </button>
