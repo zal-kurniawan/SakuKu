@@ -189,17 +189,17 @@ Login berhasil menggunakan *Google Authenticator* pada dashboard web SakuKu.
       });
     }
 
-    // Create Smart Session Token (3 days idle, 7 days absolute)
+    // Create Session Token expiring strictly at next 00:00:00 Asia/Jakarta
     const ownerPhone = process.env.MY_PHONE_NUMBER || '628563006136';
-    const { token, maxAge } = await createSessionToken('TOTP', 'owner', ownerPhone);
+    const { token, maxAge, expiresAt } = await createSessionToken('TOTP', 'owner', ownerPhone);
 
     const response = NextResponse.json({
       success: true,
       message: 'Autentikasi Google Authenticator berhasil! Mengarahkan ke dashboard...',
     });
 
-    // Set cookie sakuku_session
-    const cookieOptions = getSessionCookieOptions(maxAge);
+    // Set cookie sakuku_session with fixed Jakarta midnight expiration
+    const cookieOptions = getSessionCookieOptions(expiresAt, maxAge);
     response.cookies.set(cookieOptions.name, token, cookieOptions);
 
     return response;

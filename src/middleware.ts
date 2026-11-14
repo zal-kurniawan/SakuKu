@@ -3,7 +3,6 @@ import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
 const COOKIE_NAME = 'sakuku_session';
-const IDLE_TIMEOUT_SECONDS = 3 * 24 * 60 * 60; // 3 Days Idle
 
 function getJwtSecret(): Uint8Array {
   const secret =
@@ -96,40 +95,28 @@ export async function middleware(req: NextRequest) {
 
   // 7. Protected Routes Check (All Dashboard pages & All APIs)
   if (!verifiedPayload) {
-    // A. API Requests -> HTTP 401 JSON
+    // A. API Requests -> HTTP 401 JSON with deleted cookie
     if (pathname.startsWith('/api/')) {
-      return NextResponse.json(
+      const resp = NextResponse.json(
         { error: 'Unauthorized: Sesi tidak ditemukan atau telah kedaluwarsa.', errorCode: 'UNAUTHORIZED' },
         { status: 401 }
       );
+      resp.cookies.set(COOKIE_NAME, '', { path: '/', maxAge: 0, expires: new Date(0) });
+      return resp;
     }
 
-    // B. Web Page Requests without Cookie -> Redirect to /login
-    if (!token) {
-      const loginUrl = new URL('/login', req.url);
-      return NextResponse.redirect(loginUrl);
-    }
-
-    // C. Web Page Requests with Invalid / Expired Cookie -> Rewrite to Custom 401 Error Page
-    return NextResponse.rewrite(new URL('/unauthorized', req.url), { status: 401 });
+    // B. Web Page Requests -> Redirect to /login with deleted cookie
+    const loginUrl = new URL('/login', req.url);
+    const resp = NextResponse.redirect(loginUrl);
+    resp.cookies.set(COOKIE_NAME, '', { path: '/', maxAge: 0, expires: new Date(0) });
+    return resp;
   }
 
-  // 8. Sliding Idle Refresh (Extends cookie maxAge without database query)
+  // 8. Protected Routes Response with Strict Anti-Cache Headers (Prevents mobile bfcache stale view)
   const response = NextResponse.next();
-  const nowSec = Math.floor(Date.now() / 1000);
-  const remainingAbsolute = Number(verifiedPayload.absoluteExp) - nowSec;
-  const newMaxAge = Math.min(IDLE_TIMEOUT_SECONDS, remainingAbsolute);
-
-  if (newMaxAge > 0 && token) {
-    response.cookies.set(COOKIE_NAME, token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      path: '/',
-      maxAge: newMaxAge,
-    });
-  }
-
+  response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  response.headers.set('Pragma', 'no-cache');
+  response.headers.set('Expires', '0');
   return response;
 }
 

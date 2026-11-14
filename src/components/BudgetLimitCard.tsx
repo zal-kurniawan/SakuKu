@@ -568,7 +568,8 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
                   options={PAGE_SIZE_OPTIONS}
                   size="sm"
                   disabled={loading}
-                  usePortal={true}
+                  usePortal={false}
+                  disableMobileSheet={true}
                   aria-label={t('transactions.rows', locale === 'id' ? 'Baris:' : 'Rows:')}
                 />
               </div>

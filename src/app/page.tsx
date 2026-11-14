@@ -14,6 +14,7 @@ import { BudgetLimitCard, BudgetItem } from '@/components/BudgetLimitCard';
 import { TransactionTable, TransactionItem } from '@/components/TransactionTable';
 import { BotGuideModal } from '@/components/BotGuideModal';
 import { WhatsAppLinkerModal } from '@/components/WhatsAppLinkerModal';
+import { SessionMidnightGuard } from '@/components/SessionMidnightGuard';
 import { useTranslation } from '@/context/LanguageContext';
 import { useConfirm } from '@/context/ConfirmContext';
 import { useToast } from '@/context/ToastContext';
@@ -193,6 +194,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50/60 dark:bg-gray-950 text-gray-900 dark:text-gray-100 flex flex-col font-sans transition-colors duration-200">
+      <SessionMidnightGuard />
       {/* Navbar */}
       <Navbar
         onOpenTransfer={() => handleOpenTransfer()}

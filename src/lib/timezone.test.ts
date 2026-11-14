@@ -100,6 +100,8 @@ import {
   formatDateKey,
   formatDateRangeDisplay,
   getBudgetPeriodStatus,
+  getJakartaDateKey,
+  getNextJakartaMidnight,
 } from './timezone';
 
 const customRange = getCustomDateRange('2026-10-25', '2026-11-24');
@@ -118,5 +120,31 @@ assert.strictEqual(formattedIdCrossYear, '25 Des 2026 – 24 Jan 2027');
 const formattedEnCrossYear = formatDateRangeDisplay('2026-12-25', '2027-01-24', 'en');
 assert.strictEqual(formattedEnCrossYear, 'Dec 25, 2026 – Jan 24, 2027');
 console.log('✓ Cross-year date range formatting verified (PASSED)');
+
+// 7. Test Midnight Jakarta Expiration & Date Key Helpers
+const testNowWIB = new Date('2026-11-14T18:00:00+07:00');
+assert.strictEqual(getJakartaDateKey(testNowWIB), '2026-11-14');
+const nextMidnight = getNextJakartaMidnight(testNowWIB);
+// 2026-11-15 00:00:00 WIB in UTC is 2026-11-14T17:00:00.000Z
+assert.strictEqual(nextMidnight.toISOString(), '2026-11-14T17:00:00.000Z');
+console.log('✓ Next Jakarta midnight for 18:00 WIB correctly points to 00:00 WIB next day (PASSED)');
+
+// Exactly 1 second before midnight: 23:59:59 WIB on Nov 14
+const oneSecBeforeMidnight = new Date('2026-11-14T23:59:59+07:00');
+assert.strictEqual(getJakartaDateKey(oneSecBeforeMidnight), '2026-11-14');
+assert.strictEqual(getNextJakartaMidnight(oneSecBeforeMidnight).toISOString(), '2026-11-14T17:00:00.000Z');
+console.log('✓ Next Jakarta midnight at 23:59:59 WIB points to upcoming 00:00 WIB (PASSED)');
+
+// Exactly 1 second after midnight: 00:00:01 WIB on Nov 15
+const oneSecAfterMidnight = new Date('2026-11-15T00:00:01+07:00');
+assert.strictEqual(getJakartaDateKey(oneSecAfterMidnight), '2026-11-15');
+assert.strictEqual(getNextJakartaMidnight(oneSecAfterMidnight).toISOString(), '2026-11-15T17:00:00.000Z'); // Nov 16 00:00 WIB
+console.log('✓ Next Jakarta midnight at 00:00:01 WIB correctly advances to next night 00:00 WIB (PASSED)');
+
+// End of year rollover: Dec 31, 2026 22:00:00 WIB
+const newYearsEve = new Date('2026-12-31T22:00:00+07:00');
+assert.strictEqual(getJakartaDateKey(newYearsEve), '2026-12-31');
+assert.strictEqual(getNextJakartaMidnight(newYearsEve).toISOString(), '2026-12-31T17:00:00.000Z'); // 2027-01-01 00:00 WIB
+console.log('✓ Next Jakarta midnight on New Year\'s Eve rolls over to Jan 1 00:00 WIB (PASSED)');
 
 console.log('\n🎉 ALL TIMEZONE & RESET ENGINE TESTS PASSED 100% SUCCESSFULLY!\n');

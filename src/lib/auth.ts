@@ -1,10 +1,9 @@
 import { SignJWT, jwtVerify, JWTPayload } from 'jose';
 import { cookies } from 'next/headers';
 import { prisma } from './prisma';
+import { getNextJakartaMidnight } from './timezone';
 
 export const COOKIE_NAME = 'sakuku_session';
-export const IDLE_TIMEOUT_SECONDS = 3 * 24 * 60 * 60; // 3 Days Idle (Sliding)
-export const ABSOLUTE_TIMEOUT_SECONDS = 7 * 24 * 60 * 60; // 7 Days Absolute Maximum
 
 function getJwtSecret(): Uint8Array {
   const secret =
@@ -17,20 +16,23 @@ export interface SessionPayload extends JWTPayload {
   userId: string;
   phoneNumber: string;
   authMethod: 'TOTP' | string;
-  absoluteExp: number; // Unix timestamp in seconds
+  absoluteExp: number; // Unix timestamp in seconds (00:00:00 Asia/Jakarta)
 }
 
 /**
- * Creates a signed JWT session token with 3-day idle / 7-day absolute constraints
+ * Creates a signed JWT session token with fixed expiration at next 00:00:00 Asia/Jakarta.
+ * Non-sliding session: expires strictly at midnight Jakarta time.
  */
 export async function createSessionToken(
   authMethod: string = 'TOTP',
   userId: string = 'owner',
   phoneNumber: string = process.env.MY_PHONE_NUMBER || '628563006136'
-): Promise<{ token: string; maxAge: number; absoluteExp: number }> {
-  const now = Math.floor(Date.now() / 1000);
-  const absoluteExp = now + ABSOLUTE_TIMEOUT_SECONDS;
-  const initialMaxAge = Math.min(IDLE_TIMEOUT_SECONDS, ABSOLUTE_TIMEOUT_SECONDS);
+): Promise<{ token: string; maxAge: number; expiresAt: Date; absoluteExp: number }> {
+  const now = new Date();
+  const nowSec = Math.floor(now.getTime() / 1000);
+  const expiresAt = getNextJakartaMidnight(now);
+  const absoluteExp = Math.floor(expiresAt.getTime() / 1000);
+  const maxAge = Math.max(1, Math.floor((expiresAt.getTime() - now.getTime()) / 1000));
 
   const token = await new SignJWT({
     userId,
@@ -40,15 +42,15 @@ export async function createSessionToken(
     absoluteExp,
   })
     .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt(now)
-    .setExpirationTime(absoluteExp) // JWT valid until absolute max
+    .setIssuedAt(nowSec)
+    .setExpirationTime(absoluteExp) // Token expires strictly at 00:00:00 Asia/Jakarta
     .sign(getJwtSecret());
 
-  return { token, maxAge: initialMaxAge, absoluteExp };
+  return { token, maxAge, expiresAt, absoluteExp };
 }
 
 /**
- * Verifies a session JWT token and enforces absolute expiration
+ * Verifies a session JWT token and enforces 00:00:00 Jakarta expiration
  */
 export async function verifySessionToken(token: string): Promise<SessionPayload | null> {
   try {
@@ -67,15 +69,30 @@ export async function verifySessionToken(token: string): Promise<SessionPayload 
 }
 
 /**
- * Standard cookie configuration for SakuKu session
+ * Standard cookie configuration for SakuKu session (fixed Jakarta midnight expiration)
  */
-export function getSessionCookieOptions(maxAge: number) {
+export function getSessionCookieOptions(expiresOrMaxAge?: Date | number, maxAgeSeconds?: number) {
+  let expires: Date;
+  let maxAge: number;
+
+  if (expiresOrMaxAge instanceof Date) {
+    expires = expiresOrMaxAge;
+    maxAge = maxAgeSeconds !== undefined ? maxAgeSeconds : Math.max(1, Math.floor((expires.getTime() - Date.now()) / 1000));
+  } else if (typeof expiresOrMaxAge === 'number') {
+    maxAge = expiresOrMaxAge;
+    expires = getNextJakartaMidnight();
+  } else {
+    expires = getNextJakartaMidnight();
+    maxAge = Math.max(1, Math.floor((expires.getTime() - Date.now()) / 1000));
+  }
+
   return {
     name: COOKIE_NAME,
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict' as const,
+    sameSite: 'lax' as const,
     path: '/',
+    expires,
     maxAge,
   };
 }

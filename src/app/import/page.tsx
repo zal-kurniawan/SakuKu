@@ -21,6 +21,7 @@ import { useTranslation } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
 import { formatCurrency } from '@/lib/utils';
 import { isExcelImportEnabled } from '@/lib/features';
+import { SessionMidnightGuard } from '@/components/SessionMidnightGuard';
 
 export default function ImportPage() {
   const { t, locale } = useTranslation();
@@ -153,6 +154,7 @@ export default function ImportPage() {
 
   return (
     <div className="min-h-screen bg-gray-50/60 dark:bg-gray-950 text-gray-900 dark:text-gray-100 flex flex-col font-sans transition-colors duration-200">
+      <SessionMidnightGuard />
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">

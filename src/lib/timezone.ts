@@ -7,6 +7,33 @@
 
 export const APP_TIMEZONE = process.env.TIMEZONE || 'Asia/Jakarta';
 
+export const JAKARTA_OFFSET_MS = 7 * 60 * 60 * 1000;
+
+/**
+ * Returns YYYY-MM-DD in Asia/Jakarta timezone, independent of server timezone.
+ */
+export function getJakartaDateKey(now: Date = new Date()): string {
+  const jakartaNow = new Date(now.getTime() + JAKARTA_OFFSET_MS);
+  const y = jakartaNow.getUTCFullYear();
+  const m = String(jakartaNow.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(jakartaNow.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * Returns exact UTC Date for the next upcoming 00:00:00 in Asia/Jakarta timezone.
+ */
+export function getNextJakartaMidnight(now: Date = new Date()): Date {
+  const jakartaNow = new Date(now.getTime() + JAKARTA_OFFSET_MS);
+  const nextMidnightJakartaUTC = Date.UTC(
+    jakartaNow.getUTCFullYear(),
+    jakartaNow.getUTCMonth(),
+    jakartaNow.getUTCDate() + 1,
+    0, 0, 0, 0
+  );
+  return new Date(nextMidnightJakartaUTC - JAKARTA_OFFSET_MS);
+}
+
 /**
  * Returns formatted offset string for the given timezone, e.g. "+07:00", "+08:00", "+00:00"
  */

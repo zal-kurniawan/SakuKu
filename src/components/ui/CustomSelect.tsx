@@ -32,6 +32,7 @@ export interface CustomSelectProps<T = string | number> {
   icon?: React.ReactNode;
   isActive?: boolean;
   usePortal?: boolean;
+  disableMobileSheet?: boolean;
 }
 
 export function CustomSelect<T extends string | number = string>({
@@ -51,6 +52,7 @@ export function CustomSelect<T extends string | number = string>({
   icon,
   isActive = false,
   usePortal = true,
+  disableMobileSheet = false,
 }: CustomSelectProps<T>) {
   const { t, locale } = useTranslation();
   const defaultPlaceholder = t('common.selectOption', locale === 'en' ? 'Select an option...' : 'Pilih opsi...');
@@ -160,16 +162,16 @@ export function CustomSelect<T extends string | number = string>({
 
   // Synchronously compute portal position before browser paint (anti-fly-in)
   useIsomorphicLayoutEffect(() => {
-    if (isOpen && usePortal && !isMobile) {
+    if (isOpen && usePortal && (!isMobile || disableMobileSheet)) {
       updatePortalCoords();
     } else if (!isOpen) {
       setPortalCoords(null);
     }
-  }, [isOpen, usePortal, isMobile, updatePortalCoords]);
+  }, [isOpen, usePortal, isMobile, disableMobileSheet, updatePortalCoords]);
 
   // Real-time anchored scroll tracking with requestAnimationFrame (capture: true for modal scrolls)
   useEffect(() => {
-    if (isOpen && usePortal && !isMobile) {
+    if (isOpen && usePortal && (!isMobile || disableMobileSheet)) {
       let rafId: number | null = null;
       const handleScrollOrResize = () => {
         if (rafId !== null) cancelAnimationFrame(rafId);
@@ -187,7 +189,7 @@ export function CustomSelect<T extends string | number = string>({
         window.removeEventListener('scroll', handleScrollOrResize, true);
       };
     }
-  }, [isOpen, usePortal, isMobile, updatePortalCoords]);
+  }, [isOpen, usePortal, isMobile, disableMobileSheet, updatePortalCoords]);
 
   // Handle click outside and Escape key
   useEffect(() => {
@@ -392,11 +394,11 @@ export function CustomSelect<T extends string | number = string>({
         />
       </button>
 
-      {/* MODE B: Inline Mode (usePortal = false, specifically for Transaction History filters) */}
+      {/* MODE B: Inline Mode (usePortal = false, specifically for Transaction History & Budget pagination) */}
       {isOpen && !usePortal && (
         <div
           ref={menuRef}
-          className={`absolute left-0 right-0 z-40 min-w-[68px] rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0f1623] shadow-2xl overflow-hidden animate-in fade-in duration-150 ${
+          className={`absolute left-0 z-40 min-w-[60px] w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0f1623] shadow-2xl overflow-hidden animate-in fade-in duration-150 ${
             openUpward ? 'bottom-full mb-1.5 top-auto origin-bottom' : 'top-full mt-1.5 origin-top'
           } ${menuClassName}`}
         >
@@ -406,7 +408,7 @@ export function CustomSelect<T extends string | number = string>({
 
       {/* MODE A: Portal Mode (usePortal = true, default for all modals and components) */}
       {isOpen && usePortal && mounted && (
-        isMobile ? (
+        isMobile && !disableMobileSheet ? (
           /* Mobile View: Fixed Centered Backdrop Modal */
           createPortal(
             <div
