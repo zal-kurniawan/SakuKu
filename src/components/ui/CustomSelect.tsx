@@ -49,6 +49,7 @@ export function CustomSelect<T extends string | number = string>({
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const autoId = useId();
   const selectId = id || autoId;
 
@@ -68,8 +69,8 @@ export function CustomSelect<T extends string | number = string>({
       const spaceBelow = viewportHeight - rect.bottom;
       const spaceAbove = rect.top;
 
-      // If space below is less than 240px and space above is greater, open upward
-      if (spaceBelow < 240 && spaceAbove > spaceBelow) {
+      // If space below is less than 220px and space above is greater, open upward
+      if (spaceBelow < 220 && spaceAbove > spaceBelow) {
         setOpenUpward(true);
       } else {
         setOpenUpward(false);
@@ -124,13 +125,24 @@ export function CustomSelect<T extends string | number = string>({
     };
   }, [isOpen, focusedIndex, options, onChange]);
 
-  // Reset focused index when opening
+  // Reset focused index and auto-scroll to selected option when opening
   useEffect(() => {
     if (isOpen) {
       const idx = options.findIndex((opt) => opt.value === value);
-      setFocusedIndex(idx >= 0 ? idx : 0);
+      const targetIdx = idx >= 0 ? idx : 0;
+      setFocusedIndex(targetIdx);
+      requestAnimationFrame(() => {
+        itemRefs.current[targetIdx]?.scrollIntoView({ block: 'nearest' });
+      });
     }
   }, [isOpen, value, options]);
+
+  // Keep focused item in view when navigating via keyboard
+  useEffect(() => {
+    if (isOpen && focusedIndex >= 0) {
+      itemRefs.current[focusedIndex]?.scrollIntoView({ block: 'nearest' });
+    }
+  }, [focusedIndex, isOpen]);
 
   // Size styling variants
   const sizeClasses = {
@@ -202,7 +214,7 @@ export function CustomSelect<T extends string | number = string>({
           ref={menuRef}
           role="listbox"
           tabIndex={-1}
-          className={`absolute left-0 right-0 z-50 bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 rounded-xl shadow-2xl py-1.5 max-h-60 overflow-y-auto overscroll-contain animate-in fade-in duration-150 ${
+          className={`absolute left-0 right-0 z-50 bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 rounded-xl shadow-2xl py-1 max-h-[min(13rem,38dvh)] sm:max-h-60 overflow-y-auto overscroll-contain touch-pan-y sakuku-scrollbar animate-in fade-in duration-150 ${
             openUpward ? 'bottom-full mb-1.5 origin-bottom' : 'top-full mt-1.5 origin-top'
           } ${menuClassName}`}
         >
@@ -218,6 +230,9 @@ export function CustomSelect<T extends string | number = string>({
               return (
                 <div
                   key={String(option.value)}
+                  ref={(el) => {
+                    itemRefs.current[idx] = el;
+                  }}
                   role="option"
                   aria-selected={isSelected}
                   onClick={() => {
@@ -228,7 +243,7 @@ export function CustomSelect<T extends string | number = string>({
                     }
                   }}
                   onMouseEnter={() => setFocusedIndex(idx)}
-                  className={`flex items-center justify-between px-3 py-2 text-xs sm:text-sm cursor-pointer transition-colors ${
+                  className={`flex items-center justify-between min-h-[40px] sm:min-h-[36px] px-3 py-2 text-xs sm:text-sm cursor-pointer transition-colors shrink-0 ${
                     option.disabled
                       ? 'opacity-40 cursor-not-allowed text-gray-400'
                       : isSelected

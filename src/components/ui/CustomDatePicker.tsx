@@ -135,12 +135,23 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Precise popover coordinates calculation
+  // Precise popover coordinates calculation & viewport boundary detection
   const updateCoords = useCallback(() => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
+
+    // Auto-close if trigger has scrolled out of viewport or is hidden
+    if (
+      rect.bottom <= 0 ||
+      rect.top >= window.innerHeight ||
+      (rect.width === 0 && rect.height === 0)
+    ) {
+      setIsOpen(false);
+      return;
+    }
+
     const popoverHeight = 340;
-    const popoverWidth = 300;
+    const popoverWidth = 304;
 
     const spaceBelow = window.innerHeight - rect.bottom;
     const spaceAbove = rect.top;
@@ -154,8 +165,7 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
       top = rect.top - popoverHeight - 6;
     }
 
-    // Viewport boundary clamping
-    top = Math.max(12, Math.min(window.innerHeight - popoverHeight - 12, top));
+    // Viewport horizontal clamping
     const left = Math.max(12, Math.min(rect.left, window.innerWidth - popoverWidth - 12));
 
     setCoords({ top, left, placement });
@@ -170,15 +180,22 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
     }
   }, [isOpen, isMobile, updateCoords]);
 
-  // Listen to resize and scroll (capture: true for scrolls inside modals)
+  // Real-time anchored scroll tracking with requestAnimationFrame (capture: true for modal scrolls)
   useEffect(() => {
     if (isOpen && !isMobile) {
+      let rafId: number | null = null;
       const handleScrollOrResize = () => {
-        updateCoords();
+        if (rafId !== null) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(() => {
+          updateCoords();
+        });
       };
-      window.addEventListener('resize', handleScrollOrResize);
-      window.addEventListener('scroll', handleScrollOrResize, true);
+
+      window.addEventListener('resize', handleScrollOrResize, { passive: true });
+      window.addEventListener('scroll', handleScrollOrResize, { capture: true, passive: true });
+
       return () => {
+        if (rafId !== null) cancelAnimationFrame(rafId);
         window.removeEventListener('resize', handleScrollOrResize);
         window.removeEventListener('scroll', handleScrollOrResize, true);
       };
@@ -326,25 +343,25 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   const renderHeader = () => {
     if (viewMode === 'days') {
       return (
-        <div className="flex items-center justify-between mb-2.5 px-0.5">
-          <div className="flex items-center gap-0.5">
+        <div className="flex items-center justify-between gap-1 mb-2.5 px-0.5">
+          <div className="flex items-center gap-0.5 shrink-0">
             <button
               type="button"
               onClick={() => setViewYear((y) => y - 1)}
-              className="h-8 w-8 inline-flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition cursor-pointer"
+              className="w-6 h-6 sm:w-7 sm:h-7 shrink-0 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition cursor-pointer"
               aria-label="Previous year"
               title={locale === 'id' ? 'Tahun Sebelumnya' : 'Previous Year'}
             >
-              <ChevronsLeft className="w-4 h-4" />
+              <ChevronsLeft className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </button>
             <button
               type="button"
               onClick={handlePrevMonth}
-              className="h-8 w-8 inline-flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition cursor-pointer"
+              className="w-6 h-6 sm:w-7 sm:h-7 shrink-0 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition cursor-pointer"
               aria-label="Previous month"
               title={locale === 'id' ? 'Bulan Sebelumnya' : 'Previous Month'}
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </button>
           </div>
 
@@ -352,33 +369,33 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
           <button
             type="button"
             onClick={() => setViewMode('months')}
-            className="px-2.5 py-1 rounded-lg text-sm font-semibold text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 inline-flex items-center gap-1 transition-colors cursor-pointer"
+            className="px-1.5 py-1 rounded-lg text-xs sm:text-[13px] font-semibold whitespace-nowrap text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 inline-flex items-center justify-center gap-1 transition-colors cursor-pointer min-w-0"
             title={locale === 'id' ? 'Pilih Bulan' : 'Select Month'}
           >
-            <span>
+            <span className="whitespace-nowrap truncate">
               {months[viewMonth]} {viewYear}
             </span>
-            <ChevronDown className="w-3.5 h-3.5 opacity-60" />
+            <ChevronDown className="w-3 h-3 sm:w-3.5 sm:h-3.5 opacity-60 shrink-0" />
           </button>
 
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center gap-0.5 shrink-0">
             <button
               type="button"
               onClick={handleNextMonth}
-              className="h-8 w-8 inline-flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition cursor-pointer"
+              className="w-6 h-6 sm:w-7 sm:h-7 shrink-0 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition cursor-pointer"
               aria-label="Next month"
               title={locale === 'id' ? 'Bulan Berikutnya' : 'Next Month'}
             >
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </button>
             <button
               type="button"
               onClick={() => setViewYear((y) => y + 1)}
-              className="h-8 w-8 inline-flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition cursor-pointer"
+              className="w-6 h-6 sm:w-7 sm:h-7 shrink-0 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition cursor-pointer"
               aria-label="Next year"
               title={locale === 'id' ? 'Tahun Berikutnya' : 'Next Year'}
             >
-              <ChevronsRight className="w-4 h-4" />
+              <ChevronsRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </button>
           </div>
         </div>
@@ -387,15 +404,15 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
 
     if (viewMode === 'months') {
       return (
-        <div className="flex items-center justify-between mb-2.5 px-0.5">
+        <div className="flex items-center justify-between gap-1 mb-2.5 px-0.5">
           <button
             type="button"
             onClick={() => setViewYear((y) => y - 1)}
-            className="h-8 w-8 inline-flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition cursor-pointer"
+            className="w-6 h-6 sm:w-7 sm:h-7 shrink-0 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition cursor-pointer"
             aria-label="Previous year"
             title={locale === 'id' ? 'Tahun Sebelumnya' : 'Previous Year'}
           >
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
           </button>
 
           {/* Drill-up button to Year view */}
@@ -405,21 +422,21 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
               setYearPageStart(Math.floor(viewYear / 10) * 10);
               setViewMode('years');
             }}
-            className="px-3 py-1 rounded-lg text-sm font-semibold text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 inline-flex items-center gap-1 transition-colors cursor-pointer"
+            className="px-2 py-1 rounded-lg text-xs sm:text-[13px] font-semibold whitespace-nowrap text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 inline-flex items-center justify-center gap-1 transition-colors cursor-pointer"
             title={locale === 'id' ? 'Pilih Tahun' : 'Select Year'}
           >
             <span>{viewYear}</span>
-            <ChevronDown className="w-3.5 h-3.5 opacity-60" />
+            <ChevronDown className="w-3 h-3 sm:w-3.5 sm:h-3.5 opacity-60 shrink-0" />
           </button>
 
           <button
             type="button"
             onClick={() => setViewYear((y) => y + 1)}
-            className="h-8 w-8 inline-flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition cursor-pointer"
+            className="w-6 h-6 sm:w-7 sm:h-7 shrink-0 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition cursor-pointer"
             aria-label="Next year"
             title={locale === 'id' ? 'Tahun Berikutnya' : 'Next Year'}
           >
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
           </button>
         </div>
       );
@@ -427,29 +444,29 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
 
     // viewMode === 'years'
     return (
-      <div className="flex items-center justify-between mb-2.5 px-0.5">
+      <div className="flex items-center justify-between gap-1 mb-2.5 px-0.5">
         <button
           type="button"
           onClick={() => setYearPageStart((y) => y - 12)}
-          className="h-8 w-8 inline-flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition cursor-pointer"
+          className="w-6 h-6 sm:w-7 sm:h-7 shrink-0 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition cursor-pointer"
           aria-label="Previous 12 years"
           title={locale === 'id' ? '12 Tahun Sebelumnya' : 'Previous 12 Years'}
         >
-          <ChevronLeft className="w-4 h-4" />
+          <ChevronLeft className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
         </button>
 
-        <div className="font-bold text-sm tracking-tight text-gray-900 dark:text-white select-none px-2 text-center">
+        <div className="font-bold text-xs sm:text-[13px] tracking-tight text-gray-900 dark:text-white select-none px-2 text-center whitespace-nowrap">
           {yearPageStart} – {yearPageStart + 11}
         </div>
 
         <button
           type="button"
           onClick={() => setYearPageStart((y) => y + 12)}
-          className="h-8 w-8 inline-flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition cursor-pointer"
+          className="w-6 h-6 sm:w-7 sm:h-7 shrink-0 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition cursor-pointer"
           aria-label="Next 12 years"
           title={locale === 'id' ? '12 Tahun Berikutnya' : 'Next 12 Years'}
         >
-          <ChevronRight className="w-4 h-4" />
+          <ChevronRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
         </button>
       </div>
     );
@@ -722,7 +739,7 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div
-                    className={`w-[300px] rounded-2xl bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 shadow-2xl p-3.5 select-none text-gray-900 dark:text-gray-100 duration-150 ease-out animate-in fade-in zoom-in-95 ${
+                    className={`w-[288px] sm:w-[304px] rounded-2xl bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 shadow-2xl p-3.5 select-none text-gray-900 dark:text-gray-100 duration-150 ease-out animate-in fade-in zoom-in-95 ${
                       coords.placement === 'top' ? 'origin-bottom' : 'origin-top'
                     }`}
                   >

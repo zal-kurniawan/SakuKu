@@ -48,6 +48,47 @@ body {
   scrollbar-width: none;
 }
 
+/* Thin adaptive custom scrollbar for dropdowns and popovers */
+.sakuku-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.4) transparent;
+}
+
+.sakuku-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+@media (min-width: 640px) {
+  .sakuku-scrollbar::-webkit-scrollbar {
+    width: 5px;
+  }
+}
+
+.sakuku-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sakuku-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.35);
+  border-radius: 9999px;
+}
+
+.sakuku-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.6);
+}
+
+.dark .sakuku-scrollbar {
+  scrollbar-color: rgba(156, 163, 175, 0.25) transparent;
+}
+
+.dark .sakuku-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.25);
+}
+
+.dark .sakuku-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.45);
+}
+
 /* Controlled Silky-Smooth Theme Transition (active only during 300ms switch) */
 html.theme-transitioning,
 html.theme-transitioning *:not(svg):not(path):not(.recharts-surface):not(.recharts-surface *) {
