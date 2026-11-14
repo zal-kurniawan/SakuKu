@@ -52,7 +52,7 @@ export default function LoginPage() {
         setIsDark(false);
         document.documentElement.classList.remove('dark');
       }
-    } catch {}
+    } catch { }
 
     // Focus on first input box
     setTimeout(() => {
@@ -77,7 +77,7 @@ export default function LoginPage() {
     try {
       localStorage.setItem('sakuku_lang', next);
       window.dispatchEvent(new Event('language-change'));
-    } catch {}
+    } catch { }
   };
 
   const toggleTheme = () => {
@@ -92,7 +92,7 @@ export default function LoginPage() {
         localStorage.setItem('sakuku_theme', 'light');
       }
       window.dispatchEvent(new Event('theme-change'));
-    } catch {}
+    } catch { }
   };
 
   // Submit Verification Code (Auto-called on 6th digit or via button)
@@ -335,8 +335,8 @@ export default function LoginPage() {
             <KeyRound className="w-3 h-3 text-blue-500" />
             <span>
               {locale === 'id'
-                ? 'Dilindungi oleh Google Authenticator RFC 6238 TOTP'
-                : 'Protected by Google Authenticator RFC 6238 TOTP'}
+                ? 'Dilindungi oleh Google Authenticator'
+                : 'Protected by Google Authenticator'}
             </span>
           </p>
         </div>
