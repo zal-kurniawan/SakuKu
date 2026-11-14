@@ -23,6 +23,7 @@ export interface CustomDatePickerProps {
   minDate?: string; // 'YYYY-MM-DD'
   maxDate?: string; // 'YYYY-MM-DD'
   disabled?: boolean;
+  hasError?: boolean;
   clearable?: boolean;
   className?: string;
   triggerClassName?: string;
@@ -76,6 +77,7 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   minDate,
   maxDate,
   disabled = false,
+  hasError = false,
   clearable = false,
   className = '',
   triggerClassName = '',
@@ -126,6 +128,13 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Auto-close if disabled while open
+  useEffect(() => {
+    if (disabled && isOpen) {
+      setIsOpen(false);
+    }
+  }, [disabled, isOpen]);
 
   // Detect mobile viewport (< 640px)
   useEffect(() => {
@@ -701,16 +710,22 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
         type="button"
         id={inputId}
         disabled={disabled}
-        onClick={() => !disabled && setIsOpen((prev) => !prev)}
+        aria-disabled={disabled}
+        onClick={() => {
+          if (disabled) return;
+          setIsOpen((prev) => !prev);
+        }}
         aria-haspopup="dialog"
         aria-expanded={isOpen}
         aria-label={ariaLabel}
-        className={`w-full flex items-center justify-between border transition-all text-left font-medium cursor-pointer ${sizeClasses} ${
+        className={`w-full flex items-center justify-between border transition-all text-left font-medium ${sizeClasses} ${
           disabled
-            ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-800 cursor-not-allowed opacity-70'
+            ? 'bg-gray-100/60 dark:bg-gray-800/60 text-gray-400 dark:text-gray-500 border-gray-200/60 dark:border-gray-800/60 cursor-not-allowed opacity-55 pointer-events-none select-none'
             : isOpen
-            ? 'bg-white dark:bg-[#0f1623] text-gray-900 dark:text-white border-blue-500 ring-2 ring-blue-500/20 dark:ring-blue-500/30'
-            : 'bg-white dark:bg-[#0f1623] text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 hover:bg-gray-50/50 dark:hover:bg-[#131b2c]'
+            ? 'bg-white dark:bg-[#0f1623] text-gray-900 dark:text-white border-blue-500 ring-2 ring-blue-500/20 dark:ring-blue-500/30 cursor-pointer'
+            : hasError
+            ? 'border-rose-500/80 dark:border-rose-500/80 bg-rose-50/40 dark:bg-rose-950/20 ring-2 ring-rose-500/15 focus:border-rose-500 focus:ring-rose-500/25 cursor-pointer text-gray-900 dark:text-white'
+            : 'bg-white dark:bg-[#0f1623] text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 hover:bg-gray-50/50 dark:hover:bg-[#131b2c] cursor-pointer'
         } ${triggerClassName}`}
       >
         <span className="truncate flex-1 min-w-0 flex items-center gap-2">

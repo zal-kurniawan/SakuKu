@@ -184,6 +184,7 @@ export const WalletDistributionChart: React.FC<WalletDistributionChartProps> = (
                 ...fullMonths.map((mName, idx) => ({ value: String(idx + 1), label: mName })),
               ]}
               size="sm"
+              disabled={loading}
               aria-label={t('charts.filterMonth') || 'Pilih Bulan'}
             />
           </div>
@@ -196,6 +197,7 @@ export const WalletDistributionChart: React.FC<WalletDistributionChartProps> = (
                 onChange={(val) => setSelectedYear(Number(val))}
                 options={availableYears.map((yr) => ({ value: yr, label: String(yr) }))}
                 size="sm"
+                disabled={loading}
                 aria-label={t('charts.filterYear') || 'Pilih Tahun'}
               />
             </div>

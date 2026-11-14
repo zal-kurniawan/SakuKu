@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { CustomSelect } from './ui/CustomSelect';
 import { CurrencyInput } from './ui/CurrencyInput';
+import { FormFieldError } from './ui/FormFieldError';
 import { getCategoryLabel } from '@/lib/categories';
 
 export interface BudgetItem {
@@ -62,6 +63,10 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
   const [monthlyLimit, setMonthlyLimit] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<{
+    category?: string;
+    monthlyLimit?: string;
+  }>({});
 
   useModalEscape({
     isOpen: modalOpen,
@@ -74,6 +79,7 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
     setCategory(COMMON_CATEGORIES[0]);
     setMonthlyLimit('');
     setError('');
+    setFieldErrors({});
     setModalOpen(true);
   };
 
@@ -82,6 +88,7 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
     setCategory(b.category);
     setMonthlyLimit(String(b.monthlyLimit));
     setError('');
+    setFieldErrors({});
     setModalOpen(true);
   };
 
@@ -111,13 +118,37 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
 
   const handleSaveBudget = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!monthlyLimit || parseFloat(monthlyLimit) <= 0) {
-      setError(t('budgets.limitError') || 'Batas budget harus lebih dari 0.');
+    const errors: { category?: string; monthlyLimit?: string } = {};
+
+    if (!category) {
+      errors.category = t(
+        'budgets.categoryRequired',
+        locale === 'en' ? 'Category is required.' : 'Kategori wajib dipilih.'
+      );
+    }
+
+    const numLimit = parseFloat(monthlyLimit);
+    if (!monthlyLimit || isNaN(numLimit) || numLimit <= 0) {
+      errors.monthlyLimit = t(
+        'budgets.limitRequired',
+        locale === 'en' ? 'Budget limit must be greater than Rp 0.' : 'Batas budget harus lebih dari Rp 0.'
+      );
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      requestAnimationFrame(() => {
+        const firstKey = Object.keys(errors)[0];
+        const firstEl = document.getElementById(`budget-${firstKey}-input`);
+        firstEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        firstEl?.focus();
+      });
       return;
     }
 
     setLoading(true);
     setError('');
+    setFieldErrors({});
 
     try {
       if (editingId) {
@@ -369,19 +400,25 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
                 </div>
               )}
 
-              <form onSubmit={handleSaveBudget} id="budget-form" className="space-y-4">
+              <form onSubmit={handleSaveBudget} id="budget-form" noValidate className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                    {t('transactions.formCategory') || (locale === 'en' ? 'Category' : 'Kategori')}
+                    {t('transactions.formCategory') || (locale === 'en' ? 'Category' : 'Kategori')} *
                   </label>
                   <CustomSelect
+                    id="budget-category-input"
                     value={category}
-                    onChange={setCategory}
+                    onChange={(val) => {
+                      setCategory(val);
+                      if (fieldErrors.category) setFieldErrors((p) => ({ ...p, category: undefined }));
+                    }}
+                    hasError={Boolean(fieldErrors.category)}
                     options={COMMON_CATEGORIES.map((c) => ({ value: c, label: getCategoryLabel(c, locale, t) }))}
                     placeholder={t('transactions.formCategory', locale === 'en' ? 'Select Category' : 'Pilih Kategori')}
                     disabled={!!editingId}
                     size="lg"
                   />
+                  <FormFieldError message={fieldErrors.category} />
                 </div>
 
                 <div>
@@ -389,12 +426,17 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
                     {t('budgets.monthlyLimit') || 'Target Batas Bulanan (Rp)'} *
                   </label>
                   <CurrencyInput
+                    id="budget-monthlyLimit-input"
                     value={monthlyLimit}
-                    onChange={(numericVal) => setMonthlyLimit(String(numericVal || ''))}
-                    placeholder={t('budgets.limitPlaceholder') || 'Contoh: 1500000'}
-                    required
+                    hasError={Boolean(fieldErrors.monthlyLimit)}
+                    onChange={(numericVal) => {
+                      setMonthlyLimit(String(numericVal || ''));
+                      if (fieldErrors.monthlyLimit) setFieldErrors((p) => ({ ...p, monthlyLimit: undefined }));
+                    }}
+                    placeholder="0"
                     size="lg"
                   />
+                  <FormFieldError message={fieldErrors.monthlyLimit} />
                 </div>
               </form>
 

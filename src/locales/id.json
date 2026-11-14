@@ -81,7 +81,9 @@
     "addFailed": "Gagal menambahkan dompet",
     "updateSuccess": "Dompet berhasil diperbarui",
     "updateFailed": "Gagal memperbarui dompet",
-    "nameRequired": "Nama dompet wajib diisi."
+    "nameRequired": "Nama dompet wajib diisi.",
+    "balanceNegative": "Saldo awal tidak boleh negatif.",
+    "invalidHex": "Kode warna HEX tidak valid."
   },
   "transfer": {
     "title": "Transfer Antar Dompet",
@@ -101,7 +103,12 @@
     "insufficientBalance": "Saldo dompet asal tidak mencukupi",
     "transferSuccess": "Transfer saldo berhasil",
     "transferFailed": "Gagal melakukan transfer",
-    "amountPositive": "Nominal transfer harus lebih dari 0."
+    "amountPositive": "Nominal transfer harus lebih dari 0.",
+    "sourceRequired": "Silakan pilih dompet asal.",
+    "destRequired": "Silakan pilih dompet tujuan.",
+    "destDifferent": "Dompet tujuan harus berbeda dari dompet asal.",
+    "amountRequired": "Nominal transfer harus lebih dari Rp 0.",
+    "dateRequired": "Tanggal transfer wajib diisi."
   },
   "transactions": {
     "title": "Riwayat Transaksi",
@@ -169,7 +176,12 @@
     "destinationWallet": "Dompet Tujuan",
     "selectDestWallet": "Pilih Dompet Tujuan",
     "titleAndAmountRequired": "Judul dan nominal transaksi wajib diisi.",
-    "destWalletRequired": "Dompet tujuan wajib dipilih untuk transaksi transfer."
+    "destWalletRequired": "Dompet tujuan wajib dipilih untuk transaksi transfer.",
+    "titleRequired": "Judul transaksi wajib diisi.",
+    "amountRequired": "Nominal harus lebih dari Rp 0.",
+    "walletRequired": "Silakan pilih dompet atau rekening.",
+    "categoryRequired": "Silakan pilih kategori.",
+    "dateRequired": "Tanggal transaksi wajib diisi."
   },
   "budgets": {
     "title": "Target Batas Budget Bulanan",
@@ -194,7 +206,9 @@
     "addSuccess": "Target budget berhasil disimpan",
     "addFailed": "Gagal menyimpan target budget",
     "updateSuccess": "Target budget berhasil diperbarui",
-    "updateFailed": "Gagal memperbarui target budget"
+    "updateFailed": "Gagal memperbarui target budget",
+    "categoryRequired": "Silakan pilih kategori.",
+    "limitRequired": "Batas budget harus lebih dari Rp 0."
   },
   "charts": {
     "cashflowTitle": "Arus Kas Bulanan (Pemasukan vs Pengeluaran)",
@@ -366,5 +380,8 @@
     "Transfer Saldo": "Transfer Saldo",
     "Operasional": "Operasional",
     "Hutang / Piutang": "Hutang / Piutang"
+  },
+  "login": {
+    "codeRequired": "Kode verifikasi 6 digit wajib diisi."
   }
 }

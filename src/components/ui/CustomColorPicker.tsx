@@ -589,11 +589,11 @@ export const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
         isOpen &&
         createPortal(
           <div
-            className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
             onClick={handleApply}
           >
             <div
-              className="w-full max-w-[320px] sm:max-w-[340px] rounded-2xl bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 shadow-2xl p-4 sm:p-5 animate-in zoom-in-95 duration-150"
+              className="w-full max-w-[320px] sm:max-w-[340px] max-h-[92dvh] overflow-y-auto rounded-2xl bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 shadow-2xl p-4 sm:p-5 animate-in zoom-in-95 duration-150"
               onClick={(e) => e.stopPropagation()}
             >
               {pickerCardContent}

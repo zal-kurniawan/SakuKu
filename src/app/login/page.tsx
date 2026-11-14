@@ -72,7 +72,16 @@ export default function LoginPage() {
 
   // Submit Verification Code (Auto-called on 6th digit or via button)
   const handleSubmitCode = async (codeToVerify: string) => {
-    if (loading || codeToVerify.length !== 6 || lockedSeconds > 0) return;
+    if (loading || lockedSeconds > 0) return;
+
+    if (!codeToVerify || codeToVerify.length < 6) {
+      setErrorMessage(
+        locale === 'id'
+          ? 'Masukkan 6 digit kode verifikasi.'
+          : 'Please enter a 6-digit verification code.'
+      );
+      return;
+    }
 
     setLoading(true);
     setErrorMessage('');
@@ -249,6 +258,7 @@ export default function LoginPage() {
             e.preventDefault();
             handleSubmitCode(digits.join(''));
           }}
+          noValidate
           className="space-y-5"
         >
           <div className="grid grid-cols-6 gap-1.5 sm:gap-2.5">

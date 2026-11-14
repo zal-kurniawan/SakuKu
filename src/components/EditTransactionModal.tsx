@@ -8,6 +8,7 @@ import { X, Pencil, ArrowRightLeft } from 'lucide-react';
 import { CustomSelect } from './ui/CustomSelect';
 import { CustomDatePicker } from './ui/CustomDatePicker';
 import { CurrencyInput } from './ui/CurrencyInput';
+import { FormFieldError } from './ui/FormFieldError';
 import { WalletItem } from './WalletList';
 import { TransactionItem } from './TransactionTable';
 import { getCategoryLabel } from '@/lib/categories';
@@ -62,6 +63,14 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
   const [date, setDate] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<{
+    title?: string;
+    amount?: string;
+    walletId?: string;
+    destinationWalletId?: string;
+    category?: string;
+    date?: string;
+  }>({});
 
   // Pre-fill form when transaction changes
   useEffect(() => {
@@ -75,6 +84,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
       setNotes(transaction.notes || '');
       setDate(transaction.date ? new Date(transaction.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10));
       setError('');
+      setFieldErrors({});
     }
   }, [transaction, wallets]);
 
@@ -91,38 +101,83 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !amount) {
-      setError(
-        t(
-          'transactions.titleAndAmountRequired',
-          locale === 'en'
-            ? 'Transaction title and amount are required.'
-            : 'Judul dan nominal transaksi wajib diisi.'
-        )
+    const errors: {
+      title?: string;
+      amount?: string;
+      walletId?: string;
+      destinationWalletId?: string;
+      category?: string;
+      date?: string;
+    } = {};
+
+    if (!title.trim()) {
+      errors.title = t(
+        'transactions.titleRequired',
+        locale === 'en' ? 'Transaction title is required.' : 'Judul transaksi wajib diisi.'
       );
-      return;
+    }
+
+    const numAmount = parseFloat(amount);
+    if (!amount || isNaN(numAmount) || numAmount <= 0) {
+      errors.amount = t(
+        'transactions.amountRequired',
+        locale === 'en' ? 'Amount must be greater than Rp 0.' : 'Nominal harus lebih dari Rp 0.'
+      );
+    }
+
+    if (!walletId) {
+      errors.walletId = t(
+        'transactions.walletRequired',
+        locale === 'en' ? 'Please select a wallet or account.' : 'Silakan pilih dompet atau rekening.'
+      );
     }
 
     if (type === 'TRANSFER') {
       if (!destinationWalletId) {
-        setError(
-          t(
-            'transactions.destWalletRequired',
-            locale === 'en'
-              ? 'Destination wallet is required for transfer transactions.'
-              : 'Dompet tujuan wajib dipilih untuk transaksi transfer.'
-          )
+        errors.destinationWalletId = t(
+          'transactions.destWalletRequired',
+          locale === 'en'
+            ? 'Destination wallet is required for transfer transactions.'
+            : 'Dompet tujuan wajib dipilih untuk transaksi transfer.'
         );
-        return;
+      } else if (destinationWalletId === walletId) {
+        errors.destinationWalletId = t(
+          'transfer.destDifferent',
+          locale === 'en'
+            ? 'Destination wallet must be different from source wallet.'
+            : 'Dompet tujuan harus berbeda dari dompet asal.'
+        );
       }
-      if (destinationWalletId === walletId) {
-        setError(t('transfer.sameWalletError') || 'Dompet asal dan tujuan tidak boleh sama.');
-        return;
+    } else {
+      if (!category) {
+        errors.category = t(
+          'transactions.categoryRequired',
+          locale === 'en' ? 'Please select a category.' : 'Silakan pilih kategori.'
+        );
       }
+    }
+
+    if (!date) {
+      errors.date = t(
+        'transactions.dateRequired',
+        locale === 'en' ? 'Transaction date is required.' : 'Tanggal transaksi wajib diisi.'
+      );
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      requestAnimationFrame(() => {
+        const firstKey = Object.keys(errors)[0];
+        const firstEl = document.getElementById(`edit-tx-${firstKey}-input`);
+        firstEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        firstEl?.focus();
+      });
+      return;
     }
 
     setLoading(true);
     setError('');
+    setFieldErrors({});
 
     try {
       const res = await fetch(`/api/transactions/${transaction.id}`, {
@@ -198,7 +253,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
             </div>
           )}
 
-          <form onSubmit={handleSubmit} id="edit-tx-form" className="space-y-4">
+          <form onSubmit={handleSubmit} id="edit-tx-form" noValidate className="space-y-4">
             {/* Type Toggle Buttons (3 Options: Expense, Income, Transfer) */}
             <div>
               <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
@@ -260,13 +315,21 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
                 {t('transactions.formTitle') || 'Judul Transaksi'} *
               </label>
               <input
+                id="edit-tx-title-input"
                 type="text"
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={(e) => {
+                  setTitle(e.target.value);
+                  if (fieldErrors.title) setFieldErrors((p) => ({ ...p, title: undefined }));
+                }}
                 placeholder={t('transactions.formTitlePlaceholder') || 'Contoh: Makan Siang, Bensin, Gaji'}
-                required
-                className="w-full px-3.5 py-2.5 rounded-xl text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
+                className={`w-full px-3.5 py-2.5 rounded-xl text-sm border font-medium focus:outline-none transition-colors min-h-[44px] ${
+                  fieldErrors.title
+                    ? 'border-rose-500/80 dark:border-rose-500/80 bg-rose-50/40 dark:bg-rose-950/20 ring-2 ring-rose-500/15 focus:border-rose-500 focus:ring-rose-500/25 text-gray-900 dark:text-white'
+                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'
+                }`}
               />
+              <FormFieldError message={fieldErrors.title} />
             </div>
 
             {/* Amount */}
@@ -275,61 +338,84 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
                 {t('transactions.formAmount') || 'Nominal (Rp)'} *
               </label>
               <CurrencyInput
+                id="edit-tx-amount-input"
                 value={amount}
-                onChange={(numericVal) => setAmount(String(numericVal || ''))}
+                hasError={Boolean(fieldErrors.amount)}
+                onChange={(numericVal) => {
+                  setAmount(String(numericVal || ''));
+                  if (fieldErrors.amount) setFieldErrors((p) => ({ ...p, amount: undefined }));
+                }}
                 placeholder="0"
-                required
                 size="lg"
               />
+              <FormFieldError message={fieldErrors.amount} />
             </div>
 
             {/* Wallet Selection (Source + Destination if Transfer) */}
-            <div className={`grid ${type === 'TRANSFER' ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2'} gap-3`}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 items-start">
               {/* Source Wallet */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                   {type === 'TRANSFER'
                     ? (t('transfer.fromWallet') || (locale === 'en' ? 'Source Wallet' : 'Dompet Asal'))
-                    : (t('transactions.formWallet') || (locale === 'en' ? 'Select Wallet / Account' : 'Pilih Dompet / Rekening'))}
+                    : (t('transactions.formWallet') || (locale === 'en' ? 'Select Wallet / Account' : 'Pilih Dompet / Rekening'))} *
                 </label>
                 <CustomSelect
+                  id="edit-tx-walletId-input"
                   value={walletId}
-                  onChange={setWalletId}
+                  hasError={Boolean(fieldErrors.walletId)}
+                  onChange={(wId) => {
+                    setWalletId(wId);
+                    if (fieldErrors.walletId) setFieldErrors((p) => ({ ...p, walletId: undefined }));
+                  }}
                   options={wallets.map((w) => ({ value: w.id, label: w.name }))}
                   placeholder={t('transactions.formWallet', locale === 'en' ? 'Select Wallet / Account' : 'Pilih Dompet / Rekening')}
                   size="lg"
                 />
+                <FormFieldError message={fieldErrors.walletId} />
               </div>
 
               {/* Destination Wallet (only for TRANSFER) */}
               {type === 'TRANSFER' ? (
                 <div>
                   <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                    {t('transfer.toWallet') || (locale === 'en' ? 'Destination Wallet' : 'Dompet Tujuan')}
+                    {t('transfer.toWallet') || (locale === 'en' ? 'Destination Wallet' : 'Dompet Tujuan')} *
                   </label>
                   <CustomSelect
+                    id="edit-tx-destinationWalletId-input"
                     value={destinationWalletId || ''}
-                    onChange={(val) => setDestinationWalletId(String(val))}
+                    hasError={Boolean(fieldErrors.destinationWalletId)}
+                    onChange={(val) => {
+                      setDestinationWalletId(String(val));
+                      if (fieldErrors.destinationWalletId) setFieldErrors((p) => ({ ...p, destinationWalletId: undefined }));
+                    }}
                     options={wallets
                       .filter((w) => w.id !== walletId)
                       .map((w) => ({ value: w.id, label: w.name }))}
                     placeholder={t('transactions.selectDestWallet', locale === 'en' ? 'Select Destination Wallet' : 'Pilih Dompet Tujuan')}
                     size="lg"
                   />
+                  <FormFieldError message={fieldErrors.destinationWalletId} />
                 </div>
               ) : (
                 /* Category */
                 <div>
                   <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                    {t('transactions.formCategory') || (locale === 'en' ? 'Category' : 'Kategori')}
+                    {t('transactions.formCategory') || (locale === 'en' ? 'Category' : 'Kategori')} *
                   </label>
                   <CustomSelect
+                    id="edit-tx-category-input"
                     value={category}
-                    onChange={setCategory}
+                    hasError={Boolean(fieldErrors.category)}
+                    onChange={(cVal) => {
+                      setCategory(cVal);
+                      if (fieldErrors.category) setFieldErrors((p) => ({ ...p, category: undefined }));
+                    }}
                     options={currentCategories.map((c) => ({ value: c, label: getCategoryLabel(c, locale, t) }))}
                     placeholder={t('transactions.formCategory', locale === 'en' ? 'Select Category' : 'Pilih Kategori')}
                     size="lg"
                   />
+                  <FormFieldError message={fieldErrors.category} />
                 </div>
               )}
             </div>
@@ -337,13 +423,19 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
             {/* Date */}
             <div>
               <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                {t('transactions.formDate') || 'Tanggal'}
+                {t('transactions.formDate') || 'Tanggal'} *
               </label>
               <CustomDatePicker
+                id="edit-tx-date-input"
                 value={date}
-                onChange={setDate}
+                hasError={Boolean(fieldErrors.date)}
+                onChange={(dVal) => {
+                  setDate(dVal);
+                  if (fieldErrors.date) setFieldErrors((p) => ({ ...p, date: undefined }));
+                }}
                 size="lg"
               />
+              <FormFieldError message={fieldErrors.date} />
             </div>
 
             {/* Notes */}

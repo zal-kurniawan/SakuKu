@@ -8,6 +8,7 @@ import { X, PlusCircle } from 'lucide-react';
 import { CustomSelect } from './ui/CustomSelect';
 import { CustomDatePicker } from './ui/CustomDatePicker';
 import { CurrencyInput } from './ui/CurrencyInput';
+import { FormFieldError } from './ui/FormFieldError';
 import { WalletItem } from './WalletList';
 import { getCategoryLabel } from '@/lib/categories';
 
@@ -58,6 +59,13 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<{
+    title?: string;
+    amount?: string;
+    walletId?: string;
+    category?: string;
+    date?: string;
+  }>({});
 
   useModalEscape({ isOpen, onClose, disabled: loading });
 
@@ -68,20 +76,64 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !amount) {
-      setError(
-        t(
-          'transactions.titleAndAmountRequired',
-          locale === 'en'
-            ? 'Transaction title and amount are required.'
-            : 'Judul dan nominal transaksi wajib diisi.'
-        )
+    const errors: {
+      title?: string;
+      amount?: string;
+      walletId?: string;
+      category?: string;
+      date?: string;
+    } = {};
+
+    if (!title.trim()) {
+      errors.title = t(
+        'transactions.titleRequired',
+        locale === 'en' ? 'Transaction title is required.' : 'Judul transaksi wajib diisi.'
       );
+    }
+
+    const numAmount = parseFloat(amount);
+    if (!amount || isNaN(numAmount) || numAmount <= 0) {
+      errors.amount = t(
+        'transactions.amountRequired',
+        locale === 'en' ? 'Amount must be greater than Rp 0.' : 'Nominal harus lebih dari Rp 0.'
+      );
+    }
+
+    if (!walletId) {
+      errors.walletId = t(
+        'transactions.walletRequired',
+        locale === 'en' ? 'Please select a wallet or account.' : 'Silakan pilih dompet atau rekening.'
+      );
+    }
+
+    if (!category) {
+      errors.category = t(
+        'transactions.categoryRequired',
+        locale === 'en' ? 'Please select a category.' : 'Silakan pilih kategori.'
+      );
+    }
+
+    if (!date) {
+      errors.date = t(
+        'transactions.dateRequired',
+        locale === 'en' ? 'Transaction date is required.' : 'Tanggal transaksi wajib diisi.'
+      );
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      requestAnimationFrame(() => {
+        const firstKey = Object.keys(errors)[0];
+        const firstEl = document.getElementById(`tx-${firstKey}-input`);
+        firstEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        firstEl?.focus();
+      });
       return;
     }
 
     setLoading(true);
     setError('');
+    setFieldErrors({});
 
     try {
       const res = await fetch('/api/transactions', {
@@ -160,7 +212,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             </div>
           )}
 
-          <form onSubmit={handleSubmit} id="add-tx-form" className="space-y-4">
+          <form onSubmit={handleSubmit} id="add-tx-form" noValidate className="space-y-4">
             {/* Type Toggle Buttons */}
             <div>
               <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
@@ -204,13 +256,21 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 {t('transactions.formTitle') || 'Judul Transaksi'} *
               </label>
               <input
+                id="tx-title-input"
                 type="text"
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={(e) => {
+                  setTitle(e.target.value);
+                  if (fieldErrors.title) setFieldErrors((p) => ({ ...p, title: undefined }));
+                }}
                 placeholder={t('transactions.formTitlePlaceholder') || 'Contoh: Makan Siang, Bensin, Gaji'}
-                required
-                className="w-full px-3.5 py-2.5 rounded-xl text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
+                className={`w-full px-3.5 py-2.5 rounded-xl text-sm border font-medium focus:outline-none transition-colors min-h-[44px] ${
+                  fieldErrors.title
+                    ? 'border-rose-500/80 dark:border-rose-500/80 bg-rose-50/40 dark:bg-rose-950/20 ring-2 ring-rose-500/15 focus:border-rose-500 focus:ring-rose-500/25 text-gray-900 dark:text-white'
+                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'
+                }`}
               />
+              <FormFieldError message={fieldErrors.title} />
             </div>
 
             {/* Amount */}
@@ -219,55 +279,78 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 {t('transactions.formAmount') || 'Nominal (Rp)'} *
               </label>
               <CurrencyInput
+                id="tx-amount-input"
                 value={amount}
-                onChange={(numericVal) => setAmount(String(numericVal || ''))}
+                hasError={Boolean(fieldErrors.amount)}
+                onChange={(numericVal) => {
+                  setAmount(String(numericVal || ''));
+                  if (fieldErrors.amount) setFieldErrors((p) => ({ ...p, amount: undefined }));
+                }}
                 placeholder="0"
-                required
                 size="lg"
               />
+              <FormFieldError message={fieldErrors.amount} />
             </div>
 
             {/* Wallet Selection & Category (Responsive 2 Cols) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 items-start">
               {/* Wallet */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                  {t('transactions.formWallet') || (locale === 'en' ? 'Select Wallet / Account' : 'Pilih Dompet / Rekening')}
+                  {t('transactions.formWallet') || (locale === 'en' ? 'Select Wallet / Account' : 'Pilih Dompet / Rekening')} *
                 </label>
                 <CustomSelect
+                  id="tx-walletId-input"
                   value={walletId}
-                  onChange={setWalletId}
+                  hasError={Boolean(fieldErrors.walletId)}
+                  onChange={(wId) => {
+                    setWalletId(wId);
+                    if (fieldErrors.walletId) setFieldErrors((p) => ({ ...p, walletId: undefined }));
+                  }}
                   options={wallets.map((w) => ({ value: w.id, label: w.name }))}
                   placeholder={t('transactions.formWallet', locale === 'en' ? 'Select Wallet / Account' : 'Pilih Dompet / Rekening')}
                   size="lg"
                 />
+                <FormFieldError message={fieldErrors.walletId} />
               </div>
 
               {/* Category */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                  {t('transactions.formCategory') || (locale === 'en' ? 'Category' : 'Kategori')}
+                  {t('transactions.formCategory') || (locale === 'en' ? 'Category' : 'Kategori')} *
                 </label>
                 <CustomSelect
+                  id="tx-category-input"
                   value={category}
-                  onChange={setCategory}
+                  hasError={Boolean(fieldErrors.category)}
+                  onChange={(cVal) => {
+                    setCategory(cVal);
+                    if (fieldErrors.category) setFieldErrors((p) => ({ ...p, category: undefined }));
+                  }}
                   options={currentCategories.map((c) => ({ value: c, label: getCategoryLabel(c, locale, t) }))}
                   placeholder={t('transactions.formCategory', locale === 'en' ? 'Select Category' : 'Pilih Kategori')}
                   size="lg"
                 />
+                <FormFieldError message={fieldErrors.category} />
               </div>
             </div>
 
             {/* Date */}
             <div>
               <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                {t('transactions.formDate') || 'Tanggal'}
+                {t('transactions.formDate') || 'Tanggal'} *
               </label>
               <CustomDatePicker
+                id="tx-date-input"
                 value={date}
-                onChange={setDate}
+                hasError={Boolean(fieldErrors.date)}
+                onChange={(dVal) => {
+                  setDate(dVal);
+                  if (fieldErrors.date) setFieldErrors((p) => ({ ...p, date: undefined }));
+                }}
                 size="lg"
               />
+              <FormFieldError message={fieldErrors.date} />
             </div>
 
             {/* Notes */}

@@ -9,6 +9,7 @@ import { X, ArrowRightLeft } from 'lucide-react';
 import { CustomSelect } from './ui/CustomSelect';
 import { CustomDatePicker } from './ui/CustomDatePicker';
 import { CurrencyInput } from './ui/CurrencyInput';
+import { FormFieldError } from './ui/FormFieldError';
 import { WalletItem } from './WalletList';
 
 const getTodayLocalDate = () => {
@@ -44,6 +45,12 @@ export const TransferModal: React.FC<TransferModalProps> = ({
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<{
+    fromWalletId?: string;
+    toWalletId?: string;
+    amount?: string;
+    date?: string;
+  }>({});
 
   useEffect(() => {
     if (wallets.length >= 2) {
@@ -56,6 +63,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
     setDate(getTodayLocalDate());
     setNotes('');
     setError('');
+    setFieldErrors({});
   }, [wallets, defaultFromWalletId, isOpen]);
 
   useModalEscape({ isOpen, onClose, disabled: loading });
@@ -67,31 +75,68 @@ export const TransferModal: React.FC<TransferModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (fromWalletId === toWalletId) {
-      setError(t('transfer.sameWalletError') || 'Dompet asal dan tujuan tidak boleh sama');
-      return;
+    const errors: {
+      fromWalletId?: string;
+      toWalletId?: string;
+      amount?: string;
+      date?: string;
+    } = {};
+
+    if (!fromWalletId) {
+      errors.fromWalletId = t(
+        'transfer.sourceRequired',
+        locale === 'en' ? 'Please select source wallet.' : 'Silakan pilih dompet asal.'
+      );
+    }
+
+    if (!toWalletId) {
+      errors.toWalletId = t(
+        'transfer.destRequired',
+        locale === 'en' ? 'Please select destination wallet.' : 'Silakan pilih dompet tujuan.'
+      );
+    } else if (fromWalletId && toWalletId === fromWalletId) {
+      errors.toWalletId = t(
+        'transfer.destDifferent',
+        locale === 'en'
+          ? 'Destination wallet must be different from source wallet.'
+          : 'Dompet tujuan harus berbeda dari dompet asal.'
+      );
     }
 
     const numAmount = parseFloat(amount);
-    if (!numAmount || numAmount <= 0) {
-      setError(
-        t(
-          'transfer.amountPositive',
-          locale === 'en'
-            ? 'Transfer amount must be greater than 0.'
-            : 'Nominal transfer harus lebih dari 0.'
-        )
+    if (!amount || isNaN(numAmount) || numAmount <= 0) {
+      errors.amount = t(
+        'transfer.amountRequired',
+        locale === 'en' ? 'Transfer amount must be greater than Rp 0.' : 'Nominal transfer harus lebih dari Rp 0.'
       );
-      return;
+    } else if (selectedFromWallet && selectedFromWallet.balance < numAmount) {
+      errors.amount = t(
+        'transfer.insufficientBalance',
+        locale === 'en' ? 'Insufficient balance in source wallet.' : 'Saldo dompet asal tidak mencukupi.'
+      );
     }
 
-    if (selectedFromWallet && selectedFromWallet.balance < numAmount) {
-      setError(t('transfer.insufficientBalance') || 'Saldo dompet asal tidak mencukupi');
+    if (!date) {
+      errors.date = t(
+        'transfer.dateRequired',
+        locale === 'en' ? 'Transfer date is required.' : 'Tanggal transfer wajib diisi.'
+      );
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      requestAnimationFrame(() => {
+        const firstKey = Object.keys(errors)[0];
+        const firstEl = document.getElementById(`transfer-${firstKey}-input`);
+        firstEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        firstEl?.focus();
+      });
       return;
     }
 
     setLoading(true);
     setError('');
+    setFieldErrors({});
 
     try {
       const res = await fetch('/api/transfer', {
@@ -165,17 +210,22 @@ export const TransferModal: React.FC<TransferModalProps> = ({
             </div>
           )}
 
-          <form onSubmit={handleSubmit} id="transfer-form" className="space-y-4">
+          <form onSubmit={handleSubmit} id="transfer-form" noValidate className="space-y-4">
             {/* From & To Wallets (Responsive 2 Cols) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 items-start">
               {/* From Wallet */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                   {t('transfer.fromWallet') || 'Dompet Asal'}
                 </label>
                 <CustomSelect
+                  id="transfer-fromWalletId-input"
                   value={fromWalletId}
-                  onChange={setFromWalletId}
+                  onChange={(val) => {
+                    setFromWalletId(val);
+                    if (fieldErrors.fromWalletId) setFieldErrors((p) => ({ ...p, fromWalletId: undefined }));
+                  }}
+                  hasError={Boolean(fieldErrors.fromWalletId)}
                   options={wallets.map((w) => ({
                     value: w.id,
                     label: `${w.name} (${formatCurrency(w.balance, locale)})`,
@@ -183,6 +233,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
                   placeholder={t('transfer.fromWallet', locale === 'en' ? 'Source Wallet' : 'Dompet Asal')}
                   size="lg"
                 />
+                <FormFieldError message={fieldErrors.fromWalletId} />
               </div>
 
               {/* To Wallet */}
@@ -191,8 +242,13 @@ export const TransferModal: React.FC<TransferModalProps> = ({
                   {t('transfer.toWallet') || (locale === 'en' ? 'Destination Wallet' : 'Dompet Tujuan')}
                 </label>
                 <CustomSelect
+                  id="transfer-toWalletId-input"
                   value={toWalletId}
-                  onChange={setToWalletId}
+                  onChange={(val) => {
+                    setToWalletId(val);
+                    if (fieldErrors.toWalletId) setFieldErrors((p) => ({ ...p, toWalletId: undefined }));
+                  }}
+                  hasError={Boolean(fieldErrors.toWalletId)}
                   options={wallets.map((w) => ({
                     value: w.id,
                     label: `${w.name} (${formatCurrency(w.balance, locale)})`,
@@ -201,6 +257,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
                   placeholder={t('transfer.toWallet', locale === 'en' ? 'Destination Wallet' : 'Dompet Tujuan')}
                   size="lg"
                 />
+                <FormFieldError message={fieldErrors.toWalletId} />
               </div>
             </div>
 
@@ -210,12 +267,17 @@ export const TransferModal: React.FC<TransferModalProps> = ({
                 {t('transfer.amount') || 'Nominal Transfer (Rp)'} *
               </label>
               <CurrencyInput
+                id="transfer-amount-input"
                 value={amount}
-                onChange={(numericVal) => setAmount(String(numericVal || ''))}
+                hasError={Boolean(fieldErrors.amount)}
+                onChange={(numericVal) => {
+                  setAmount(String(numericVal || ''));
+                  if (fieldErrors.amount) setFieldErrors((p) => ({ ...p, amount: undefined }));
+                }}
                 placeholder="0"
-                required
                 size="lg"
               />
+              <FormFieldError message={fieldErrors.amount} />
               {selectedFromWallet && (
                 <p className="mt-1.5 text-[11px] text-gray-500">
                   {t('transfer.availableBalance') || 'Saldo tersedia'}:{' '}
@@ -232,10 +294,16 @@ export const TransferModal: React.FC<TransferModalProps> = ({
                 {t('transfer.date') || t('transactions.formDate') || 'Tanggal'}
               </label>
               <CustomDatePicker
+                id="transfer-date-input"
                 value={date}
-                onChange={setDate}
+                hasError={Boolean(fieldErrors.date)}
+                onChange={(val) => {
+                  setDate(val);
+                  if (fieldErrors.date) setFieldErrors((p) => ({ ...p, date: undefined }));
+                }}
                 size="lg"
               />
+              <FormFieldError message={fieldErrors.date} />
             </div>
 
             {/* Notes */}

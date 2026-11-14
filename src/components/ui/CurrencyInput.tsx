@@ -9,6 +9,7 @@ export interface CurrencyInputProps {
   prefix?: string;
   disabled?: boolean;
   required?: boolean;
+  hasError?: boolean;
   min?: number;
   max?: number;
   className?: string;
@@ -35,6 +36,7 @@ export const CurrencyInput: React.FC<CurrencyInputProps> = ({
   prefix = 'Rp',
   disabled = false,
   required = false,
+  hasError = false,
   min,
   max,
   className = '',
@@ -140,10 +142,16 @@ export const CurrencyInput: React.FC<CurrencyInputProps> = ({
         required={required}
         autoFocus={autoFocus}
         aria-label={ariaLabel}
-        className={`w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0f1623] text-gray-900 dark:text-white font-semibold tabular-nums focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors ${sizeClasses} ${prefixPadding} ${
+        className={`w-full rounded-xl border text-gray-900 dark:text-white font-semibold tabular-nums focus:outline-none transition-colors ${sizeClasses} ${prefixPadding} ${
+          hasError
+            ? 'border-rose-500/80 dark:border-rose-500/80 bg-rose-50/40 dark:bg-rose-950/20 ring-2 ring-rose-500/15 focus:border-rose-500 focus:ring-rose-500/25'
+            : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0f1623] focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'
+        } ${
           disabled
             ? 'opacity-60 cursor-not-allowed bg-gray-100 dark:bg-gray-800'
-            : 'hover:border-gray-300 dark:hover:border-gray-700'
+            : !hasError
+            ? 'hover:border-gray-300 dark:hover:border-gray-700'
+            : ''
         } ${inputClassName}`}
       />
     </div>

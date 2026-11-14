@@ -195,6 +195,7 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({
             onChange={(val) => setSelectedYear(Number(val))}
             options={availableYears.map((yr) => ({ value: yr, label: String(yr) }))}
             size="sm"
+            disabled={loading}
             aria-label={t('charts.filterYear') || 'Pilih Tahun'}
           />
         </div>

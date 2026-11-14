@@ -81,7 +81,9 @@
     "addFailed": "Failed to add wallet",
     "updateSuccess": "Wallet updated successfully",
     "updateFailed": "Failed to update wallet",
-    "nameRequired": "Wallet name is required."
+    "nameRequired": "Wallet name is required.",
+    "balanceNegative": "Initial balance cannot be negative.",
+    "invalidHex": "Invalid HEX color code."
   },
   "transfer": {
     "title": "Inter-Wallet Transfer",
@@ -101,7 +103,12 @@
     "insufficientBalance": "Insufficient balance in source wallet",
     "transferSuccess": "Funds transferred successfully",
     "transferFailed": "Failed to transfer funds",
-    "amountPositive": "Transfer amount must be greater than 0."
+    "amountPositive": "Transfer amount must be greater than 0.",
+    "sourceRequired": "Please select source wallet.",
+    "destRequired": "Please select destination wallet.",
+    "destDifferent": "Destination wallet must be different from source wallet.",
+    "amountRequired": "Transfer amount must be greater than Rp 0.",
+    "dateRequired": "Transfer date is required."
   },
   "transactions": {
     "title": "Transaction History",
@@ -169,7 +176,12 @@
     "destinationWallet": "Destination Wallet",
     "selectDestWallet": "Select Destination Wallet",
     "titleAndAmountRequired": "Transaction title and amount are required.",
-    "destWalletRequired": "Destination wallet is required for transfer transactions."
+    "destWalletRequired": "Destination wallet is required for transfer transactions.",
+    "titleRequired": "Transaction title is required.",
+    "amountRequired": "Amount must be greater than Rp 0.",
+    "walletRequired": "Please select a wallet or account.",
+    "categoryRequired": "Please select a category.",
+    "dateRequired": "Transaction date is required."
   },
   "budgets": {
     "title": "Monthly Category Budget Limits",
@@ -194,7 +206,9 @@
     "addSuccess": "Budget limit saved successfully",
     "addFailed": "Failed to save budget limit",
     "updateSuccess": "Budget limit updated successfully",
-    "updateFailed": "Failed to update budget limit"
+    "updateFailed": "Failed to update budget limit",
+    "categoryRequired": "Please select a category.",
+    "limitRequired": "Budget limit must be greater than Rp 0."
   },
   "charts": {
     "cashflowTitle": "Monthly Cashflow (Income vs Expense)",
@@ -366,5 +380,8 @@
     "Transfer Saldo": "Balance Transfer",
     "Operasional": "Operations",
     "Hutang / Piutang": "Debt & Loan"
+  },
+  "login": {
+    "codeRequired": "6-digit verification code is required."
   }
 }

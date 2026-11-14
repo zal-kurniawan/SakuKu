@@ -6,6 +6,7 @@ import { useToast } from '@/context/ToastContext';
 import { useModalEscape } from '@/hooks/useModalEscape';
 import { X, Wallet } from 'lucide-react';
 import { CurrencyInput } from './ui/CurrencyInput';
+import { FormFieldError } from './ui/FormFieldError';
 import { CustomColorPicker, PRESET_COLORS, isValidHex, normalizeHex } from './ui/CustomColorPicker';
 import { WalletItem } from './WalletList';
 
@@ -33,6 +34,11 @@ export const AddWalletModal: React.FC<AddWalletModalProps> = ({
   const [colorCode, setColorCode] = useState(DEFAULT_COLOR);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<{
+    name?: string;
+    balance?: string;
+    colorCode?: string;
+  }>({});
 
   useEffect(() => {
     if (walletToEdit) {
@@ -43,10 +49,11 @@ export const AddWalletModal: React.FC<AddWalletModalProps> = ({
     } else {
       setName('');
       setType('BANK');
-      setBalance('0');
+      setBalance('');
       setColorCode(DEFAULT_COLOR);
     }
     setError('');
+    setFieldErrors({});
   }, [walletToEdit, isOpen]);
 
   useModalEscape({ isOpen, onClose, disabled: loading });
@@ -55,18 +62,43 @@ export const AddWalletModal: React.FC<AddWalletModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const errors: { name?: string; balance?: string; colorCode?: string } = {};
+
     if (!name.trim()) {
-      setError(
-        t(
-          'wallets.nameRequired',
-          locale === 'en' ? 'Wallet name is required.' : 'Nama dompet wajib diisi.'
-        )
+      errors.name = t(
+        'wallets.nameRequired',
+        locale === 'en' ? 'Wallet name is required.' : 'Nama dompet wajib diisi.'
       );
+    }
+
+    if (balance && parseFloat(balance) < 0) {
+      errors.balance = t(
+        'wallets.balanceNegative',
+        locale === 'en' ? 'Initial balance cannot be negative.' : 'Saldo awal tidak boleh negatif.'
+      );
+    }
+
+    if (!isValidHex(colorCode)) {
+      errors.colorCode = t(
+        'wallets.invalidHex',
+        locale === 'en' ? 'Invalid HEX color code.' : 'Kode warna HEX tidak valid.'
+      );
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      requestAnimationFrame(() => {
+        const firstKey = Object.keys(errors)[0];
+        const firstEl = document.getElementById(`wallet-${firstKey}-input`);
+        firstEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        firstEl?.focus();
+      });
       return;
     }
 
     setLoading(true);
     setError('');
+    setFieldErrors({});
 
     try {
       const url = walletToEdit
@@ -157,20 +189,28 @@ export const AddWalletModal: React.FC<AddWalletModalProps> = ({
             </div>
           )}
 
-          <form onSubmit={handleSubmit} id="wallet-form" className="space-y-4">
+          <form onSubmit={handleSubmit} id="wallet-form" noValidate className="space-y-4">
             {/* Wallet Name */}
             <div>
               <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                 {t('wallets.formName') || 'Nama Dompet / Bank'} *
               </label>
               <input
+                id="wallet-name-input"
                 type="text"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  if (fieldErrors.name) setFieldErrors((p) => ({ ...p, name: undefined }));
+                }}
                 placeholder={t('wallets.formNamePlaceholder') || 'Contoh: BCA, Mandiri, GoPay, Tunai'}
-                required
-                className="w-full px-3.5 py-2.5 rounded-xl text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
+                className={`w-full px-3.5 py-2.5 rounded-xl text-sm border font-medium focus:outline-none transition-colors min-h-[44px] ${
+                  fieldErrors.name
+                    ? 'border-rose-500/80 dark:border-rose-500/80 bg-rose-50/40 dark:bg-rose-950/20 ring-2 ring-rose-500/15 focus:border-rose-500 focus:ring-rose-500/25 text-gray-900 dark:text-white'
+                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'
+                }`}
               />
+              <FormFieldError message={fieldErrors.name} />
             </div>
 
             {/* Wallet Type */}
@@ -221,11 +261,17 @@ export const AddWalletModal: React.FC<AddWalletModalProps> = ({
                   : t('wallets.formBalance') || 'Saldo Awal (Rp)'}
               </label>
               <CurrencyInput
+                id="wallet-balance-input"
                 value={balance}
-                onChange={(numericVal) => setBalance(String(numericVal || '0'))}
+                hasError={Boolean(fieldErrors.balance)}
+                onChange={(numericVal) => {
+                  setBalance(String(numericVal || ''));
+                  if (fieldErrors.balance) setFieldErrors((p) => ({ ...p, balance: undefined }));
+                }}
                 placeholder="0"
                 size="lg"
               />
+              <FormFieldError message={fieldErrors.balance} />
             </div>
 
             {/* Color Accent Presets & Custom Hex Picker */}
@@ -240,7 +286,10 @@ export const AddWalletModal: React.FC<AddWalletModalProps> = ({
                   <button
                     key={c}
                     type="button"
-                    onClick={() => setColorCode(c)}
+                    onClick={() => {
+                      setColorCode(c);
+                      if (fieldErrors.colorCode) setFieldErrors((p) => ({ ...p, colorCode: undefined }));
+                    }}
                     style={{ backgroundColor: c }}
                     className={`w-7 h-7 rounded-full border-2 transition-transform ${
                       colorCode.toLowerCase() === c.toLowerCase()
@@ -257,7 +306,10 @@ export const AddWalletModal: React.FC<AddWalletModalProps> = ({
                 {/* Single Interactive Left Swatch Button - Live Preview & Trigger */}
                 <CustomColorPicker
                   value={colorCode}
-                  onChange={setColorCode}
+                  onChange={(c) => {
+                    setColorCode(c);
+                    if (fieldErrors.colorCode) setFieldErrors((p) => ({ ...p, colorCode: undefined }));
+                  }}
                 />
 
                 {/* Hex Code Input (flex-1 h-10 flush with inputs above) */}
@@ -266,11 +318,13 @@ export const AddWalletModal: React.FC<AddWalletModalProps> = ({
                     #
                   </span>
                   <input
+                    id="wallet-colorCode-input"
                     type="text"
                     value={colorCode.replace('#', '')}
                     onChange={(e) => {
                       const val = e.target.value.replace(/[^0-9A-Fa-f]/g, '').slice(0, 6);
                       setColorCode(`#${val}`);
+                      if (fieldErrors.colorCode) setFieldErrors((p) => ({ ...p, colorCode: undefined }));
                     }}
                     onBlur={() => {
                       if (isValidHex(colorCode)) {
@@ -282,10 +336,15 @@ export const AddWalletModal: React.FC<AddWalletModalProps> = ({
                     placeholder="005CAA"
                     maxLength={6}
                     aria-label="Hex color code"
-                    className="w-full h-10 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl pl-8 pr-3 text-xs sm:text-sm font-mono text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase transition-colors"
+                    className={`w-full h-10 rounded-xl pl-8 pr-3 text-xs sm:text-sm font-mono uppercase focus:outline-none transition-colors ${
+                      fieldErrors.colorCode
+                        ? 'border-rose-500/80 dark:border-rose-500/80 bg-rose-50/40 dark:bg-rose-950/20 ring-2 ring-rose-500/15 focus:border-rose-500 focus:ring-rose-500/25 text-gray-900 dark:text-white'
+                        : 'bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'
+                    }`}
                   />
                 </div>
               </div>
+              <FormFieldError message={fieldErrors.colorCode} />
             </div>
           </form>
         </div>

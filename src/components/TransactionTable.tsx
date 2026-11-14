@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useTranslation } from '@/context/LanguageContext';
 import { useConfirm } from '@/context/ConfirmContext';
@@ -100,6 +100,16 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
     initialTotalCount !== undefined ? initialTotalCount : transactions.length
   );
   const [loading, setLoading] = useState<boolean>(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const wasSearchingRef = useRef(false);
+  const requestIdRef = useRef(0);
+
+  // Auto-refocus search input after loading completes if user was searching
+  useEffect(() => {
+    if (!loading && wasSearchingRef.current) {
+      searchInputRef.current?.focus();
+    }
+  }, [loading]);
 
   // Search debounce (~300ms)
   useEffect(() => {
@@ -217,6 +227,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
     let isCancelled = false;
 
     const fetchServerTransactions = async () => {
+      const currentReqId = ++requestIdRef.current;
       const params = new URLSearchParams();
       params.set('page', String(currentPage));
       params.set('limit', String(rowsPerPage));
@@ -267,7 +278,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
       setLoading(true);
       try {
         const res = await fetch(cacheKey);
-        if (res.ok && !isCancelled) {
+        if (res.ok && !isCancelled && currentReqId === requestIdRef.current) {
           const json = await res.json();
           mutateCache(cacheKey, json);
           setItems(json.transactions || []);
@@ -276,7 +287,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
       } catch (err) {
         console.error('Failed to fetch transactions:', err);
       } finally {
-        if (!isCancelled) setLoading(false);
+        if (!isCancelled && currentReqId === requestIdRef.current) setLoading(false);
       }
     };
 
@@ -419,19 +430,33 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
           <div className="relative flex-1">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
+              ref={searchInputRef}
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              disabled={loading}
+              onChange={(e) => {
+                wasSearchingRef.current = true;
+                setSearch(e.target.value);
+              }}
               placeholder={t('transactions.search') || (locale === 'id' ? 'Cari transaksi...' : 'Search transactions...')}
-              className="w-full pl-9 pr-3 h-10 rounded-xl text-xs sm:text-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0f1623] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+              className={`w-full pl-9 pr-3 h-10 rounded-xl text-xs sm:text-sm border transition-colors ${
+                loading
+                  ? 'bg-gray-100/60 dark:bg-gray-800/60 text-gray-400 dark:text-gray-500 border-gray-200/60 dark:border-gray-800/60 cursor-not-allowed opacity-55'
+                  : 'bg-white dark:bg-[#0f1623] border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'
+              }`}
             />
           </div>
 
           {isFiltered && (
             <button
               type="button"
+              disabled={loading}
               onClick={handleResetFilter}
-              className="h-10 px-3.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0f1623] text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-rose-500 hover:border-rose-500/40 transition-colors inline-flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95 shadow-xs"
+              className={`h-10 px-3.5 rounded-xl border text-xs font-medium transition-colors inline-flex items-center gap-1.5 shrink-0 shadow-xs ${
+                loading
+                  ? 'bg-gray-100/60 dark:bg-gray-800/60 text-gray-400 dark:text-gray-500 border-gray-200/60 dark:border-gray-800/60 cursor-not-allowed opacity-55'
+                  : 'bg-white dark:bg-[#0f1623] border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:text-rose-500 hover:border-rose-500/40 cursor-pointer active:scale-95'
+              }`}
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>{t('transactions.resetFilter') || 'Reset Filter'}</span>
@@ -448,6 +473,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
             options={walletOptions}
             icon={<Wallet className="w-3.5 h-3.5" />}
             isActive={selectedWallet !== 'all'}
+            disabled={loading}
             size="md"
             aria-label={t('transactions.filterWallet') || 'Semua Dompet'}
             usePortal={false}
@@ -460,6 +486,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
             options={typeOptions}
             icon={<ArrowUpDown className="w-3.5 h-3.5" />}
             isActive={selectedType !== 'all'}
+            disabled={loading}
             size="md"
             aria-label={t('transactions.filterType') || 'Semua Tipe'}
             usePortal={false}
@@ -472,6 +499,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
             options={categoryOptions}
             icon={<Tag className="w-3.5 h-3.5" />}
             isActive={selectedCategory !== 'all'}
+            disabled={loading}
             size="md"
             aria-label={t('transactions.filterCategory') || 'Semua Kategori'}
             usePortal={false}
@@ -484,6 +512,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
             options={dateFilterOptions}
             icon={<Calendar className="w-3.5 h-3.5" />}
             isActive={selectedDateFilter !== 'all'}
+            disabled={loading}
             size="md"
             aria-label={t('transactions.filterDate') || 'Semua Tanggal'}
             usePortal={false}
@@ -499,6 +528,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                 onChange={setCustomDateFrom}
                 placeholder={t('transactions.dateFrom') || (locale === 'id' ? 'Dari Tanggal' : 'From Date')}
                 maxDate={customDateTo || undefined}
+                disabled={loading}
                 clearable
                 size="md"
                 usePortal={false}
@@ -508,6 +538,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                 onChange={setCustomDateTo}
                 placeholder={t('transactions.dateTo') || (locale === 'id' ? 'Sampai Tanggal' : 'To Date')}
                 minDate={customDateFrom || undefined}
+                disabled={loading}
                 clearable
                 size="md"
                 usePortal={false}
@@ -640,19 +671,19 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
         )}
       </div>
 
-      {/* 2. Desktop & Tablet Safe Horizontal Scroll Table (>= 640px / sm) */}
+      {/* 2. Desktop & Tablet Safe Table Without Horizontal Scroll (>= 640px / sm) */}
       <div className="hidden sm:block overflow-x-auto rounded-xl border border-gray-100 dark:border-gray-700">
-        <table className="w-full text-left text-xs">
-          <thead className="bg-gray-50 dark:bg-gray-900/80 text-gray-500 dark:text-gray-400 uppercase text-[10px] font-semibold tracking-wider">
+        <table className="w-full table-fixed border-collapse text-left">
+          <thead className="bg-gray-50 dark:bg-gray-900/80 text-gray-500 dark:text-gray-400 uppercase text-[10px] lg:text-[11px] font-semibold tracking-wider">
             <tr>
-              <th className="px-4 py-3">{t('transactions.colId') || 'ID'}</th>
-              <th className="px-4 py-3">{t('transactions.colDate')}</th>
-              <th className="px-4 py-3">{t('transactions.colTitle')}</th>
-              <th className="px-4 py-3">{t('transactions.colCategory')}</th>
-              <th className="px-4 py-3">{t('transactions.colWallet')}</th>
-              <th className="px-4 py-3 text-right">{t('transactions.colAmount')}</th>
-              <th className="px-4 py-3 text-center">{t('transactions.colSource')}</th>
-              <th className="px-4 py-3 text-right">{t('transactions.colActions')}</th>
+              <th className="w-[58px] lg:w-[72px] px-2 lg:px-3 py-2.5 lg:py-3 whitespace-nowrap">{t('transactions.colId') || 'ID'}</th>
+              <th className="w-[88px] lg:w-[106px] px-2 lg:px-3 py-2.5 lg:py-3 whitespace-nowrap">{t('transactions.colDate') || (locale === 'id' ? 'Tanggal' : 'Date')}</th>
+              <th className="w-auto min-w-0 px-2 lg:px-3 py-2.5 lg:py-3">{t('transactions.colTitle') || (locale === 'id' ? 'Keterangan' : 'Description')}</th>
+              <th className="w-[116px] lg:w-[152px] px-2 lg:px-3 py-2.5 lg:py-3">{t('transactions.colCategory') || (locale === 'id' ? 'Kategori' : 'Category')}</th>
+              <th className="w-[82px] lg:w-[104px] px-2 lg:px-3 py-2.5 lg:py-3">{t('transactions.colWallet') || (locale === 'id' ? 'Dompet' : 'Wallet')}</th>
+              <th className="w-[102px] lg:w-[124px] px-2 lg:px-3 py-2.5 lg:py-3 text-right whitespace-nowrap tabular-nums">{t('transactions.colAmount') || (locale === 'id' ? 'Jumlah' : 'Amount')}</th>
+              <th className="w-[60px] lg:w-[74px] px-2 lg:px-3 py-2.5 lg:py-3 text-center whitespace-nowrap">{t('transactions.colSource') || (locale === 'id' ? 'Sumber' : 'Source')}</th>
+              <th className="w-[60px] lg:w-[74px] px-2 lg:px-3 py-2.5 lg:py-3 text-right whitespace-nowrap">{t('transactions.colActions') || (locale === 'id' ? 'Aksi' : 'Actions')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -667,14 +698,14 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                   className="hover:bg-gray-50/70 dark:hover:bg-gray-900/40 transition"
                 >
                   {/* ID */}
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-md font-mono text-[11px] font-bold bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-900/40">
+                  <td className="px-2 lg:px-3 py-2.5 lg:py-3 whitespace-nowrap text-xs lg:text-[13px]">
+                    <span className="inline-flex items-center px-1.5 lg:px-2 py-0.5 rounded-md font-mono text-[10px] lg:text-[11px] font-bold bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-900/40">
                       #{tx.id}
                     </span>
                   </td>
 
                   {/* Date */}
-                  <td className="px-4 py-3 whitespace-nowrap text-gray-500 dark:text-gray-400">
+                  <td className="px-2 lg:px-3 py-2.5 lg:py-3 whitespace-nowrap text-xs lg:text-[13px] text-gray-500 dark:text-gray-400">
                     {new Date(tx.date).toLocaleDateString(locale === 'en' ? 'en-US' : 'id-ID', {
                       day: '2-digit',
                       month: 'short',
@@ -683,45 +714,51 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                   </td>
 
                   {/* Title & Notes */}
-                  <td className="px-4 py-3">
-                    <div className="font-semibold text-gray-900 dark:text-white">
+                  <td className="px-2 lg:px-3 py-2.5 lg:py-3 min-w-0 text-xs lg:text-[13px]">
+                    <div className="font-semibold text-gray-900 dark:text-white truncate" title={tx.title}>
                       {tx.title}
                     </div>
                     {tx.notes && (
-                      <div className="text-[11px] text-gray-400 italic">
+                      <div className="text-[11px] text-gray-400 italic truncate" title={tx.notes}>
                         {tx.notes}
                       </div>
                     )}
                   </td>
 
                   {/* Category */}
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                  <td className="px-2 lg:px-3 py-2.5 lg:py-3 whitespace-nowrap text-xs lg:text-[13px]">
+                    <span
+                      className="inline-block max-w-full truncate align-middle px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                      title={getCategoryLabel(tx.category, locale, t)}
+                    >
                       {getCategoryLabel(tx.category, locale, t)}
                     </span>
                   </td>
 
                   {/* Wallet */}
-                  <td className="px-4 py-3 whitespace-nowrap">
+                  <td className="px-2 lg:px-3 py-2.5 lg:py-3 whitespace-nowrap text-xs lg:text-[13px]">
                     {isTransfer ? (
-                      <div className="flex items-center space-x-1 font-medium">
-                        <span className="text-gray-700 dark:text-gray-300">
+                      <div
+                        className="flex items-center space-x-1 font-medium truncate"
+                        title={`${tx.wallet.name} → ${tx.destinationWallet?.name || t('transactions.destinationWallet') || 'Tujuan'}`}
+                      >
+                        <span className="text-gray-700 dark:text-gray-300 truncate">
                           {tx.wallet.name}
                         </span>
-                        <ArrowRightLeft className="w-3 h-3 text-gray-400" />
-                        <span className="text-gray-700 dark:text-gray-300">
+                        <ArrowRightLeft className="w-3 h-3 text-gray-400 shrink-0" />
+                        <span className="text-gray-700 dark:text-gray-300 truncate">
                           {tx.destinationWallet?.name || t('transactions.destinationWallet') || 'Tujuan'}
                         </span>
                       </div>
                     ) : (
-                      <span className="font-medium text-gray-800 dark:text-gray-200">
+                      <span className="font-medium text-gray-800 dark:text-gray-200 block truncate" title={tx.wallet.name}>
                         {tx.wallet.name}
                       </span>
                     )}
                   </td>
 
                   {/* Amount */}
-                  <td className="px-4 py-3 whitespace-nowrap text-right font-bold">
+                  <td className="px-2 lg:px-3 py-2.5 lg:py-3 whitespace-nowrap text-right font-bold tabular-nums text-xs lg:text-[13px]">
                     {isIncome && (
                       <span className="text-emerald-600 dark:text-emerald-400">
                         +{formatCurrency(tx.amount, locale)}
@@ -740,11 +777,11 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                   </td>
 
                   {/* Source */}
-                  <td className="px-4 py-3 whitespace-nowrap text-center">
+                  <td className="px-2 lg:px-3 py-2.5 lg:py-3 whitespace-nowrap text-center text-xs lg:text-[13px]">
                     {tx.source === 'WHATSAPP' ? (
                       <span
                         title="Via WhatsApp Bot"
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
+                        className="inline-flex items-center gap-1 px-1.5 lg:px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
                       >
                         <Smartphone className="w-3 h-3 text-emerald-500" />
                         <span>WA</span>
@@ -752,7 +789,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                     ) : (
                       <span
                         title="Via Web Dashboard"
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-400 border border-blue-200 dark:border-blue-800"
+                        className="inline-flex items-center gap-1 px-1.5 lg:px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-400 border border-blue-200 dark:border-blue-800"
                       >
                         <Globe className="w-3 h-3 text-blue-500" />
                         <span>Web</span>
@@ -761,13 +798,13 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                   </td>
 
                   {/* Actions */}
-                  <td className="px-4 py-3 whitespace-nowrap text-right">
-                    <div className="flex items-center justify-end space-x-1">
+                  <td className="px-2 lg:px-3 py-2.5 lg:py-3 whitespace-nowrap text-right text-xs lg:text-[13px]">
+                    <div className="inline-flex items-center justify-end gap-1">
                       {onEdit && (
                         <button
                           onClick={() => onEdit(tx)}
                           title={t('common.edit') || 'Edit'}
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition min-h-[34px] min-w-[34px] flex items-center justify-center"
+                          className="p-1 lg:p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition flex items-center justify-center shrink-0"
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
@@ -775,9 +812,9 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                       <button
                         onClick={() => handleDelete(tx.id)}
                         title={t('common.delete') || 'Hapus'}
-                        className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition min-h-[34px] min-w-[34px] flex items-center justify-center"
+                        className="p-1 lg:p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition flex items-center justify-center shrink-0"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </td>
@@ -811,6 +848,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                   onChange={(val) => setRowsPerPage(Number(val))}
                   options={rowsPerPageOptions}
                   size="sm"
+                  disabled={loading}
                   aria-label={t('transactions.rows')}
                 />
               </div>
@@ -823,38 +861,61 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
 
           {/* Bottom/Right Section: Adaptive Page Navigation */}
           {/* A. Mobile Compact View (< 640px / sm) */}
-          <div className="flex sm:hidden items-center justify-between w-full pt-1">
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={validCurrentPage === 1}
-              className="h-8 px-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1"
-            >
-              <ChevronLeft className="w-3.5 h-3.5" />
-              <span>{t('transactions.prevPage') || (locale === 'id' ? 'Sebelumnya' : 'Prev')}</span>
-            </button>
+          {(() => {
+            const isPrevDisabled = validCurrentPage <= 1;
+            const isNextDisabled = validCurrentPage >= totalPages;
 
-            <span className="text-xs font-bold text-gray-800 dark:text-gray-200">
-              {t('transactions.pageOf')
-                ? t('transactions.pageOf').replace('{page}', String(validCurrentPage)).replace('{total}', String(totalPages))
-                : `Hal ${validCurrentPage} / ${totalPages}`}
-            </span>
+            return (
+              <div className="flex sm:hidden items-center justify-between w-full pt-1">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.currentTarget.blur();
+                    setCurrentPage((p) => Math.max(1, p - 1));
+                  }}
+                  disabled={isPrevDisabled || loading}
+                  className={`h-8 px-2.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                    isPrevDisabled || loading
+                      ? 'bg-gray-100/60 dark:bg-[#0d131f]/60 text-gray-400 dark:text-gray-600 border border-gray-200/60 dark:border-gray-800/60 opacity-50 cursor-not-allowed pointer-events-none'
+                      : 'bg-white dark:bg-[#151e2e] text-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700/80 shadow-xs active:scale-[0.98]'
+                  }`}
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <span>{t('transactions.prevPage') || (locale === 'id' ? 'Sebelumnya' : 'Prev')}</span>
+                </button>
 
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={validCurrentPage === totalPages}
-              className="h-8 px-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1"
-            >
-              <span>{t('transactions.nextPage') || (locale === 'id' ? 'Berikutnya' : 'Next')}</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
+                <span className="text-xs font-bold text-gray-800 dark:text-gray-200">
+                  {t('transactions.pageOf')
+                    ? t('transactions.pageOf').replace('{page}', String(validCurrentPage)).replace('{total}', String(totalPages))
+                    : `Hal ${validCurrentPage} / ${totalPages}`}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.currentTarget.blur();
+                    setCurrentPage((p) => Math.min(totalPages, p + 1));
+                  }}
+                  disabled={isNextDisabled || loading}
+                  className={`h-8 px-2.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                    isNextDisabled || loading
+                      ? 'bg-gray-100/60 dark:bg-[#0d131f]/60 text-gray-400 dark:text-gray-600 border border-gray-200/60 dark:border-gray-800/60 opacity-50 cursor-not-allowed pointer-events-none'
+                      : 'bg-white dark:bg-[#151e2e] text-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700/80 shadow-xs active:scale-[0.98]'
+                  }`}
+                >
+                  <span>{t('transactions.nextPage') || (locale === 'id' ? 'Berikutnya' : 'Next')}</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            );
+          })()}
 
           {/* B. Tablet & Desktop Full View (>= 640px / sm) */}
           <div className="hidden sm:flex items-center gap-1">
             {/* First Page */}
             <button
               onClick={() => setCurrentPage(1)}
-              disabled={validCurrentPage === 1}
+              disabled={validCurrentPage === 1 || loading}
               className="h-9 w-9 p-0 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition text-gray-600 dark:text-gray-300 flex items-center justify-center"
               title={t('transactions.firstPage') || (locale === 'id' ? 'Halaman Pertama' : 'First Page')}
             >
@@ -864,7 +925,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
             {/* Previous Page */}
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={validCurrentPage === 1}
+              disabled={validCurrentPage === 1 || loading}
               className="h-9 w-9 p-0 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition text-gray-600 dark:text-gray-300 flex items-center justify-center"
               title={t('transactions.prevPage') || (locale === 'id' ? 'Sebelumnya' : 'Previous Page')}
             >
@@ -882,10 +943,11 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                   <button
                     key={`page-${p}`}
                     onClick={() => setCurrentPage(Number(p))}
+                    disabled={loading}
                     className={`min-w-[36px] h-9 px-2 rounded-lg font-semibold transition text-xs sm:text-sm flex items-center justify-center ${
                       validCurrentPage === p
                         ? 'bg-blue-600 text-white shadow-xs'
-                        : 'border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
+                        : 'border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-40'
                     }`}
                   >
                     {p}
@@ -897,7 +959,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
             {/* Next Page */}
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={validCurrentPage === totalPages}
+              disabled={validCurrentPage === totalPages || loading}
               className="h-9 w-9 p-0 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition text-gray-600 dark:text-gray-300 flex items-center justify-center"
               title={t('transactions.nextPage') || (locale === 'id' ? 'Selanjutnya' : 'Next Page')}
             >
@@ -907,7 +969,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
             {/* Last Page */}
             <button
               onClick={() => setCurrentPage(totalPages)}
-              disabled={validCurrentPage === totalPages}
+              disabled={validCurrentPage === totalPages || loading}
               className="h-9 w-9 p-0 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition text-gray-600 dark:text-gray-300 flex items-center justify-center"
               title={t('transactions.lastPage') || (locale === 'id' ? 'Halaman Terakhir' : 'Last Page')}
             >

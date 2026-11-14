@@ -21,6 +21,7 @@ export interface CustomSelectProps<T = string | number> {
   options: SelectOption<T>[];
   placeholder?: string;
   disabled?: boolean;
+  hasError?: boolean;
   className?: string;
   triggerClassName?: string;
   menuClassName?: string;
@@ -39,6 +40,7 @@ export function CustomSelect<T extends string | number = string>({
   options,
   placeholder,
   disabled = false,
+  hasError = false,
   className = '',
   triggerClassName = '',
   menuClassName = '',
@@ -84,6 +86,13 @@ export function CustomSelect<T extends string | number = string>({
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Auto-close if disabled while open
+  useEffect(() => {
+    if (disabled && isOpen) {
+      setIsOpen(false);
+    }
+  }, [disabled, isOpen]);
 
   // Detect mobile viewport (< 640px)
   useEffect(() => {
@@ -339,19 +348,25 @@ export function CustomSelect<T extends string | number = string>({
         type="button"
         id={selectId}
         disabled={disabled}
-        onClick={() => !disabled && setIsOpen((prev) => !prev)}
+        aria-disabled={disabled}
+        onClick={() => {
+          if (disabled) return;
+          setIsOpen((prev) => !prev);
+        }}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         aria-label={ariaLabel}
         title={selectedLabel}
-        className={`w-full flex items-center justify-between border transition-all text-left font-medium cursor-pointer ${sizeClasses} ${
+        className={`w-full flex items-center justify-between border transition-all text-left font-medium ${sizeClasses} ${
           disabled
-            ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-800 cursor-not-allowed opacity-70'
+            ? 'bg-gray-100/60 dark:bg-gray-800/60 text-gray-400 dark:text-gray-500 border-gray-200/60 dark:border-gray-800/60 cursor-not-allowed opacity-55 pointer-events-none select-none'
             : isOpen
-            ? 'bg-white dark:bg-[#0f1623] text-gray-900 dark:text-white border-blue-500 ring-2 ring-blue-500/20 dark:ring-blue-500/30'
+            ? 'bg-white dark:bg-[#0f1623] text-gray-900 dark:text-white border-blue-500 ring-2 ring-blue-500/20 dark:ring-blue-500/30 cursor-pointer'
+            : hasError
+            ? 'border-rose-500/80 dark:border-rose-500/80 bg-rose-50/40 dark:bg-rose-950/20 ring-2 ring-rose-500/15 focus:border-rose-500 focus:ring-rose-500/25 cursor-pointer text-gray-900 dark:text-white'
             : isActive
-            ? 'bg-blue-500/8 dark:bg-blue-500/10 border-blue-500/50 text-blue-600 dark:text-blue-400 font-medium'
-            : 'bg-white dark:bg-[#0f1623] border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-200 hover:border-gray-300 dark:hover:border-gray-700 hover:bg-gray-50/50 dark:hover:bg-[#131b2c]'
+            ? 'bg-blue-500/8 dark:bg-blue-500/10 border-blue-500/50 text-blue-600 dark:text-blue-400 font-medium cursor-pointer'
+            : 'bg-white dark:bg-[#0f1623] border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-200 hover:border-gray-300 dark:hover:border-gray-700 hover:bg-gray-50/50 dark:hover:bg-[#131b2c] cursor-pointer'
         } ${triggerClassName}`}
       >
         <span className="truncate flex items-center gap-1.5 sm:gap-2 flex-1 min-w-0">
