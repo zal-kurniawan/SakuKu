@@ -554,83 +554,160 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
 
       {/* Bottom Section: Compact Pagination Footer (when totalBudgets > 3) */}
       {totalBudgets > 3 && (
-        <div className="mt-auto pt-3.5 border-t border-gray-100 dark:border-gray-800/80 flex flex-wrap items-center justify-between gap-2">
-          {/* Grup Kiri: Label Baris + CustomSelect + Info Rentang Data */}
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                {t('transactions.rows', locale === 'id' ? 'Baris:' : 'Rows:')}
-              </span>
-              <div className="w-[60px] min-w-[60px]">
-                <CustomSelect<number>
-                  value={budgetPageSize}
-                  onChange={handlePageSizeChange}
-                  options={PAGE_SIZE_OPTIONS}
-                  size="sm"
-                  disabled={loading}
-                  usePortal={false}
-                  disableMobileSheet={true}
-                  aria-label={t('transactions.rows', locale === 'id' ? 'Baris:' : 'Rows:')}
-                />
+        <>
+          {/* A. Mobile 2-Row Pagination View (< 640px / sm:hidden) */}
+          <div className="flex flex-col gap-3 pt-3.5 mt-4 border-t border-gray-100 dark:border-gray-800/80 sm:hidden">
+            {/* Baris 1 (Atas): Kontrol Pemilih Baris & Info Rentang Data */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                  {t('transactions.rows', locale === 'id' ? 'Baris:' : 'Rows:')}
+                </span>
+                <div className="w-[60px] min-w-[60px]">
+                  <CustomSelect<number>
+                    value={budgetPageSize}
+                    onChange={handlePageSizeChange}
+                    options={PAGE_SIZE_OPTIONS}
+                    size="sm"
+                    disabled={loading}
+                    usePortal={true}
+                    disableMobileSheet={true}
+                    aria-label={t('transactions.rows', locale === 'id' ? 'Baris:' : 'Rows:')}
+                  />
+                </div>
               </div>
+
+              <span className="text-xs text-gray-500 dark:text-gray-400 tabular-nums whitespace-nowrap">
+                {t('budgets.rangeOf', locale === 'en' ? '{start}–{end} of {total}' : '{start}–{end} dari {total}')
+                  .replace('{start}', String(startIndex + 1))
+                  .replace('{end}', String(endIndex))
+                  .replace('{total}', String(totalBudgets))}
+              </span>
             </div>
 
-            <span className="text-xs text-gray-500 dark:text-gray-400 tabular-nums whitespace-nowrap">
-              {t('budgets.rangeOf', locale === 'en' ? '{start}–{end} of {total}' : '{start}–{end} dari {total}')
-                .replace('{start}', String(startIndex + 1))
-                .replace('{end}', String(endIndex))
-                .replace('{total}', String(totalBudgets))}
-            </span>
+            {/* Baris 2 (Bawah): Tombol < Sebelumnya, Indikator Hal 1 / 2, & Tombol Berikutnya > */}
+            <div className="flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.currentTarget.blur();
+                  setBudgetPage((p) => Math.max(1, p - 1));
+                }}
+                disabled={isPrevDisabled || loading}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium inline-flex items-center justify-center gap-1.5 whitespace-nowrap transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 ${
+                  isPrevDisabled || loading
+                    ? 'bg-gray-100/60 dark:bg-[#0d131f]/60 text-gray-400 dark:text-gray-600 border border-gray-200/60 dark:border-gray-800/60 opacity-50 cursor-not-allowed pointer-events-none'
+                    : 'bg-white dark:bg-[#151e2e] text-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700/80 hover:bg-gray-50 dark:hover:bg-[#1c273b] shadow-2xs active:scale-[0.98] cursor-pointer'
+                }`}
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                <span>{t('transactions.prevPage', locale === 'en' ? 'Previous' : 'Sebelumnya')}</span>
+              </button>
+
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-300 tabular-nums whitespace-nowrap">
+                {t('budgets.pageOf', locale === 'en' ? 'Page {current} / {total}' : 'Hal {current} / {total}')
+                  .replace('{current}', String(validCurrentPage))
+                  .replace('{total}', String(totalPages))}
+              </span>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.currentTarget.blur();
+                  setBudgetPage((p) => Math.min(totalPages, p + 1));
+                }}
+                disabled={isNextDisabled || loading}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium inline-flex items-center justify-center gap-1.5 whitespace-nowrap transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 ${
+                  isNextDisabled || loading
+                    ? 'bg-gray-100/60 dark:bg-[#0d131f]/60 text-gray-400 dark:text-gray-600 border border-gray-200/60 dark:border-gray-800/60 opacity-50 cursor-not-allowed pointer-events-none'
+                    : 'bg-white dark:bg-[#151e2e] text-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700/80 hover:bg-gray-50 dark:hover:bg-[#1c273b] shadow-2xs active:scale-[0.98] cursor-pointer'
+                }`}
+              >
+                <span>{t('transactions.nextPage', locale === 'en' ? 'Next' : 'Berikutnya')}</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
 
-          {/* Grup Kanan: Navigasi Halaman (< Hal 1 / 2 >) */}
-          <div className="inline-flex items-center gap-1.5 shrink-0 ml-auto">
-            {/* Tombol Sebelumnya (<) */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.currentTarget.blur();
-                setBudgetPage((p) => Math.max(1, p - 1));
-              }}
-              disabled={isPrevDisabled || loading}
-              title={t('budgets.prevPage', locale === 'en' ? 'Previous page' : 'Halaman sebelumnya')}
-              aria-label={t('budgets.prevPage', locale === 'en' ? 'Previous page' : 'Halaman sebelumnya')}
-              className={`w-8 h-8 rounded-lg inline-flex items-center justify-center transition-transform duration-150 ${
-                isPrevDisabled || loading
-                  ? 'bg-gray-100/60 dark:bg-[#0d131f]/60 text-gray-400 dark:text-gray-600 border border-gray-200/60 dark:border-gray-800/60 opacity-50 cursor-not-allowed pointer-events-none'
-                  : 'bg-white dark:bg-[#151e2e] text-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700/80 hover:bg-gray-50 dark:hover:bg-[#1c273b] shadow-2xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 active:scale-[0.97] cursor-pointer'
-              }`}
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
+          {/* B. Tablet & Desktop Full View (>= 640px / hidden sm:flex) */}
+          <div className="hidden sm:flex items-center justify-between gap-2 pt-3.5 mt-4 border-t border-gray-100 dark:border-gray-800/80">
+            {/* Grup Kiri: Label Baris + CustomSelect + Info Rentang Data */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                  {t('transactions.rows', locale === 'id' ? 'Baris:' : 'Rows:')}
+                </span>
+                <div className="w-[60px] min-w-[60px]">
+                  <CustomSelect<number>
+                    value={budgetPageSize}
+                    onChange={handlePageSizeChange}
+                    options={PAGE_SIZE_OPTIONS}
+                    size="sm"
+                    disabled={loading}
+                    usePortal={true}
+                    disableMobileSheet={true}
+                    aria-label={t('transactions.rows', locale === 'id' ? 'Baris:' : 'Rows:')}
+                  />
+                </div>
+              </div>
 
-            {/* Indikator Halaman (Hal 1 / 2) */}
-            <span className="px-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 tabular-nums whitespace-nowrap">
-              {t('budgets.pageOf', locale === 'en' ? 'Page {current} / {total}' : 'Hal {current} / {total}')
-                .replace('{current}', String(validCurrentPage))
-                .replace('{total}', String(totalPages))}
-            </span>
+              <span className="text-xs text-gray-500 dark:text-gray-400 tabular-nums whitespace-nowrap">
+                {t('budgets.rangeOf', locale === 'en' ? '{start}–{end} of {total}' : '{start}–{end} dari {total}')
+                  .replace('{start}', String(startIndex + 1))
+                  .replace('{end}', String(endIndex))
+                  .replace('{total}', String(totalBudgets))}
+              </span>
+            </div>
 
-            {/* Tombol Berikutnya (>) */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.currentTarget.blur();
-                setBudgetPage((p) => Math.min(totalPages, p + 1));
-              }}
-              disabled={isNextDisabled || loading}
-              title={t('budgets.nextPage', locale === 'en' ? 'Next page' : 'Halaman berikutnya')}
-              aria-label={t('budgets.nextPage', locale === 'en' ? 'Next page' : 'Halaman berikutnya')}
-              className={`w-8 h-8 rounded-lg inline-flex items-center justify-center transition-transform duration-150 ${
-                isNextDisabled || loading
-                  ? 'bg-gray-100/60 dark:bg-[#0d131f]/60 text-gray-400 dark:text-gray-600 border border-gray-200/60 dark:border-gray-800/60 opacity-50 cursor-not-allowed pointer-events-none'
-                  : 'bg-white dark:bg-[#151e2e] text-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700/80 hover:bg-gray-50 dark:hover:bg-[#1c273b] shadow-2xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 active:scale-[0.97] cursor-pointer'
-              }`}
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
+            {/* Grup Kanan: Navigasi Halaman (< Hal 1 / 2 >) */}
+            <div className="inline-flex items-center gap-1.5 shrink-0 ml-auto">
+              {/* Tombol Sebelumnya (<) */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.currentTarget.blur();
+                  setBudgetPage((p) => Math.max(1, p - 1));
+                }}
+                disabled={isPrevDisabled || loading}
+                title={t('budgets.prevPage', locale === 'en' ? 'Previous page' : 'Halaman sebelumnya')}
+                aria-label={t('budgets.prevPage', locale === 'en' ? 'Previous page' : 'Halaman sebelumnya')}
+                className={`w-8 h-8 rounded-lg inline-flex items-center justify-center transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 ${
+                  isPrevDisabled || loading
+                    ? 'bg-gray-100/60 dark:bg-[#0d131f]/60 text-gray-400 dark:text-gray-600 border border-gray-200/60 dark:border-gray-800/60 opacity-50 cursor-not-allowed pointer-events-none'
+                    : 'bg-white dark:bg-[#151e2e] text-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700/80 hover:bg-gray-50 dark:hover:bg-[#1c273b] shadow-2xs active:scale-[0.98] cursor-pointer'
+                }`}
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              {/* Indikator Halaman (Hal 1 / 2) */}
+              <span className="px-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 tabular-nums whitespace-nowrap">
+                {t('budgets.pageOf', locale === 'en' ? 'Page {current} / {total}' : 'Hal {current} / {total}')
+                  .replace('{current}', String(validCurrentPage))
+                  .replace('{total}', String(totalPages))}
+              </span>
+
+              {/* Tombol Berikutnya (>) */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.currentTarget.blur();
+                  setBudgetPage((p) => Math.min(totalPages, p + 1));
+                }}
+                disabled={isNextDisabled || loading}
+                title={t('budgets.nextPage', locale === 'en' ? 'Next page' : 'Halaman berikutnya')}
+                aria-label={t('budgets.nextPage', locale === 'en' ? 'Next page' : 'Halaman berikutnya')}
+                className={`w-8 h-8 rounded-lg inline-flex items-center justify-center transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 ${
+                  isNextDisabled || loading
+                    ? 'bg-gray-100/60 dark:bg-[#0d131f]/60 text-gray-400 dark:text-gray-600 border border-gray-200/60 dark:border-gray-800/60 opacity-50 cursor-not-allowed pointer-events-none'
+                    : 'bg-white dark:bg-[#151e2e] text-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700/80 hover:bg-gray-50 dark:hover:bg-[#1c273b] shadow-2xs active:scale-[0.98] cursor-pointer'
+                }`}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* Modal Add / Edit Budget */}

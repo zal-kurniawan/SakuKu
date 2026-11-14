@@ -151,11 +151,14 @@ export function CustomSelect<T extends string | number = string>({
       placement = 'top';
     }
 
+    const width = rect.width;
+    const computedLeft = Math.max(8, Math.min(rect.left, window.innerWidth - Math.max(68, width) - 8));
+
     setPortalCoords({
       top: rect.bottom + gap,
       bottom: window.innerHeight - rect.top + gap,
-      left: rect.left,
-      width: rect.width,
+      left: computedLeft,
+      width,
       placement,
     });
   }, [options.length]);
