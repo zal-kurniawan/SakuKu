@@ -8,6 +8,7 @@ import {
 import qrcode from 'qrcode-terminal';
 import pino from 'pino';
 import { handleWhatsAppMessage } from './handler';
+import { prisma } from '../lib/prisma';
 import {
   usePrismaAuthState,
   setDbLiveQR,
@@ -243,6 +244,9 @@ export async function startWhatsAppBot(): Promise<WASocket> {
         } catch (profileErr: any) {
           console.warn('ℹ️ [SAKUKU BOT] Info nama profil (mungkin dibatasi frekuensi oleh WA):', profileErr.message);
         }
+
+        // Deferred Security Alert Flusher (sends alerts queued while bot was offline)
+        await flushDeferredSecurityAlert();
       }
     });
 
@@ -389,6 +393,35 @@ export async function sendDirectMessage(
   } catch (err) {
     console.error(`❌ [GAGAL KIRIM NOTIFIKASI SAKUKU] Ke ${targetPhone}:`, err);
     return false;
+  }
+}
+
+/**
+ * Flushes security reports stored while WhatsApp Bot was offline
+ */
+export async function flushDeferredSecurityAlert(): Promise<void> {
+  try {
+    const secState = await prisma.authSecurityState.findUnique({
+      where: { id: 'singleton' },
+    });
+    if (secState?.pendingSecurityAlert) {
+      const alertMsg = secState.pendingSecurityAlert;
+      const ownerPhone = process.env.MY_PHONE_NUMBER;
+      if (ownerPhone) {
+        console.log('🚨 [DEFERRED ALERT] Ditemukan peringatan keamanan darurat yang tertunda.');
+        console.log('🚨 [DEFERRED ALERT] Mengirim laporan keamanan ke WhatsApp pemilik...');
+        const sent = await sendDirectMessage(ownerPhone, alertMsg);
+        if (sent) {
+          await prisma.authSecurityState.update({
+            where: { id: 'singleton' },
+            data: { pendingSecurityAlert: null },
+          });
+          console.log('✅ [DEFERRED ALERT] Laporan keamanan berhasil terkirim dan dibersihkan dari database.');
+        }
+      }
+    }
+  } catch (err: any) {
+    console.error('⚠️ [DEFERRED ALERT] Error saat flush alert tertunda:', err.message);
   }
 }
 

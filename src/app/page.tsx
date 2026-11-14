@@ -105,6 +105,17 @@ export default function DashboardPage() {
     fetchData();
   }, [fetchData]);
 
+  // Auto-open WhatsApp Linker modal if user entered via offline TOTP recovery
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('recovery') === 'wa') {
+        setIsBotLinkerOpen(true);
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+    }
+  }, []);
+
   // Mutation handler: Invalidates all dashboard caches and pulls fresh data
   const handleMutationSuccess = useCallback(async () => {
     invalidateDashboardCache();

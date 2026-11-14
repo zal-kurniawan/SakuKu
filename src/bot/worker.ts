@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import http from 'http';
-import { startWhatsAppBot, getBotStatus, restartWhatsAppBot, closeWhatsAppSocket } from './whatsapp';
+import { startWhatsAppBot, getBotStatus, restartWhatsAppBot, closeWhatsAppSocket, sendDirectMessage } from './whatsapp';
 import { initCronSchedulers } from './cron';
 import { prisma } from '../lib/prisma';
 import { getDbWorkerCommand, setDbWorkerCommand, setDbBotStatus } from './prisma-auth';
@@ -88,6 +88,56 @@ const server = http.createServer((req, res) => {
       console.log('💤 Worker keluar (process.exit(1)) untuk full process restart di Render...');
       process.exit(1);
     }, 500);
+    return;
+  }
+
+  // Internal bridge to send WhatsApp message to owner (authenticated via INTERNAL_API_SECRET)
+  if (req.method === 'POST' && (url === '/internal/send-wa' || url === '/api/internal/send-wa')) {
+    const internalSecret = process.env.INTERNAL_API_SECRET;
+    const authHeader = req.headers['authorization'];
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+
+    if (!internalSecret || token !== internalSecret) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Unauthorized: Invalid INTERNAL_API_SECRET' }));
+      return;
+    }
+
+    let body = '';
+    req.on('data', (chunk) => {
+      body += chunk;
+    });
+
+    req.on('end', async () => {
+      try {
+        const parsed = JSON.parse(body);
+        const message = parsed.message;
+        if (!message || typeof message !== 'string') {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Missing message parameter' }));
+          return;
+        }
+
+        const myPhone = process.env.MY_PHONE_NUMBER;
+        if (!myPhone) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'MY_PHONE_NUMBER not configured' }));
+          return;
+        }
+
+        const sent = await sendDirectMessage(myPhone, message);
+        if (sent) {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true, message: 'WhatsApp message sent' }));
+        } else {
+          res.writeHead(503, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'WhatsApp bot is not connected', errorCode: 'WA_DISCONNECTED' }));
+        }
+      } catch (err: any) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message || 'Internal server error' }));
+      }
+    });
     return;
   }
 

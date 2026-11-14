@@ -26,7 +26,8 @@
     "toggleTheme": "Ganti Tema",
     "mobileFooter": "Versi Mobile • Cloud Sync",
     "transferFunds": "Transfer Saldo",
-    "addTransaction": "Catat Transaksi"
+    "addTransaction": "Catat Transaksi",
+    "logout": "Keluar"
   },
   "kpi": {
     "totalNetWorth": "Total Kekayaan Bersih",
@@ -227,7 +228,9 @@
     "txDeleted": "Transaksi berhasil dihapus",
     "txDeleteFailed": "Gagal menghapus transaksi",
     "budgetDeleted": "Target budget berhasil dihapus",
-    "budgetDeleteFailed": "Gagal menghapus target budget"
+    "budgetDeleteFailed": "Gagal menghapus target budget",
+    "logoutTitle": "Keluar dari SakuKu?",
+    "logoutDesc": "Sesi masuk Anda akan diakhiri. Anda perlu memverifikasi kode OTP baru untuk masuk kembali."
   },
   "import": {
     "successCount": "Berhasil mengimpor {count} transaksi",

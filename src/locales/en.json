@@ -26,7 +26,8 @@
     "toggleTheme": "Toggle Theme",
     "mobileFooter": "Mobile Version • Cloud Sync",
     "transferFunds": "Transfer Funds",
-    "addTransaction": "Add Transaction"
+    "addTransaction": "Add Transaction",
+    "logout": "Logout"
   },
   "kpi": {
     "totalNetWorth": "Total Net Worth",
@@ -227,7 +228,9 @@
     "txDeleted": "Transaction successfully deleted",
     "txDeleteFailed": "Failed to delete transaction",
     "budgetDeleted": "Budget target successfully deleted",
-    "budgetDeleteFailed": "Failed to delete budget target"
+    "budgetDeleteFailed": "Failed to delete budget target",
+    "logoutTitle": "Sign out of SakuKu?",
+    "logoutDesc": "Your login session will be ended. You will need to verify a new OTP code to sign in again."
   },
   "import": {
     "successCount": "Successfully imported {count} transactions",

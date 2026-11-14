@@ -19,7 +19,9 @@
     "test:handler": "tsx --env-file=.env src/bot/handler.test.ts",
     "test:excel": "tsx src/lib/excel-parser.test.ts",
     "test:timezone": "tsx src/lib/timezone.test.ts",
-    "test": "npm run test:parser && npm run test:excel && npm run test:timezone"
+    "test:totp": "tsx src/lib/totp.test.ts",
+    "test": "npm run test:parser && npm run test:excel && npm run test:timezone && npm run test:totp",
+    "auth:setup-totp": "tsx scripts/setup-totp.ts"
   },
   "keywords": [
     "sakuku",
@@ -41,6 +43,7 @@
     "clsx": "^2.1.1",
     "concurrently": "^10.0.7",
     "dotenv": "^18.0.10",
+    "jose": "^6.2.17",
     "lucide-react": "^1.72.0",
     "next": "^14.2.18",
     "next-themes": "^0.4.6",

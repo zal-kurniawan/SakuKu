@@ -121,3 +121,26 @@ model WhatsAppSession {
 
   @@map("whatsapp_sessions")
 }
+
+model AuthOtp {
+  id          String    @id @default(cuid())
+  codeHash    String    // SHA-256 hash dari 6 digit OTP
+  expiresAt   DateTime  // Berlaku 3 menit
+  attempts    Int       @default(0)
+  lockedUntil DateTime? // Diisi jika salah >= 5x (kunci 15 menit)
+  isUsed      Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  @@map("auth_otps")
+}
+
+model AuthSecurityState {
+  id                   String    @id @default("singleton")
+  lastUsedTotpStep     BigInt?   // Anti-replay: mencegah kode TOTP 30 detik yang sama dipakai 2x
+  totpAttempts         Int       @default(0)
+  totpLockedUntil      DateTime? // Kunci 15 menit jika salah TOTP >= 5x
+  pendingSecurityAlert String?   // Menyimpan pesan audit login darurat saat WA offline untuk dikirim begitu WA online
+  updatedAt            DateTime  @updatedAt
+
+  @@map("auth_security_states")
+}
