@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback, useId } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { useTranslation } from '@/context/LanguageContext';
 
@@ -157,9 +158,8 @@ export const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
   const autoId = useId();
   const pickerId = id || autoId;
 
+  const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [openUpward, setOpenUpward] = useState(false);
 
   const initialColorRef = useRef<string>(isValidHex(value) ? normalizeHex(value) : '#005CAA');
 
@@ -176,12 +176,16 @@ export const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
-  const popoverRef = useRef<HTMLDivElement>(null);
   const satValRef = useRef<HTMLDivElement>(null);
   const hueRef = useRef<HTMLDivElement>(null);
 
   const isDraggingSatVal = useRef(false);
   const isDraggingHue = useRef(false);
+
+  // Client-side mount check for createPortal
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Sync when value prop changes from outside
   useEffect(() => {
@@ -192,33 +196,6 @@ export const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
       setHexInput(norm.replace('#', ''));
     }
   }, [value]);
-
-  // Mobile detection (< 640px)
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 640);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  // Viewport collision detection when opening popover on Desktop
-  useEffect(() => {
-    if (isOpen && !isMobile && triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
-      const spaceBelow = viewportHeight - rect.bottom;
-      const spaceAbove = rect.top;
-
-      // Needs ~340px for popover
-      if (spaceBelow < 340 && spaceAbove > spaceBelow) {
-        setOpenUpward(true);
-      } else {
-        setOpenUpward(false);
-      }
-    }
-  }, [isOpen, isMobile]);
 
   // Handle open state: capture initial color for Cancel
   const handleOpen = () => {
@@ -243,37 +220,20 @@ export const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
     setIsOpen(false);
   };
 
-  // Click outside and Escape key handler
+  // Handle Escape key
   useEffect(() => {
     if (!isOpen) return;
-
-    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node) &&
-        popoverRef.current &&
-        !popoverRef.current.contains(e.target as Node)
-      ) {
-        // Confirm current color on click outside
-        handleApply();
-      }
-    };
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         handleCancel();
+      } else if (e.key === 'Enter') {
+        handleApply();
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('touchstart', handleClickOutside);
     window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
-      window.removeEventListener('keydown', handleKeyDown);
-    };
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, currentColor]);
 
   // Update Saturation & Value from 2D square pointer position
@@ -397,13 +357,12 @@ export const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
   // Color Picker Card Content
   const pickerCardContent = (
     <div
-      ref={popoverRef}
-      className="space-y-3 select-none text-gray-900 dark:text-gray-100"
+      className="space-y-3.5 select-none text-gray-900 dark:text-gray-100"
       onClick={(e) => e.stopPropagation()}
     >
       {/* Header with Title & Close button */}
-      <div className="flex items-center justify-between pb-1 border-b border-gray-100 dark:border-gray-800">
-        <h4 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white">
+      <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800">
+        <h4 className="text-sm font-bold text-gray-900 dark:text-white">
           {t('wallets.colorPickerTitle') || 'Pilih Warna Identitas'}
         </h4>
         <button
@@ -517,7 +476,7 @@ export const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
       </div>
 
       {/* 5. Bottom Action Buttons */}
-      <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+      <div className="flex items-center justify-end gap-2 pt-2.5 border-t border-gray-100 dark:border-gray-800">
         <button
           type="button"
           onClick={handleCancel}
@@ -564,34 +523,23 @@ export const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
         )}
       </div>
 
-      {/* Popover on Desktop / Centered Modal on Mobile */}
-      {isOpen && (
-        <>
-          {isMobile ? (
-            /* Mobile View: Fixed Centered Backdrop Modal */
+      {/* Centered Modal with Backdrop Blur mounted directly into document.body via Portal */}
+      {mounted &&
+        isOpen &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+            onClick={handleApply}
+          >
             <div
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
-              onClick={handleApply}
-            >
-              <div
-                className="w-full max-w-[320px] rounded-2xl bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 shadow-2xl p-4 animate-in zoom-in-95 duration-150"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {pickerCardContent}
-              </div>
-            </div>
-          ) : (
-            /* Desktop View: Popover floating near trigger with boundary collision safety */
-            <div
-              className={`absolute left-0 z-50 w-[280px] p-3.5 rounded-2xl bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 shadow-2xl animate-in fade-in zoom-in-95 duration-150 ${
-                openUpward ? 'bottom-full mb-2 origin-bottom-left' : 'top-full mt-2 origin-top-left'
-              }`}
+              className="w-full max-w-[320px] sm:max-w-[340px] rounded-2xl bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 shadow-2xl p-4 sm:p-5 animate-in zoom-in-95 duration-150"
+              onClick={(e) => e.stopPropagation()}
             >
               {pickerCardContent}
             </div>
-          )}
-        </>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 };

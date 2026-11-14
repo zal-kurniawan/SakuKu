@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useId, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useId, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -80,9 +81,10 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   'aria-label': ariaLabel,
 }) => {
   const { locale, t } = useTranslation();
+  const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [openUpward, setOpenUpward] = useState(false);
+  const [popoverCoords, setPopoverCoords] = useState<{ top: number; left: number } | null>(null);
 
   // Drill-up navigation mode: 'days' -> 'months' -> 'years'
   const [viewMode, setViewMode] = useState<'days' | 'months' | 'years'>('days');
@@ -107,6 +109,11 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   const autoId = useId();
   const inputId = id || autoId;
 
+  // Mount check for createPortal
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Detect mobile viewport (< 640px)
   useEffect(() => {
     const checkMobile = () => {
@@ -117,21 +124,37 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Viewport collision detection on Desktop
-  useEffect(() => {
-    if (isOpen && !isMobile && triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
-      const spaceBelow = viewportHeight - rect.bottom;
-      const spaceAbove = rect.top;
+  // Calculate and update fixed popover coordinates for desktop
+  const updatePopoverCoords = useCallback(() => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const popoverHeight = 350;
+    const popoverWidth = 300;
 
-      if (spaceBelow < 340 && spaceAbove > spaceBelow) {
-        setOpenUpward(true);
-      } else {
-        setOpenUpward(false);
-      }
+    let top = rect.bottom + 6;
+    if (top + popoverHeight > window.innerHeight && rect.top - popoverHeight - 6 > 0) {
+      top = rect.top - popoverHeight - 6;
     }
-  }, [isOpen, isMobile]);
+    top = Math.max(12, Math.min(window.innerHeight - popoverHeight - 12, top));
+
+    let left = rect.left;
+    left = Math.max(12, Math.min(window.innerWidth - popoverWidth - 12, left));
+
+    setPopoverCoords({ top, left });
+  }, []);
+
+  // Update popover coordinates when opening on desktop, and listen to resize/scroll
+  useEffect(() => {
+    if (isOpen && !isMobile) {
+      updatePopoverCoords();
+      window.addEventListener('resize', updatePopoverCoords);
+      window.addEventListener('scroll', updatePopoverCoords, true);
+      return () => {
+        window.removeEventListener('resize', updatePopoverCoords);
+        window.removeEventListener('scroll', updatePopoverCoords, true);
+      };
+    }
+  }, [isOpen, isMobile, updatePopoverCoords]);
 
   // Reset viewMode to 'days' and sync year & month whenever calendar opens
   useEffect(() => {
@@ -152,8 +175,8 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
 
     const handleClickOutside = (e: MouseEvent | TouchEvent) => {
       if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node) &&
+        triggerRef.current &&
+        !triggerRef.current.contains(e.target as Node) &&
         popoverRef.current &&
         !popoverRef.current.contains(e.target as Node)
       ) {
@@ -639,34 +662,41 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
         ) : null}
       </button>
 
-      {/* Popover on Desktop / Centered Modal on Mobile */}
-      {isOpen && (
-        <>
-          {isMobile ? (
-            /* Mobile View: Fixed Centered Backdrop Modal */
-            <div
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
-              onClick={() => setIsOpen(false)}
-            >
+      {/* Popover on Desktop / Centered Modal on Mobile (mounted via Portal to document.body) */}
+      {mounted &&
+        isOpen &&
+        createPortal(
+          <>
+            {isMobile ? (
+              /* Mobile View: Fixed Centered Backdrop Modal */
               <div
-                className="w-full max-w-[320px] rounded-2xl bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 shadow-2xl p-4 animate-in zoom-in-95 duration-150"
-                onClick={(e) => e.stopPropagation()}
+                className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+                onClick={() => setIsOpen(false)}
+              >
+                <div
+                  className="w-full max-w-[320px] rounded-2xl bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 shadow-2xl p-4 animate-in zoom-in-95 duration-150"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {calendarContent}
+                </div>
+              </div>
+            ) : (
+              /* Desktop View: Fixed Popover near trigger with boundary collision safety */
+              <div
+                style={{
+                  position: 'fixed',
+                  top: popoverCoords ? popoverCoords.top : 0,
+                  left: popoverCoords ? popoverCoords.left : 0,
+                  zIndex: 70,
+                }}
+                className="rounded-2xl bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 shadow-2xl p-3.5 animate-in fade-in zoom-in-95 duration-150"
               >
                 {calendarContent}
               </div>
-            </div>
-          ) : (
-            /* Desktop View: Popover floating near trigger with boundary collision safety */
-            <div
-              className={`absolute left-0 z-50 rounded-2xl bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 shadow-2xl p-3.5 animate-in fade-in zoom-in-95 duration-150 ${
-                openUpward ? 'bottom-full mb-2 origin-bottom-left' : 'top-full mt-2 origin-top-left'
-              }`}
-            >
-              {calendarContent}
-            </div>
-          )}
-        </>
-      )}
+            )}
+          </>,
+          document.body
+        )}
     </div>
   );
 };
