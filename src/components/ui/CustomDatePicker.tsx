@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useId, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useId, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Calendar as CalendarIcon,
@@ -12,9 +12,6 @@ import {
   X,
 } from 'lucide-react';
 import { useTranslation } from '@/context/LanguageContext';
-
-const useIsomorphicLayoutEffect =
-  typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
 
 export interface CustomDatePickerProps {
   value: string; // ISO string 'YYYY-MM-DD'
@@ -87,13 +84,8 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-
-  // Position state: null until measured to prevent initial (0,0) flash / fly-in
-  const [coords, setCoords] = useState<{
-    top: number;
-    left: number;
-    placement: 'bottom' | 'top';
-  } | null>(null);
+  const [openUpward, setOpenUpward] = useState(false);
+  const [alignRight, setAlignRight] = useState(false);
 
   // Drill-up navigation mode: 'days' -> 'months' -> 'years'
   const [viewMode, setViewMode] = useState<'days' | 'months' | 'years'>('days');
@@ -135,72 +127,31 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Precise popover coordinates calculation & viewport boundary detection
-  const updateCoords = useCallback(() => {
-    if (!triggerRef.current) return;
-    const rect = triggerRef.current.getBoundingClientRect();
-
-    // Auto-close if trigger has scrolled out of viewport or is hidden
-    if (
-      rect.bottom <= 0 ||
-      rect.top >= window.innerHeight ||
-      (rect.width === 0 && rect.height === 0)
-    ) {
-      setIsOpen(false);
-      return;
-    }
-
-    const popoverHeight = 340;
-    const popoverWidth = 304;
-
-    const spaceBelow = window.innerHeight - rect.bottom;
-    const spaceAbove = rect.top;
-
-    let placement: 'bottom' | 'top' = 'bottom';
-    let top = rect.bottom + 6;
-
-    // Flip to top if space below is insufficient (< 330px) and space above is larger
-    if (spaceBelow < 330 && spaceAbove > spaceBelow) {
-      placement = 'top';
-      top = rect.top - popoverHeight - 6;
-    }
-
-    // Viewport horizontal clamping
-    const left = Math.max(12, Math.min(rect.left, window.innerWidth - popoverWidth - 12));
-
-    setCoords({ top, left, placement });
-  }, []);
-
-  // Synchronously compute position before browser paint (anti-fly-in)
-  useIsomorphicLayoutEffect(() => {
-    if (isOpen && !isMobile) {
-      updateCoords();
-    } else if (!isOpen) {
-      setCoords(null);
-    }
-  }, [isOpen, isMobile, updateCoords]);
-
-  // Real-time anchored scroll tracking with requestAnimationFrame (capture: true for modal scrolls)
+  // Measure collision with viewport edges (vertical auto-flip & horizontal right alignment)
   useEffect(() => {
-    if (isOpen && !isMobile) {
-      let rafId: number | null = null;
-      const handleScrollOrResize = () => {
-        if (rafId !== null) cancelAnimationFrame(rafId);
-        rafId = requestAnimationFrame(() => {
-          updateCoords();
-        });
-      };
+    if (isOpen && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const viewportWidth = window.innerWidth;
+      const spaceBelow = viewportHeight - rect.bottom;
+      const spaceAbove = rect.top;
 
-      window.addEventListener('resize', handleScrollOrResize, { passive: true });
-      window.addEventListener('scroll', handleScrollOrResize, { capture: true, passive: true });
+      // Auto-flip upward if space below is < 320px and space above is greater
+      if (spaceBelow < 320 && spaceAbove > spaceBelow) {
+        setOpenUpward(true);
+      } else {
+        setOpenUpward(false);
+      }
 
-      return () => {
-        if (rafId !== null) cancelAnimationFrame(rafId);
-        window.removeEventListener('resize', handleScrollOrResize);
-        window.removeEventListener('scroll', handleScrollOrResize, true);
-      };
+      // Check horizontal collision: calendar is 300px wide
+      // If rect.left + 300 > viewportWidth - 16 or trigger right is near right edge
+      if (rect.left + 300 > viewportWidth - 16 || (rect.right > viewportWidth / 2 && rect.left + 300 > viewportWidth - 24)) {
+        setAlignRight(true);
+      } else {
+        setAlignRight(false);
+      }
     }
-  }, [isOpen, isMobile, updateCoords]);
+  }, [isOpen]);
 
   // Reset viewMode to 'days' and sync year & month whenever calendar opens
   useEffect(() => {
@@ -705,50 +656,38 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
         ) : null}
       </button>
 
-      {/* Popover on Desktop / Centered Modal on Mobile (mounted via Portal to document.body) */}
+      {/* Tablet & Desktop Popover: Anchored Absolute directly in container */}
+      {isOpen && !isMobile && (
+        <div
+          ref={popoverRef}
+          onClick={(e) => e.stopPropagation()}
+          className={`hidden sm:block absolute z-50 w-[300px] animate-in fade-in zoom-in-95 duration-150 ${
+            openUpward ? 'bottom-full mb-1.5 origin-bottom' : 'top-full mt-1.5 origin-top'
+          } ${alignRight ? 'right-0' : 'left-0'}`}
+        >
+          <div className="w-full rounded-2xl bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 shadow-2xl p-3.5 select-none text-gray-900 dark:text-gray-100">
+            {calendarBody}
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Modal Dialog: Centered Backdrop Modal via createPortal */}
       {mounted &&
         isOpen &&
+        isMobile &&
         createPortal(
-          <>
-            {isMobile ? (
-              /* Mobile View: Fixed Centered Backdrop Modal */
-              <div
-                className="fixed inset-0 z-[80] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
-                onClick={() => setIsOpen(false)}
-              >
-                <div
-                  ref={popoverRef}
-                  className="w-full max-w-[320px] rounded-2xl bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 shadow-2xl p-4 select-none text-gray-900 dark:text-gray-100 animate-in zoom-in-95 duration-150"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {calendarBody}
-                </div>
-              </div>
-            ) : (
-              /* Desktop View: Anti-Fly-In Fixed Popover anchored precisely to field */
-              coords && (
-                <div
-                  ref={popoverRef}
-                  style={{
-                    position: 'fixed',
-                    top: coords.top,
-                    left: coords.left,
-                    zIndex: 80,
-                  }}
-                  className="pointer-events-auto"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div
-                    className={`w-[288px] sm:w-[304px] rounded-2xl bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 shadow-2xl p-3.5 select-none text-gray-900 dark:text-gray-100 duration-150 ease-out animate-in fade-in zoom-in-95 ${
-                      coords.placement === 'top' ? 'origin-bottom' : 'origin-top'
-                    }`}
-                  >
-                    {calendarBody}
-                  </div>
-                </div>
-              )
-            )}
-          </>,
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs sm:hidden animate-in fade-in duration-150"
+            onClick={() => setIsOpen(false)}
+          >
+            <div
+              ref={popoverRef}
+              className="w-full max-w-[320px] rounded-2xl bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 shadow-2xl p-4 select-none text-gray-900 dark:text-gray-100 animate-in zoom-in-95 duration-150"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {calendarBody}
+            </div>
+          </div>,
           document.body
         )}
     </div>

@@ -49,7 +49,7 @@ export function CustomSelect<T extends string | number = string>({
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const itemRefs = useRef<(HTMLLIElement | null)[]>([]);
   const autoId = useId();
   const selectId = id || autoId;
 
@@ -212,61 +212,67 @@ export function CustomSelect<T extends string | number = string>({
       {isOpen && (
         <div
           ref={menuRef}
-          role="listbox"
-          tabIndex={-1}
-          className={`absolute left-0 right-0 z-50 bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 rounded-xl shadow-2xl py-1 max-h-[min(13rem,38dvh)] sm:max-h-60 overflow-y-auto overscroll-contain touch-pan-y sakuku-scrollbar animate-in fade-in duration-150 ${
+          className={`absolute left-0 right-0 z-50 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0f1623] shadow-2xl overflow-hidden animate-in fade-in duration-150 ${
             openUpward ? 'bottom-full mb-1.5 origin-bottom' : 'top-full mt-1.5 origin-top'
           } ${menuClassName}`}
         >
-          {options.length === 0 ? (
-            <div className="py-3 px-3 text-xs text-center text-gray-400 dark:text-gray-500">
-              Tidak ada pilihan
-            </div>
-          ) : (
-            options.map((option, idx) => {
-              const isSelected = option.value === value;
-              const isFocused = idx === focusedIndex;
+          <ul
+            role="listbox"
+            tabIndex={-1}
+            onWheel={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
+            className="max-h-[192px] sm:max-h-[216px] overflow-y-auto overscroll-contain touch-pan-y py-1 sakuku-scrollbar list-none m-0 p-0"
+          >
+            {options.length === 0 ? (
+              <li className="py-3 px-3 text-xs text-center text-gray-400 dark:text-gray-500 list-none">
+                Tidak ada pilihan
+              </li>
+            ) : (
+              options.map((option, idx) => {
+                const isSelected = option.value === value;
+                const isFocused = idx === focusedIndex;
 
-              return (
-                <div
-                  key={String(option.value)}
-                  ref={(el) => {
-                    itemRefs.current[idx] = el;
-                  }}
-                  role="option"
-                  aria-selected={isSelected}
-                  onClick={() => {
-                    if (!option.disabled) {
-                      onChange(option.value);
-                      setIsOpen(false);
-                      triggerRef.current?.focus();
-                    }
-                  }}
-                  onMouseEnter={() => setFocusedIndex(idx)}
-                  className={`flex items-center justify-between min-h-[40px] sm:min-h-[36px] px-3 py-2 text-xs sm:text-sm cursor-pointer transition-colors shrink-0 ${
-                    option.disabled
-                      ? 'opacity-40 cursor-not-allowed text-gray-400'
-                      : isSelected
-                      ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 font-semibold'
-                      : isFocused
-                      ? 'bg-gray-100 dark:bg-gray-800/80 text-gray-900 dark:text-white'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50'
-                  }`}
-                >
-                  <span className="truncate flex items-center gap-2 flex-1 min-w-0 pr-2">
-                    {option.icon && (
-                      <span className="shrink-0 flex items-center">{option.icon}</span>
+                return (
+                  <li
+                    key={String(option.value)}
+                    ref={(el) => {
+                      itemRefs.current[idx] = el;
+                    }}
+                    role="option"
+                    aria-selected={isSelected}
+                    onClick={() => {
+                      if (!option.disabled) {
+                        onChange(option.value);
+                        setIsOpen(false);
+                        triggerRef.current?.focus();
+                      }
+                    }}
+                    onMouseEnter={() => setFocusedIndex(idx)}
+                    className={`flex items-center justify-between min-h-[40px] sm:min-h-[36px] px-3 py-2 text-xs sm:text-sm cursor-pointer transition-colors shrink-0 w-full text-left select-none ${
+                      option.disabled
+                        ? 'opacity-40 cursor-not-allowed text-gray-400'
+                        : isSelected
+                        ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 font-semibold'
+                        : isFocused
+                        ? 'bg-gray-100 dark:bg-gray-800/80 text-gray-900 dark:text-white'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                    }`}
+                  >
+                    <span className="truncate flex items-center gap-2 flex-1 min-w-0 pr-2">
+                      {option.icon && (
+                        <span className="shrink-0 flex items-center">{option.icon}</span>
+                      )}
+                      <span className="truncate">{option.label}</span>
+                    </span>
+
+                    {isSelected && (
+                      <Check className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
                     )}
-                    <span className="truncate">{option.label}</span>
-                  </span>
-
-                  {isSelected && (
-                    <Check className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
-                  )}
-                </div>
-              );
-            })
-          )}
+                  </li>
+                );
+              })
+            )}
+          </ul>
         </div>
       )}
     </div>
