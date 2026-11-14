@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
 import { useModalEscape } from '@/hooks/useModalEscape';
@@ -40,7 +40,7 @@ export const AddWalletModal: React.FC<AddWalletModalProps> = ({
     colorCode?: string;
   }>({});
 
-  useEffect(() => {
+  const resetFormState = useCallback(() => {
     if (walletToEdit) {
       setName(walletToEdit.name);
       setType(walletToEdit.type);
@@ -54,9 +54,23 @@ export const AddWalletModal: React.FC<AddWalletModalProps> = ({
     }
     setError('');
     setFieldErrors({});
-  }, [walletToEdit, isOpen]);
+  }, [walletToEdit]);
 
-  useModalEscape({ isOpen, onClose, disabled: loading });
+  const handleClose = useCallback(() => {
+    if (loading) return;
+    resetFormState();
+    onClose();
+  }, [loading, onClose, resetFormState]);
+
+  useEffect(() => {
+    if (isOpen) {
+      resetFormState();
+    } else {
+      resetFormState();
+    }
+  }, [isOpen, resetFormState]);
+
+  useModalEscape({ isOpen, onClose: handleClose, disabled: loading });
 
   if (!isOpen) return null;
 
@@ -133,6 +147,7 @@ export const AddWalletModal: React.FC<AddWalletModalProps> = ({
         toast.success(t('wallets.addSuccess', 'Dompet berhasil ditambahkan'));
       }
 
+      resetFormState();
       onSuccess();
       onClose();
     } catch (err: any) {
@@ -146,7 +161,7 @@ export const AddWalletModal: React.FC<AddWalletModalProps> = ({
   return (
     <div
       onClick={(e) => {
-        if (e.target === e.currentTarget && !loading) onClose();
+        if (e.target === e.currentTarget && !loading) handleClose();
       }}
       className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
     >
@@ -172,7 +187,7 @@ export const AddWalletModal: React.FC<AddWalletModalProps> = ({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             disabled={loading}
             aria-label={t('common.close') || 'Tutup'}
             className="h-8 w-8 inline-flex items-center justify-center rounded-lg shrink-0 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer disabled:opacity-50"
@@ -353,7 +368,7 @@ export const AddWalletModal: React.FC<AddWalletModalProps> = ({
         <div className="p-4 sm:p-6 border-t border-gray-100 dark:border-gray-700 flex flex-col-reverse sm:flex-row justify-end gap-2 shrink-0 bg-gray-50/60 dark:bg-gray-900/40">
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition min-h-[42px] flex items-center justify-center cursor-pointer"
           >
             {t('wallets.cancel') || 'Batal'}

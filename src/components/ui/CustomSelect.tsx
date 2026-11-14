@@ -63,6 +63,7 @@ export function CustomSelect<T extends string | number = string>({
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
   const [portalCoords, setPortalCoords] = useState<{
     top: number;
+    bottom: number;
     left: number;
     width: number;
     placement: 'bottom' | 'top';
@@ -138,19 +139,19 @@ export function CustomSelect<T extends string | number = string>({
 
     const spaceBelow = window.innerHeight - rect.bottom;
     const spaceAbove = rect.top;
-    const popoverHeight = Math.min(220, options.length * 40 + 16);
+    const estimatedHeight = Math.min(220, options.length * 38 + 16);
 
     let placement: 'bottom' | 'top' = 'bottom';
-    let top = rect.bottom + 6;
+    const gap = 6;
 
-    // Flip to top if space below is insufficient (< 230px) and space above is larger
-    if (spaceBelow < 230 && spaceAbove > spaceBelow) {
+    // Flip to top if space below is insufficient (< 190px or < estimatedHeight + gap) and space above is larger
+    if (spaceBelow < Math.max(190, estimatedHeight + gap) && spaceAbove > spaceBelow) {
       placement = 'top';
-      top = rect.top - popoverHeight - 6;
     }
 
     setPortalCoords({
-      top,
+      top: rect.bottom + gap,
+      bottom: window.innerHeight - rect.top + gap,
       left: rect.left,
       width: rect.width,
       placement,
@@ -357,7 +358,7 @@ export function CustomSelect<T extends string | number = string>({
         aria-expanded={isOpen}
         aria-label={ariaLabel}
         title={selectedLabel}
-        className={`w-full flex items-center justify-between border transition-all text-left font-medium ${sizeClasses} ${
+        className={`w-full flex items-center justify-between border transition-colors duration-150 text-left font-medium ${sizeClasses} ${
           disabled
             ? 'bg-gray-100/60 dark:bg-gray-800/60 text-gray-400 dark:text-gray-500 border-gray-200/60 dark:border-gray-800/60 cursor-not-allowed opacity-55 pointer-events-none select-none'
             : isOpen
@@ -395,8 +396,8 @@ export function CustomSelect<T extends string | number = string>({
       {isOpen && !usePortal && (
         <div
           ref={menuRef}
-          className={`absolute left-0 right-0 z-40 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0f1623] shadow-2xl overflow-hidden animate-in fade-in duration-150 ${
-            openUpward ? 'bottom-full mb-1.5 origin-bottom' : 'top-full mt-1.5 origin-top'
+          className={`absolute left-0 right-0 z-40 min-w-[68px] rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0f1623] shadow-2xl overflow-hidden animate-in fade-in duration-150 ${
+            openUpward ? 'bottom-full mb-1.5 top-auto origin-bottom' : 'top-full mt-1.5 origin-top'
           } ${menuClassName}`}
         >
           {renderList}
@@ -435,9 +436,10 @@ export function CustomSelect<T extends string | number = string>({
               ref={menuRef}
               style={{
                 position: 'fixed',
-                top: portalCoords.top,
+                top: portalCoords.placement === 'top' ? 'auto' : portalCoords.top,
+                bottom: portalCoords.placement === 'top' ? portalCoords.bottom : 'auto',
                 left: portalCoords.left,
-                width: portalCoords.width,
+                width: Math.max(68, portalCoords.width),
                 zIndex: 100,
               }}
               className="pointer-events-auto"

@@ -68,9 +68,19 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
     monthlyLimit?: string;
   }>({});
 
+  const handleCloseModal = () => {
+    if (loading) return;
+    setEditingId(null);
+    setCategory(COMMON_CATEGORIES[0]);
+    setMonthlyLimit('');
+    setError('');
+    setFieldErrors({});
+    setModalOpen(false);
+  };
+
   useModalEscape({
     isOpen: modalOpen,
-    onClose: () => setModalOpen(false),
+    onClose: handleCloseModal,
     disabled: loading,
   });
 
@@ -357,7 +367,7 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
       {modalOpen && (
         <div
           onClick={(e) => {
-            if (e.target === e.currentTarget && !loading) setModalOpen(false);
+            if (e.target === e.currentTarget && !loading) handleCloseModal();
           }}
           className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
         >
@@ -383,7 +393,7 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
               </div>
               <button
                 type="button"
-                onClick={() => setModalOpen(false)}
+                onClick={handleCloseModal}
                 disabled={loading}
                 aria-label={t('common.close') || 'Tutup'}
                 className="h-8 w-8 inline-flex items-center justify-center rounded-lg shrink-0 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer disabled:opacity-50"
@@ -493,7 +503,7 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
             <div className="p-4 sm:p-6 border-t border-gray-100 dark:border-gray-700 shrink-0 flex flex-col-reverse sm:flex-row justify-end gap-2 bg-gray-50/60 dark:bg-gray-900/40">
               <button
                 type="button"
-                onClick={() => setModalOpen(false)}
+                onClick={handleCloseModal}
                 className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition min-h-[42px]"
               >
                 {t('common.cancel') || 'Batal'}

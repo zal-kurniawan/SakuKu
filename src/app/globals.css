@@ -89,14 +89,25 @@ body {
   background: rgba(156, 163, 175, 0.45);
 }
 
-/* Controlled Silky-Smooth Theme Transition (active only during 300ms switch) */
-html.theme-transitioning,
-html.theme-transitioning *:not(svg):not(path):not(.recharts-surface):not(.recharts-surface *) {
-  transition:
-    background-color 280ms cubic-bezier(0.4, 0, 0.2, 1),
-    border-color 280ms cubic-bezier(0.4, 0, 0.2, 1),
-    color 220ms cubic-bezier(0.4, 0, 0.2, 1),
-    box-shadow 280ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+/* Synchronous 60fps Theme Transition Engine (Zero Stutter, Atomic Transition) */
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition: none !important;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 240ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  mix-blend-mode: normal;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 1ms;
+  }
 }
 
 /* Toast Notification Smooth Entry Animation */

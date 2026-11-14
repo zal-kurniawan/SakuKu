@@ -95,6 +95,7 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   const [alignRight, setAlignRight] = useState(false);
   const [portalCoords, setPortalCoords] = useState<{
     top: number;
+    bottom: number;
     left: number;
     placement: 'bottom' | 'top';
   } | null>(null);
@@ -190,23 +191,26 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
     }
 
     const popoverHeight = 340;
-    const popoverWidth = 300;
     const spaceBelow = window.innerHeight - rect.bottom;
     const spaceAbove = rect.top;
 
     let placement: 'bottom' | 'top' = 'bottom';
-    let top = rect.bottom + 6;
+    const gap = 6;
 
     // Flip to top if space below is insufficient (< 340px) and space above is larger
     if (spaceBelow < 340 && spaceAbove > spaceBelow) {
       placement = 'top';
-      top = rect.top - popoverHeight - 6;
     }
 
     // Viewport horizontal clamping
     const left = Math.max(12, Math.min(rect.left, window.innerWidth - 312));
 
-    setPortalCoords({ top, left, placement });
+    setPortalCoords({
+      top: rect.bottom + gap,
+      bottom: window.innerHeight - rect.top + gap,
+      left,
+      placement,
+    });
   }, []);
 
   // Synchronously compute portal position before browser paint (anti-fly-in)
@@ -718,7 +722,7 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
         aria-haspopup="dialog"
         aria-expanded={isOpen}
         aria-label={ariaLabel}
-        className={`w-full flex items-center justify-between border transition-all text-left font-medium ${sizeClasses} ${
+        className={`w-full flex items-center justify-between border transition-colors duration-150 text-left font-medium ${sizeClasses} ${
           disabled
             ? 'bg-gray-100/60 dark:bg-gray-800/60 text-gray-400 dark:text-gray-500 border-gray-200/60 dark:border-gray-800/60 cursor-not-allowed opacity-55 pointer-events-none select-none'
             : isOpen
@@ -757,7 +761,7 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
           ref={popoverRef}
           onClick={(e) => e.stopPropagation()}
           className={`hidden sm:block absolute z-40 w-[300px] animate-in fade-in zoom-in-95 duration-150 ${
-            openUpward ? 'bottom-full mb-1.5 origin-bottom' : 'top-full mt-1.5 origin-top'
+            openUpward ? 'bottom-full mb-1.5 top-auto origin-bottom' : 'top-full mt-1.5 origin-top'
           } ${alignRight ? 'right-0' : 'left-0'}`}
         >
           <div className="w-full rounded-2xl bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 shadow-2xl p-3.5 select-none text-gray-900 dark:text-gray-100">
@@ -773,7 +777,8 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
             ref={popoverRef}
             style={{
               position: 'fixed',
-              top: portalCoords.top,
+              top: portalCoords.placement === 'top' ? 'auto' : portalCoords.top,
+              bottom: portalCoords.placement === 'top' ? portalCoords.bottom : 'auto',
               left: portalCoords.left,
               zIndex: 100,
             }}
