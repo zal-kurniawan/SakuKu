@@ -299,18 +299,18 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
 
   return (
     <div className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3.5 sm:gap-4">
-        {/* Left Side: Icon + Title + Subtitle */}
-        <div className="flex items-start gap-3 min-w-0 flex-1">
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5 flex items-center justify-center">
+      {/* Header (2-Tier Stacked Layout) */}
+      <div>
+        {/* Blok Identitas Header (Ikon + Judul + Subjudul) */}
+        <div className="flex items-start gap-3.5">
+          <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5 flex items-center justify-center">
             <Target className="w-5 h-5" />
           </div>
-          <div className="space-y-1 min-w-0">
-            <h3 className="text-base font-bold text-gray-900 dark:text-white leading-snug truncate">
+          <div className="min-w-0 flex-1 space-y-1">
+            <h3 className="text-base sm:text-[17px] font-bold leading-snug text-gray-900 dark:text-white">
               {t('budgets.title', 'Target Batas Budget')}
             </h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+            <p className="text-xs sm:text-[13px] leading-relaxed text-gray-500 dark:text-gray-400">
               {t(
                 'budgets.subtitle',
                 locale === 'en'
@@ -321,11 +321,11 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
           </div>
         </div>
 
-        {/* Right Side: CTA Button */}
+        {/* Tombol Aksi CTA */}
         <button
           type="button"
           onClick={handleOpenAdd}
-          className="px-3 py-2 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold inline-flex items-center gap-1.5 shrink-0 whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition active:scale-95 cursor-pointer"
+          className="mt-3.5 w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold inline-flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition active:scale-95 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>{t('budgets.addBudget', locale === 'en' ? 'Set Budget' : 'Atur Budget')}</span>
@@ -499,7 +499,7 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
 
           {/* Empty State */}
           {budgets.length === 0 && (
-            <div className="py-6 sm:py-8 px-3 text-center flex flex-col items-center justify-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+            <div className="py-6 text-center text-xs sm:text-sm text-gray-500 dark:text-gray-400">
               <p>
                 {t(
                   'budgets.empty',
@@ -508,21 +508,6 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
                     : 'Belum ada batas budget yang diatur.'
                 )}
               </p>
-              <button
-                type="button"
-                onClick={handleOpenAdd}
-                className="text-blue-600 hover:underline font-semibold cursor-pointer inline-flex items-center gap-1 min-h-[36px]"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>
-                  {t(
-                    'budgets.setNow',
-                    locale === 'en'
-                      ? 'Set a budget limit now'
-                      : 'Atur batas budget sekarang'
-                  )}
-                </span>
-              </button>
             </div>
           )}
         </div>
