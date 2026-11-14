@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useTheme } from 'next-themes';
+import { useSakuKuTheme } from '@/hooks/useSakuKuTheme';
 import { useTranslation } from '@/context/LanguageContext';
 import { useConfirm } from '@/context/ConfirmContext';
 import { useModalEscape } from '@/hooks/useModalEscape';
@@ -34,14 +34,9 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const router = useRouter();
   const confirm = useConfirm();
-  const { theme, setTheme } = useTheme();
+  const { isDark, toggleTheme, mounted } = useSakuKuTheme();
   const { locale, setLocale, t } = useTranslation();
-  const [mounted, setMounted] = useState(false);
   const [isSpeedDialOpen, setIsSpeedDialOpen] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const handleLogout = async () => {
     const isConfirmed = await confirm({
@@ -186,21 +181,23 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
 
               {/* 3. Theme Switcher */}
-              {mounted && (
-                <button
-                  type="button"
-                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                  title={t('nav.toggleTheme') || 'Toggle Mode'}
-                  aria-label={t('nav.toggleTheme') || 'Toggle Mode'}
-                  className={iconControlClass}
-                >
-                  {theme === 'dark' ? (
-                    <Sun className="w-4 h-4 text-amber-400" />
+              <button
+                type="button"
+                onClick={toggleTheme}
+                title={t('nav.toggleTheme', isDark ? 'Mode Terang' : 'Mode Gelap')}
+                aria-label={t('nav.toggleTheme', isDark ? 'Mode Terang' : 'Mode Gelap')}
+                className={iconControlClass}
+              >
+                {mounted ? (
+                  isDark ? (
+                    <Sun className="w-4 h-4 text-amber-400 transition-transform duration-300 ease-out hover:rotate-45" />
                   ) : (
-                    <Moon className="w-4 h-4 text-gray-700 dark:text-gray-300" />
-                  )}
-                </button>
-              )}
+                    <Moon className="w-4 h-4 text-gray-700 dark:text-gray-300 transition-transform duration-300 ease-out hover:-rotate-12" />
+                  )
+                ) : (
+                  <div className="w-4 h-4" />
+                )}
+              </button>
 
               {/* 4. Logout Button */}
               <button
@@ -229,21 +226,23 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
 
             {/* 2. Theme Switcher */}
-            {mounted && (
-              <button
-                type="button"
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                title={t('nav.toggleTheme') || 'Toggle Mode'}
-                aria-label={t('nav.toggleTheme') || 'Toggle Mode'}
-                className="h-7 w-7 inline-flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/70 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer active:scale-95 shrink-0"
-              >
-                {theme === 'dark' ? (
-                  <Sun className="w-3.5 h-3.5 text-amber-400" />
+            <button
+              type="button"
+              onClick={toggleTheme}
+              title={t('nav.toggleTheme', isDark ? 'Mode Terang' : 'Mode Gelap')}
+              aria-label={t('nav.toggleTheme', isDark ? 'Mode Terang' : 'Mode Gelap')}
+              className="h-7 w-7 inline-flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/70 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer active:scale-95 shrink-0"
+            >
+              {mounted ? (
+                isDark ? (
+                  <Sun className="w-3.5 h-3.5 text-amber-400 transition-transform duration-300 ease-out hover:rotate-45" />
                 ) : (
-                  <Moon className="w-3.5 h-3.5 text-gray-700 dark:text-gray-300" />
-                )}
-              </button>
-            )}
+                  <Moon className="w-3.5 h-3.5 text-gray-700 dark:text-gray-300 transition-transform duration-300 ease-out hover:-rotate-12" />
+                )
+              ) : (
+                <div className="w-3.5 h-3.5" />
+              )}
+            </button>
 
             {/* 3. Bot Guide Button */}
             <button

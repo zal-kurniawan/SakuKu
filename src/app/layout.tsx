@@ -30,8 +30,25 @@ export default function RootLayout({
 }) {
   return (
     <html lang="id" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var saved = localStorage.getItem('sakuku-theme') || localStorage.getItem('theme') || localStorage.getItem('sakuku_theme');
+                  var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                  var isDark = saved ? saved === 'dark' : (saved === null ? true : prefersDark);
+                  document.documentElement.classList.toggle('dark', isDark);
+                  document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
       <body className="antialiased min-h-screen bg-white dark:bg-gray-950">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem storageKey="sakuku-theme">
           <LanguageProvider>
             <ConfirmProvider>
               <ToastProvider>

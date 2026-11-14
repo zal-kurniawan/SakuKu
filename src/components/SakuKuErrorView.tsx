@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Sun, Moon, Globe, LucideIcon } from 'lucide-react';
+import { useSakuKuTheme } from '@/hooks/useSakuKuTheme';
 
 export interface ErrorAction {
   label: { id: string; en: string };
@@ -31,33 +32,18 @@ export const SakuKuErrorView: React.FC<SakuKuErrorViewProps> = ({
   iconAccentColor = 'blue',
   actions,
 }) => {
-  // Standalone locale & theme management with localStorage fallback
+  // Locale management & Unified SakuKu Theme
   const [locale, setLocale] = useState<'id' | 'en'>('id');
-  const [isDark, setIsDark] = useState<boolean>(true);
-  const [mounted, setMounted] = useState<boolean>(false);
+  const { isDark, toggleTheme, mounted } = useSakuKuTheme();
 
   useEffect(() => {
-    setMounted(true);
-    // 1. Sync Language
+    // Sync Language
     try {
       const savedLang = localStorage.getItem('sakuku_lang') as 'id' | 'en';
       if (savedLang === 'id' || savedLang === 'en') {
         setLocale(savedLang);
       } else if (navigator.language.startsWith('en')) {
         setLocale('en');
-      }
-    } catch {}
-
-    // 2. Sync Theme
-    try {
-      const savedTheme = localStorage.getItem('sakuku_theme');
-      const rootHasDark = document.documentElement.classList.contains('dark');
-      if (savedTheme === 'dark' || (!savedTheme && rootHasDark)) {
-        setIsDark(true);
-        document.documentElement.classList.add('dark');
-      } else if (savedTheme === 'light') {
-        setIsDark(false);
-        document.documentElement.classList.remove('dark');
       }
     } catch {}
   }, []);
@@ -68,21 +54,6 @@ export const SakuKuErrorView: React.FC<SakuKuErrorViewProps> = ({
     try {
       localStorage.setItem('sakuku_lang', nextLang);
       window.dispatchEvent(new Event('language-change'));
-    } catch {}
-  };
-
-  const toggleTheme = () => {
-    const nextTheme = !isDark;
-    setIsDark(nextTheme);
-    try {
-      if (nextTheme) {
-        document.documentElement.classList.add('dark');
-        localStorage.setItem('sakuku_theme', 'dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-        localStorage.setItem('sakuku_theme', 'light');
-      }
-      window.dispatchEvent(new Event('theme-change'));
     } catch {}
   };
 
@@ -129,15 +100,17 @@ export const SakuKuErrorView: React.FC<SakuKuErrorViewProps> = ({
         </button>
 
         <button
+          type="button"
           onClick={toggleTheme}
           className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl border border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-[#0f1623]/90 backdrop-blur-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition flex items-center justify-center shadow-xs cursor-pointer active:scale-95"
-          title={isDark ? 'Mode Terang' : 'Mode Gelap'}
+          title={isDark ? (locale === 'id' ? 'Mode Terang' : 'Light Mode') : (locale === 'id' ? 'Mode Gelap' : 'Dark Mode')}
+          aria-label={isDark ? (locale === 'id' ? 'Mode Terang' : 'Light Mode') : (locale === 'id' ? 'Mode Gelap' : 'Dark Mode')}
         >
           {mounted ? (
             isDark ? (
-              <Sun className="w-4 h-4 text-amber-400" />
+              <Sun className="w-4 h-4 text-amber-400 transition-transform duration-300 ease-out hover:rotate-45" />
             ) : (
-              <Moon className="w-4 h-4 text-gray-600" />
+              <Moon className="w-4 h-4 text-gray-600 transition-transform duration-300 ease-out hover:-rotate-12" />
             )
           ) : (
             <div className="w-4 h-4" />

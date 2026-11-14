@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSakuKuTheme } from '@/hooks/useSakuKuTheme';
 import {
   ShieldCheck,
   KeyRound,
@@ -16,10 +17,9 @@ import {
 export default function LoginPage() {
   const router = useRouter();
 
-  // Standalone Locale & Theme
+  // Standalone Locale & Unified Theme
   const [locale, setLocale] = useState<'id' | 'en'>('id');
-  const [isDark, setIsDark] = useState<boolean>(true);
-  const [mounted, setMounted] = useState<boolean>(false);
+  const { isDark, toggleTheme, mounted } = useSakuKuTheme();
 
   // 6 Digits Input State
   const [digits, setDigits] = useState<string[]>(['', '', '', '', '', '']);
@@ -32,9 +32,8 @@ export default function LoginPage() {
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [remainingAttempts, setRemainingAttempts] = useState<number | null>(null);
 
-  // Initialize Theme and Locale from localStorage
+  // Initialize Locale from localStorage
   useEffect(() => {
-    setMounted(true);
     try {
       const savedLang = localStorage.getItem('sakuku_lang') as 'id' | 'en';
       if (savedLang === 'id' || savedLang === 'en') {
@@ -42,17 +41,7 @@ export default function LoginPage() {
       } else if (navigator.language.startsWith('en')) {
         setLocale('en');
       }
-
-      const savedTheme = localStorage.getItem('sakuku_theme');
-      const rootHasDark = document.documentElement.classList.contains('dark');
-      if (savedTheme === 'dark' || (!savedTheme && rootHasDark)) {
-        setIsDark(true);
-        document.documentElement.classList.add('dark');
-      } else if (savedTheme === 'light') {
-        setIsDark(false);
-        document.documentElement.classList.remove('dark');
-      }
-    } catch { }
+    } catch {}
 
     // Focus on first input box
     setTimeout(() => {
@@ -77,22 +66,7 @@ export default function LoginPage() {
     try {
       localStorage.setItem('sakuku_lang', next);
       window.dispatchEvent(new Event('language-change'));
-    } catch { }
-  };
-
-  const toggleTheme = () => {
-    const next = !isDark;
-    setIsDark(next);
-    try {
-      if (next) {
-        document.documentElement.classList.add('dark');
-        localStorage.setItem('sakuku_theme', 'dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-        localStorage.setItem('sakuku_theme', 'light');
-      }
-      window.dispatchEvent(new Event('theme-change'));
-    } catch { }
+    } catch {}
   };
 
   // Submit Verification Code (Auto-called on 6th digit or via button)
@@ -213,13 +187,14 @@ export default function LoginPage() {
           type="button"
           onClick={toggleTheme}
           className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl border border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-[#0f1623]/90 backdrop-blur-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition flex items-center justify-center shadow-xs cursor-pointer active:scale-95"
-          title={isDark ? 'Mode Terang' : 'Mode Gelap'}
+          title={isDark ? (locale === 'id' ? 'Mode Terang' : 'Light Mode') : (locale === 'id' ? 'Mode Gelap' : 'Dark Mode')}
+          aria-label={isDark ? (locale === 'id' ? 'Mode Terang' : 'Light Mode') : (locale === 'id' ? 'Mode Gelap' : 'Dark Mode')}
         >
           {mounted ? (
             isDark ? (
-              <Sun className="w-4 h-4 text-amber-400" />
+              <Sun className="w-4 h-4 text-amber-400 transition-transform duration-300 ease-out hover:rotate-45" />
             ) : (
-              <Moon className="w-4 h-4 text-gray-600" />
+              <Moon className="w-4 h-4 text-gray-600 transition-transform duration-300 ease-out hover:-rotate-12" />
             )
           ) : (
             <div className="w-4 h-4" />
