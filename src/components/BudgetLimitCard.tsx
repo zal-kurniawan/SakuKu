@@ -64,6 +64,12 @@ const COMMON_CATEGORIES = [
   'Lainnya',
 ];
 
+const PAGE_SIZE_OPTIONS = [
+  { value: 3, label: '3' },
+  { value: 5, label: '5' },
+  { value: 10, label: '10' },
+];
+
 export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
   budgets,
   onRefresh,
@@ -97,19 +103,24 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
   }>({});
 
   // Pagination Configuration & Slicing
-  const BUDGETS_PER_PAGE = 3;
-  const [budgetPage, setBudgetPage] = useState(1);
+  const [budgetPageSize, setBudgetPageSize] = useState<number>(3);
+  const [budgetPage, setBudgetPage] = useState<number>(1);
 
   const totalBudgets = budgets.length;
-  const totalPages = Math.max(1, Math.ceil(totalBudgets / BUDGETS_PER_PAGE));
+  const totalPages = Math.max(1, Math.ceil(totalBudgets / budgetPageSize));
   const validCurrentPage = Math.min(Math.max(1, budgetPage), totalPages);
 
-  const startIndex = (validCurrentPage - 1) * BUDGETS_PER_PAGE;
-  const endIndex = Math.min(startIndex + BUDGETS_PER_PAGE, totalBudgets);
+  const startIndex = (validCurrentPage - 1) * budgetPageSize;
+  const endIndex = Math.min(startIndex + budgetPageSize, totalBudgets);
   const paginatedBudgets = budgets.slice(startIndex, endIndex);
 
   const isPrevDisabled = validCurrentPage <= 1;
   const isNextDisabled = validCurrentPage >= totalPages;
+
+  const handlePageSizeChange = (val: number) => {
+    setBudgetPageSize(val);
+    setBudgetPage(1);
+  };
 
   // Auto-clamp page when items are deleted so user never sees an empty page
   useEffect(() => {
@@ -541,19 +552,38 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
       </div>
     </div>
 
-      {/* Bottom Section: Compact Pagination Footer (when totalPages > 1) */}
-      {totalPages > 1 && (
-        <div className="mt-auto pt-4 border-t border-gray-100 dark:border-gray-800/80 flex items-center justify-between gap-2">
-          {/* Sisi Kiri — Info Rentang Data */}
-          <span className="text-xs text-gray-500 dark:text-gray-400 tabular-nums whitespace-nowrap">
-            {t('budgets.rangeOf', locale === 'en' ? '{start}–{end} of {total}' : '{start}–{end} dari {total}')
-              .replace('{start}', String(startIndex + 1))
-              .replace('{end}', String(endIndex))
-              .replace('{total}', String(totalBudgets))}
-          </span>
+      {/* Bottom Section: Compact Pagination Footer (when totalBudgets > 3) */}
+      {totalBudgets > 3 && (
+        <div className="mt-auto pt-3.5 border-t border-gray-100 dark:border-gray-800/80 flex flex-wrap items-center justify-between gap-2">
+          {/* Grup Kiri: Label Baris + CustomSelect + Info Rentang Data */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                {t('transactions.rows', locale === 'id' ? 'Baris:' : 'Rows:')}
+              </span>
+              <div className="w-[60px] min-w-[60px]">
+                <CustomSelect<number>
+                  value={budgetPageSize}
+                  onChange={handlePageSizeChange}
+                  options={PAGE_SIZE_OPTIONS}
+                  size="sm"
+                  disabled={loading}
+                  usePortal={true}
+                  aria-label={t('transactions.rows', locale === 'id' ? 'Baris:' : 'Rows:')}
+                />
+              </div>
+            </div>
 
-          {/* Sisi Kanan — Navigasi Halaman (< Hal 1 / 3 >) */}
-          <div className="inline-flex items-center gap-1.5 shrink-0">
+            <span className="text-xs text-gray-500 dark:text-gray-400 tabular-nums whitespace-nowrap">
+              {t('budgets.rangeOf', locale === 'en' ? '{start}–{end} of {total}' : '{start}–{end} dari {total}')
+                .replace('{start}', String(startIndex + 1))
+                .replace('{end}', String(endIndex))
+                .replace('{total}', String(totalBudgets))}
+            </span>
+          </div>
+
+          {/* Grup Kanan: Navigasi Halaman (< Hal 1 / 2 >) */}
+          <div className="inline-flex items-center gap-1.5 shrink-0 ml-auto">
             {/* Tombol Sebelumnya (<) */}
             <button
               type="button"
@@ -573,8 +603,8 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
               <ChevronLeft className="w-4 h-4" />
             </button>
 
-            {/* Indikator Halaman (Hal 1 / 3) */}
-            <span className="px-2 text-xs font-medium text-gray-700 dark:text-gray-300 tabular-nums whitespace-nowrap">
+            {/* Indikator Halaman (Hal 1 / 2) */}
+            <span className="px-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 tabular-nums whitespace-nowrap">
               {t('budgets.pageOf', locale === 'en' ? 'Page {current} / {total}' : 'Hal {current} / {total}')
                 .replace('{current}', String(validCurrentPage))
                 .replace('{total}', String(totalPages))}
