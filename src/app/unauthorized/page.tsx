@@ -17,8 +17,8 @@ export default function UnauthorizedPage() {
         en: 'Unauthorized Access',
       }}
       description={{
-        id: 'Sesi masuk SakuKu Anda tidak ditemukan, telah kedaluwarsa, atau tidak valid. Silakan masuk kembali untuk melanjutkan.',
-        en: 'Your SakuKu session was not found, has expired, or is invalid. Please sign in again to continue.',
+        id: 'Sesi masuk SakuKu Anda tidak ditemukan, telah kedaluwarsa, atau tidak valid. Silakan verifikasi ulang identitas Anda menggunakan kode Google Authenticator.',
+        en: 'Your SakuKu session was not found, has expired, or is invalid. Please re-verify your identity using your Google Authenticator code.',
       }}
       icon={ShieldAlert}
       iconAccentColor="red"

@@ -17,10 +17,8 @@ const PUBLIC_PATHS = [
   '/login',
   '/unauthorized',
   '/forbidden',
-  '/api/auth/channel-status',
-  '/api/auth/request-otp',
-  '/api/auth/verify-otp',
   '/api/auth/verify-totp',
+  '/api/auth/logout',
   '/api/health',
   '/health',
   '/robots.txt',
@@ -126,7 +124,7 @@ export async function middleware(req: NextRequest) {
     response.cookies.set(COOKIE_NAME, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: 'strict',
       path: '/',
       maxAge: newMaxAge,
     });

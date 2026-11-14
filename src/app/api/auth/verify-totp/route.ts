@@ -91,25 +91,36 @@ export async function POST(req: NextRequest) {
         const alertMsg =
 `🚨 *[PERINGATAN KEAMANAN SAKUKU]*
 
-Terdeteksi *5x percobaan login TOTP gagal* pada dashboard web SakuKu saat WhatsApp Bot offline!
+Terdeteksi *5x percobaan login gagal* (salah memasukkan kode Google Authenticator) pada dashboard web SakuKu!
 
 • Waktu: ${timeWib} WIB
 • IP Address: ${ip}
 • Perangkat: ${deviceSummary}
-• Tindakan: Akses TOTP otomatis dikunci selama *15 menit*.`;
+• Tindakan: Akses login otomatis dikunci selama *15 menit*.`;
 
-        await prisma.authSecurityState.update({
-          where: { id: 'singleton' },
-          data: {
-            totpAttempts: newAttempts,
-            totpLockedUntil: lockedUntil,
-            pendingSecurityAlert: alertMsg,
-          },
-        });
+        if (isBotOnline) {
+          sendWhatsAppNotification(alertMsg).catch(() => {});
+          await prisma.authSecurityState.update({
+            where: { id: 'singleton' },
+            data: {
+              totpAttempts: newAttempts,
+              totpLockedUntil: lockedUntil,
+            },
+          });
+        } else {
+          await prisma.authSecurityState.update({
+            where: { id: 'singleton' },
+            data: {
+              totpAttempts: newAttempts,
+              totpLockedUntil: lockedUntil,
+              pendingSecurityAlert: alertMsg,
+            },
+          });
+        }
 
         return NextResponse.json(
           {
-            error: 'Terlalu banyak percobaan salah. Pemulihan TOTP dikunci selama 15 menit.',
+            error: 'Terlalu banyak percobaan salah. Akses login dikunci selama 15 menit.',
             errorCode: 'LOCKED_NOW',
             retryAfterSeconds: 900,
           },
@@ -145,9 +156,14 @@ Terdeteksi *5x percobaan login TOTP gagal* pada dashboard web SakuKu saat WhatsA
       timeStyle: 'medium',
     });
 
-    const auditMessage = isBotOnline
-      ? `🛡️ *[LOG KEAMANAN SAKUKU]*\n\nLogin menggunakan *Google Authenticator (TOTP)* berhasil dilakukan.\n\n• Waktu: ${timeWib} WIB\n• IP Address: ${ip}\n• Perangkat: ${deviceSummary}`
-      : `🛡️ *[LOG PEMULIHAN AKSES SAKUKU]*\n\nLogin darurat menggunakan *Google Authenticator (TOTP)* berhasil dilakukan saat WhatsApp Bot offline.\n\n• Waktu: ${timeWib} WIB\n• IP Address: ${ip}\n• Perangkat: ${deviceSummary}`;
+    const auditMessage =
+`🛡️ *[LOG KEAMANAN SAKUKU]*
+
+Login berhasil menggunakan *Google Authenticator* pada dashboard web SakuKu.
+
+• Waktu: ${timeWib} WIB
+• IP Address: ${ip}
+• Perangkat: ${deviceSummary}`;
 
     if (isBotOnline) {
       // Send alert immediately via WhatsApp bridge if bot is online
@@ -179,8 +195,7 @@ Terdeteksi *5x percobaan login TOTP gagal* pada dashboard web SakuKu saat WhatsA
 
     const response = NextResponse.json({
       success: true,
-      recoveryMode: !isBotOnline,
-      message: 'Autentikasi Google Authenticator berhasil! Anda akan diarahkan ke dashboard.',
+      message: 'Autentikasi Google Authenticator berhasil! Mengarahkan ke dashboard...',
     });
 
     // Set cookie sakuku_session

@@ -49,8 +49,8 @@ export const Navbar: React.FC<NavbarProps> = ({
       message: t(
         'dialog.logoutDesc',
         locale === 'id'
-          ? 'Sesi masuk Anda akan diakhiri. Anda perlu memverifikasi kode OTP baru untuk masuk kembali.'
-          : 'Your login session will be ended. You will need to verify a new OTP code to sign in again.'
+          ? 'Sesi masuk Anda akan diakhiri. Anda perlu memverifikasi kode Google Authenticator untuk masuk kembali.'
+          : 'Your login session will be ended. You will need to verify your Google Authenticator code to sign in again.'
       ),
       confirmText: t('dialog.logoutConfirm', locale === 'id' ? 'Keluar' : 'Sign Out'),
       cancelText: t('common.cancel', locale === 'id' ? 'Batal' : 'Cancel'),

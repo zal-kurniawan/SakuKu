@@ -231,7 +231,7 @@
     "budgetDeleted": "Budget target successfully deleted",
     "budgetDeleteFailed": "Failed to delete budget target",
     "logoutTitle": "Sign out of SakuKu?",
-    "logoutDesc": "Your login session will be ended. You will need to verify a new OTP code to sign in again.",
+    "logoutDesc": "Your login session will be ended. You will need to verify your Google Authenticator code to sign in again.",
     "logoutConfirm": "Sign Out"
   },
   "import": {

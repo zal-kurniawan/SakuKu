@@ -16,7 +16,7 @@ function getJwtSecret(): Uint8Array {
 export interface SessionPayload extends JWTPayload {
   userId: string;
   phoneNumber: string;
-  authMethod: 'WA_OTP' | 'TOTP';
+  authMethod: 'TOTP' | string;
   absoluteExp: number; // Unix timestamp in seconds
 }
 
@@ -24,7 +24,7 @@ export interface SessionPayload extends JWTPayload {
  * Creates a signed JWT session token with 3-day idle / 7-day absolute constraints
  */
 export async function createSessionToken(
-  authMethod: 'WA_OTP' | 'TOTP',
+  authMethod: string = 'TOTP',
   userId: string = 'owner',
   phoneNumber: string = process.env.MY_PHONE_NUMBER || '628563006136'
 ): Promise<{ token: string; maxAge: number; absoluteExp: number }> {
@@ -36,6 +36,7 @@ export async function createSessionToken(
     userId,
     phoneNumber,
     authMethod,
+    role: 'owner',
     absoluteExp,
   })
     .setProtectedHeader({ alg: 'HS256' })
@@ -73,7 +74,7 @@ export function getSessionCookieOptions(maxAge: number) {
     name: COOKIE_NAME,
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax' as const,
+    sameSite: 'strict' as const,
     path: '/',
     maxAge,
   };

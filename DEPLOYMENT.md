@@ -5,7 +5,7 @@ Panduan ini memandu Anda melakukan deployment sistem **SakuKu** ke infrastruktur
 - **Frontend Dashboard**: [Vercel](https://vercel.com) (Gratis Serverless Edge)
 - **Bot Worker & Scheduler**: [Render](https://render.com) (Gratis Container)
 - **Monitoring & Anti-Sleep**: [UptimeRobot](https://uptimerobot.com) (Gratis 50 monitor / 5 menit ping)
-- **Autentikasi & Keamanan**: Passwordless WhatsApp OTP, Smart Offline TOTP Fallback (Google Authenticator / Authy), Smart Session Cookie (`sakuku_session`), and Anti-Replay Guard.
+- **Autentikasi & Keamanan**: Google Authenticator (RFC 6238 TOTP Tunggal), Anti-Replay Guard, 5x Failed Lockout (15 Menit), Smart Session Cookie (`sakuku_session` 3 Hari Idle / 7 Hari Maksimal), dan Laporan Audit Keamanan Pasif ke WhatsApp.
 
 ---
 
@@ -18,7 +18,7 @@ Panduan ini memandu Anda melakukan deployment sistem **SakuKu** ke infrastruktur
 |  - Data Keuangan: Users, Wallets, Transactions, BudgetLimits            |
 |  - Sesi WhatsApp: WhatsAppSession (Kredensial & Signal Keys Baileys)    |
 |  - Real-time Status: meta_qr_code & meta_bot_status                     |
-|  - Keamanan Auth: AuthOtp & AuthSecurityState (Anti-Replay & Lockout)   |
+|  - Keamanan Auth: AuthSecurityState (Anti-Replay & Lockout)             |
 +-------------------+---------------------------------+-------------------+
                     ^                                 ^
                     | (Prisma ORM)                    | (Prisma ORM)
@@ -29,9 +29,9 @@ Panduan ini memandu Anda melakukan deployment sistem **SakuKu** ke infrastruktur
 |                                   |   |                                 |
 | - Antarmuka Next.js 14 App Router |   | - Baileys WebSocket Bot Engine  |
 | - Edge Middleware & Smart Session |   | - Node-Cron Auto Notifikasi     |
-| - WhatsApp OTP & Offline TOTP Auth|   | - Zero-File DB Auth Sync        |
+| - Google Authenticator Auth Gate  |   | - Zero-File DB Auth Sync        |
 | - Custom Error Pages Suite        |   | - HTTP Health Check (Port 8080) |
-| - Internal Bridge HTTP Client     |-->| - POST /internal/send-wa        |
+| - Passive Audit Dispatcher (HTTP) |--->| - POST /internal/send-wa        |
 +-------------------+---------------+   +-------------+-------------------+
                     ^                                 ^
                     | (HTTPS)                         | (Ping tiap 5 Menit)
@@ -71,15 +71,15 @@ Panduan ini memandu Anda melakukan deployment sistem **SakuKu** ke infrastruktur
    ```bash
    npx prisma db push
    ```
-   > Skema tabel `users`, `wallets`, `transactions`, `budget_limits`, `notification_logs`, `whatsapp_sessions`, `auth_otps`, dan `auth_security_state` akan langsung dibuat dan tersinkronisasi di Supabase!
+   > Skema tabel `users`, `wallets`, `transactions`, `budget_limits`, `notification_logs`, `whatsapp_sessions`, dan `auth_security_states` akan langsung tersinkronisasi di Supabase!
 
 ---
 
-## 🔐 Langkah 2: Setup Kunci Keamanan & TOTP Offline Fallback
+## 🔐 Langkah 2: Setup Kunci Keamanan & Google Authenticator
 
 Sebelum melakukan deployment, siapkan kunci rahasia berikut:
 
-1. **Buat Kunci Smart Offline TOTP (Google Authenticator / Authy)**:
+1. **Buat Kunci Google Authenticator (TOTP)**:
    Jalankan script CLI bawaan SakuKu di terminal:
    ```bash
    npm run auth:setup-totp
@@ -90,7 +90,7 @@ Sebelum melakukan deployment, siapkan kunci rahasia berikut:
 
 2. **Buat Kunci Acak untuk JWT & Bridge Internal**:
    - `JWT_SECRET`: String acak minimal 32 karakter (contoh: hasil dari `openssl rand -base64 32`).
-   - `INTERNAL_API_SECRET`: Kunci rahasia acak untuk autentikasi Next.js -> Worker HTTP bridge.
+   - `INTERNAL_API_SECRET`: Kunci rahasia acak untuk autentikasi laporan audit internal Next.js -> Worker HTTP bridge.
    - `ADMIN_SECRET_KEY`: Kunci rahasia untuk akses menu darurat web QR.
 
 ---
@@ -109,9 +109,9 @@ Sebelum melakukan deployment, siapkan kunci rahasia berikut:
    | `DATABASE_URL` | *`postgresql://...:6543/postgres?...`* | URL koneksi Supabase Anda |
    | `ADMIN_SECRET_KEY` | *`kunci_rahasia_admin`* | Password akses darurat `/admin/qr` |
    | `JWT_SECRET` | *`kunci_jwt_minimal_32_karakter`* | Pengaman session cookie `sakuku_session` |
-   | `INTERNAL_API_SECRET`| *`kunci_bridge_rahasia`* | Kunci komunikasi internal Next.js -> Worker |
+   | `TOTP_SECRET` | *`QJUV3ACVD5BDFZYOC...`* | Kunci Base32 Google Authenticator |
+   | `INTERNAL_API_SECRET`| *`kunci_bridge_rahasia`* | Kunci laporan audit keamanan Next.js -> Worker |
    | `WORKER_URL` | *`https://sakuku-worker.onrender.com`* | URL publik worker Render Anda |
-   | `TOTP_SECRET` | *`JBSWY3DPEHPK3PXP...`* | Kunci Base32 Google Authenticator |
    | `MY_PHONE_NUMBER` | `628563006136` | Nomor WhatsApp Anda (internasional tanpa `+`) |
 5. Klik **"Deploy"**. Tunggu ~1 menit hingga Vercel memberikan domain gratis (contoh: `https://sakuku.vercel.app`).
 
@@ -164,14 +164,13 @@ Tidak perlu membuka terminal server cloud! Anda bisa menghubungkan WhatsApp lang
    ```text
    https://<domain-vercel-anda>/login
    ```
-2. Jika ini login pertama dan bot belum tertaut, Anda dapat mengakses:
+2. Masukkan 6 digit kode dari aplikasi **Google Authenticator** di HP Anda. Begitu digit ke-6 dimasukkan, Anda langsung masuk ke Dashboard!
+3. Jika WhatsApp bot belum tertaut, klik tombol **WA Bot** di Navbar atau buka:
    ```text
    https://<domain-vercel-anda>/admin/qr?secret=<ADMIN_SECRET_KEY_ANDA>
    ```
-3. Arahkan kamera WhatsApp (Menu > Perangkat Tertaut > Tautkan Perangkat) ke QR code.
-4. Dalam 2-4 detik, bot akan terhubung (`CONNECTED`).
-5. Mulai sekarang, login ke Web Dashboard SakuKu cukup membuka `/login`, klik **"Kirim Kode OTP ke WhatsApp"**, dan masukkan 6 digit OTP yang diterima di WhatsApp!
-6. Jika suatu saat server WhatsApp bot sedang terputus, halaman login otomatis beralih ke **Mode Pemulihan TOTP Offline** (Google Authenticator / Authy) tanpa khawatir terkunci dari sistem!
+4. Arahkan kamera WhatsApp (Menu > Perangkat Tertaut > Tautkan Perangkat) ke QR code.
+5. Bot terhubung (`CONNECTED`) dan siap mencatat transaksi dari chat WhatsApp 24/7!
 
 ---
 
@@ -183,4 +182,4 @@ Jika suatu saat Anda ingin mengganti nomor WhatsApp atau menyambungkan ulang:
 
 ---
 
-### 🎉 Selamat! SakuKu Finance Tracker Anda kini aktif 24/7 di Cloud dengan keamanan tingkat tinggi, multi-channel OTP, dan 100% Gratis!
+### 🎉 Selamat! SakuKu Finance Tracker Anda kini aktif 24/7 di Cloud dengan keamanan Google Authenticator tingkat tinggi dan 100% Gratis!
