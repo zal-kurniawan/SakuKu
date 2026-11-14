@@ -12,11 +12,12 @@ import {
   CheckCircle2,
   Plus,
   Target,
-  ChevronDown,
   Pencil,
   Trash2,
   X,
 } from 'lucide-react';
+import { CustomSelect } from './ui/CustomSelect';
+import { CurrencyInput } from './ui/CurrencyInput';
 
 export interface BudgetItem {
   id: string;
@@ -372,39 +373,25 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
                   <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                     {t('transactions.formCategory') || 'Kategori'}
                   </label>
-                  <div className="relative">
-                    <select
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                      disabled={!!editingId}
-                      className={`appearance-none w-full pl-3.5 pr-9 py-2.5 rounded-xl text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] ${
-                        editingId ? 'opacity-70 cursor-not-allowed bg-gray-100 dark:bg-gray-800' : 'cursor-pointer'
-                      }`}
-                    >
-                      {COMMON_CATEGORIES.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                    </select>
-                    {!editingId && (
-                      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    )}
-                  </div>
+                  <CustomSelect
+                    value={category}
+                    onChange={setCategory}
+                    options={COMMON_CATEGORIES.map((c) => ({ value: c, label: c }))}
+                    disabled={!!editingId}
+                    size="lg"
+                  />
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                     {t('budgets.monthlyLimit') || 'Target Batas Bulanan (Rp)'} *
                   </label>
-                  <input
-                    type="number"
+                  <CurrencyInput
                     value={monthlyLimit}
-                    onChange={(e) => setMonthlyLimit(e.target.value)}
+                    onChange={(numericVal) => setMonthlyLimit(String(numericVal || ''))}
                     placeholder={t('budgets.limitPlaceholder') || 'Contoh: 1500000'}
                     required
-                    min="1"
-                    className="w-full px-3.5 py-2.5 rounded-xl text-sm font-semibold border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
+                    size="lg"
                   />
                 </div>
               </form>

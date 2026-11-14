@@ -15,6 +15,8 @@ export async function GET(req: Request) {
     const type = searchParams.get('type');
     const category = searchParams.get('category');
     const search = searchParams.get('search');
+    const dateFrom = searchParams.get('dateFrom');
+    const dateTo = searchParams.get('dateTo');
     const limit = parseInt(searchParams.get('limit') || '50', 10);
 
     const whereClause: any = {
@@ -31,6 +33,16 @@ export async function GET(req: Request) {
 
     if (category && category !== 'all') {
       whereClause.category = category;
+    }
+
+    if (dateFrom || dateTo) {
+      whereClause.date = {};
+      if (dateFrom) {
+        whereClause.date.gte = new Date(`${dateFrom}T00:00:00.000Z`);
+      }
+      if (dateTo) {
+        whereClause.date.lte = new Date(`${dateTo}T23:59:59.999Z`);
+      }
     }
 
     if (search) {

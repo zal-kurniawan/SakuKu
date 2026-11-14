@@ -5,7 +5,9 @@ import { useTranslation } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
 import { useModalEscape } from '@/hooks/useModalEscape';
 import { formatCurrency } from '@/lib/utils';
-import { X, ArrowRightLeft, ChevronDown } from 'lucide-react';
+import { X, ArrowRightLeft } from 'lucide-react';
+import { CustomSelect } from './ui/CustomSelect';
+import { CurrencyInput } from './ui/CurrencyInput';
 import { WalletItem } from './WalletList';
 
 interface TransferModalProps {
@@ -151,20 +153,15 @@ export const TransferModal: React.FC<TransferModalProps> = ({
                 <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                   {t('transfer.fromWallet') || 'Dompet Asal'}
                 </label>
-                <div className="relative">
-                  <select
-                    value={fromWalletId}
-                    onChange={(e) => setFromWalletId(e.target.value)}
-                    className="appearance-none w-full pl-3.5 pr-9 py-2.5 rounded-xl text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer min-h-[44px]"
-                  >
-                    {wallets.map((w) => (
-                      <option key={w.id} value={w.id}>
-                        {w.name} ({formatCurrency(w.balance, locale)})
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                </div>
+                <CustomSelect
+                  value={fromWalletId}
+                  onChange={setFromWalletId}
+                  options={wallets.map((w) => ({
+                    value: w.id,
+                    label: `${w.name} (${formatCurrency(w.balance, locale)})`,
+                  }))}
+                  size="lg"
+                />
               </div>
 
               {/* To Wallet */}
@@ -172,20 +169,16 @@ export const TransferModal: React.FC<TransferModalProps> = ({
                 <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                   {t('transfer.toWallet') || 'Dompet Tujuan'}
                 </label>
-                <div className="relative">
-                  <select
-                    value={toWalletId}
-                    onChange={(e) => setToWalletId(e.target.value)}
-                    className="appearance-none w-full pl-3.5 pr-9 py-2.5 rounded-xl text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer min-h-[44px]"
-                  >
-                    {wallets.map((w) => (
-                      <option key={w.id} value={w.id} disabled={w.id === fromWalletId}>
-                        {w.name} ({formatCurrency(w.balance, locale)})
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                </div>
+                <CustomSelect
+                  value={toWalletId}
+                  onChange={setToWalletId}
+                  options={wallets.map((w) => ({
+                    value: w.id,
+                    label: `${w.name} (${formatCurrency(w.balance, locale)})`,
+                    disabled: w.id === fromWalletId,
+                  }))}
+                  size="lg"
+                />
               </div>
             </div>
 
@@ -194,14 +187,12 @@ export const TransferModal: React.FC<TransferModalProps> = ({
               <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                 {t('transfer.amount') || 'Nominal Transfer (Rp)'} *
               </label>
-              <input
-                type="number"
+              <CurrencyInput
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={(numericVal) => setAmount(String(numericVal || ''))}
                 placeholder="0"
-                min="1"
                 required
-                className="w-full px-3.5 py-2.5 rounded-xl text-sm font-semibold border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
+                size="lg"
               />
               {selectedFromWallet && (
                 <p className="mt-1.5 text-[11px] text-gray-500">

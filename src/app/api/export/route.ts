@@ -5,11 +5,53 @@ import { getActiveUser } from '@/lib/current-user';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const user = await getActiveUser();
+    const { searchParams } = new URL(req.url);
+
+    const walletId = searchParams.get('walletId');
+    const type = searchParams.get('type');
+    const category = searchParams.get('category');
+    const search = searchParams.get('search');
+    const dateFrom = searchParams.get('dateFrom');
+    const dateTo = searchParams.get('dateTo');
+
+    const whereClause: any = {
+      userId: user.id,
+    };
+
+    if (walletId && walletId !== 'all') {
+      whereClause.OR = [{ walletId }, { destinationWalletId: walletId }];
+    }
+
+    if (type && type !== 'all') {
+      whereClause.type = type;
+    }
+
+    if (category && category !== 'all') {
+      whereClause.category = category;
+    }
+
+    if (dateFrom || dateTo) {
+      whereClause.date = {};
+      if (dateFrom) {
+        whereClause.date.gte = new Date(`${dateFrom}T00:00:00.000Z`);
+      }
+      if (dateTo) {
+        whereClause.date.lte = new Date(`${dateTo}T23:59:59.999Z`);
+      }
+    }
+
+    if (search) {
+      whereClause.title = {
+        contains: search,
+        mode: 'insensitive',
+      };
+    }
+
     const transactions = await prisma.transaction.findMany({
-      where: { userId: user.id },
+      where: whereClause,
       include: { wallet: true, destinationWallet: true },
       orderBy: { date: 'desc' },
     });

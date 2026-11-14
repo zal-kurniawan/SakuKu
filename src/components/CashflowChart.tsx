@@ -11,7 +11,8 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { ChevronDown, Calendar } from 'lucide-react';
+import { Calendar } from 'lucide-react';
+import { CustomSelect } from './ui/CustomSelect';
 import { useTranslation } from '@/context/LanguageContext';
 import { formatCurrency } from '@/lib/utils';
 
@@ -124,22 +125,14 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ data: initialData 
         </div>
 
         {/* Year Dropdown Filter */}
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          <div className="relative">
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(Number(e.target.value))}
-              aria-label={t('charts.filterYear') || 'Pilih Tahun'}
-              className="appearance-none bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl pl-3 pr-8 py-1.5 text-xs font-semibold text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer min-h-[36px]"
-            >
-              {availableYears.map((yr) => (
-                <option key={yr} value={yr}>
-                  {yr}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-          </div>
+        <div className="flex items-center gap-2 self-start sm:self-auto w-24">
+          <CustomSelect
+            value={selectedYear}
+            onChange={(val) => setSelectedYear(Number(val))}
+            options={availableYears.map((yr) => ({ value: yr, label: String(yr) }))}
+            size="sm"
+            aria-label={t('charts.filterYear') || 'Pilih Tahun'}
+          />
         </div>
       </div>
 

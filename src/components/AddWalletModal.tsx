@@ -5,6 +5,7 @@ import { useTranslation } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
 import { useModalEscape } from '@/hooks/useModalEscape';
 import { X, Wallet } from 'lucide-react';
+import { CurrencyInput } from './ui/CurrencyInput';
 import { WalletItem } from './WalletList';
 
 interface AddWalletModalProps {
@@ -224,13 +225,11 @@ export const AddWalletModal: React.FC<AddWalletModalProps> = ({
                   ? t('wallets.balance') || 'Saldo'
                   : t('wallets.formBalance') || 'Saldo Awal (Rp)'}
               </label>
-              <input
-                type="number"
+              <CurrencyInput
                 value={balance}
-                onChange={(e) => setBalance(e.target.value)}
+                onChange={(numericVal) => setBalance(String(numericVal || '0'))}
                 placeholder="0"
-                min="0"
-                className="w-full px-3.5 py-2.5 rounded-xl text-sm font-semibold border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
+                size="lg"
               />
             </div>
 

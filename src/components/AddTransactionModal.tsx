@@ -4,7 +4,10 @@ import React, { useState } from 'react';
 import { useTranslation } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
 import { useModalEscape } from '@/hooks/useModalEscape';
-import { X, PlusCircle, ChevronDown } from 'lucide-react';
+import { X, PlusCircle } from 'lucide-react';
+import { CustomSelect } from './ui/CustomSelect';
+import { CustomDatePicker } from './ui/CustomDatePicker';
+import { CurrencyInput } from './ui/CurrencyInput';
 import { WalletItem } from './WalletList';
 
 interface AddTransactionModalProps {
@@ -207,14 +210,12 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                 {t('transactions.formAmount') || 'Nominal (Rp)'} *
               </label>
-              <input
-                type="number"
+              <CurrencyInput
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={(numericVal) => setAmount(String(numericVal || ''))}
                 placeholder="0"
-                min="1"
                 required
-                className="w-full px-3.5 py-2.5 rounded-xl text-sm font-semibold border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
+                size="lg"
               />
             </div>
 
@@ -225,20 +226,12 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                   {t('transactions.formWallet') || 'Pilih Dompet / Rekening'}
                 </label>
-                <div className="relative">
-                  <select
-                    value={walletId}
-                    onChange={(e) => setWalletId(e.target.value)}
-                    className="appearance-none w-full pl-3.5 pr-9 py-2.5 rounded-xl text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer min-h-[44px]"
-                  >
-                    {wallets.map((w) => (
-                      <option key={w.id} value={w.id}>
-                        {w.name}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                </div>
+                <CustomSelect
+                  value={walletId}
+                  onChange={setWalletId}
+                  options={wallets.map((w) => ({ value: w.id, label: w.name }))}
+                  size="lg"
+                />
               </div>
 
               {/* Category */}
@@ -246,20 +239,12 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                   {t('transactions.formCategory') || 'Kategori'}
                 </label>
-                <div className="relative">
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="appearance-none w-full pl-3.5 pr-9 py-2.5 rounded-xl text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer min-h-[44px]"
-                  >
-                    {currentCategories.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                </div>
+                <CustomSelect
+                  value={category}
+                  onChange={setCategory}
+                  options={currentCategories.map((c) => ({ value: c, label: c }))}
+                  size="lg"
+                />
               </div>
             </div>
 
@@ -268,11 +253,10 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                 {t('transactions.formDate') || 'Tanggal'}
               </label>
-              <input
-                type="date"
+              <CustomDatePicker
                 value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
+                onChange={setDate}
+                size="lg"
               />
             </div>
 

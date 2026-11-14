@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
-import { ChevronDown } from 'lucide-react';
+import { CustomSelect } from './ui/CustomSelect';
 import { useTranslation } from '@/context/LanguageContext';
 import { formatCurrency } from '@/lib/utils';
 
@@ -148,39 +148,29 @@ export const WalletDistributionChart: React.FC<WalletDistributionChartProps> = (
         {/* Month & Year Selectors */}
         <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
           {/* Month Selector */}
-          <div className="relative">
-            <select
+          <div className="w-28 sm:w-32">
+            <CustomSelect
               value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
+              onChange={setSelectedMonth}
+              options={[
+                { value: 'current', label: t('charts.currentMonth') || 'Saat Ini' },
+                ...fullMonths.map((mName, idx) => ({ value: String(idx + 1), label: mName })),
+              ]}
+              size="sm"
               aria-label={t('charts.filterMonth') || 'Pilih Bulan'}
-              className="appearance-none bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl pl-3 pr-8 py-1.5 text-xs font-semibold text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer min-h-[36px]"
-            >
-              <option value="current">{t('charts.currentMonth') || 'Saat Ini'}</option>
-              {fullMonths.map((mName, idx) => (
-                <option key={idx + 1} value={String(idx + 1)}>
-                  {mName}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+            />
           </div>
 
           {/* Year Selector (Visible when specific month is selected) */}
           {selectedMonth !== 'current' && (
-            <div className="relative animate-in fade-in duration-150">
-              <select
+            <div className="w-24 animate-in fade-in duration-150">
+              <CustomSelect
                 value={selectedYear}
-                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                onChange={(val) => setSelectedYear(Number(val))}
+                options={availableYears.map((yr) => ({ value: yr, label: String(yr) }))}
+                size="sm"
                 aria-label={t('charts.filterYear') || 'Pilih Tahun'}
-                className="appearance-none bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl pl-3 pr-8 py-1.5 text-xs font-semibold text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer min-h-[36px]"
-              >
-                {availableYears.map((yr) => (
-                  <option key={yr} value={yr}>
-                    {yr}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+              />
             </div>
           )}
         </div>

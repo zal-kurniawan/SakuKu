@@ -19,7 +19,10 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  RotateCcw,
 } from 'lucide-react';
+import { CustomSelect } from './ui/CustomSelect';
+import { CustomDatePicker } from './ui/CustomDatePicker';
 import { WalletItem } from './WalletList';
 import { isExcelImportEnabled } from '@/lib/features';
 
@@ -71,10 +74,25 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   const [search, setSearch] = useState('');
   const [selectedWallet, setSelectedWallet] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedDateFilter, setSelectedDateFilter] = useState('all');
+  const [customDateFrom, setCustomDateFrom] = useState('');
+  const [customDateTo, setCustomDateTo] = useState('');
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  // Extract unique categories dynamically from transactions
+  const uniqueCategories = React.useMemo(() => {
+    const set = new Set<string>();
+    transactions.forEach((tx) => {
+      if (tx.category && tx.category.trim()) {
+        set.add(tx.category.trim());
+      }
+    });
+    return Array.from(set).sort();
+  }, [transactions]);
 
   const handleDelete = async (id: string | number) => {
     const isConfirmed = await confirm({
@@ -90,6 +108,25 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
     }
   };
 
+  const isFiltered =
+    Boolean(search) ||
+    selectedWallet !== 'all' ||
+    selectedType !== 'all' ||
+    selectedCategory !== 'all' ||
+    selectedDateFilter !== 'all' ||
+    Boolean(customDateFrom) ||
+    Boolean(customDateTo);
+
+  const handleResetFilter = () => {
+    setSearch('');
+    setSelectedWallet('all');
+    setSelectedType('all');
+    setSelectedCategory('all');
+    setSelectedDateFilter('all');
+    setCustomDateFrom('');
+    setCustomDateTo('');
+  };
+
   const filtered = transactions.filter((tx) => {
     const matchesSearch =
       tx.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -102,13 +139,45 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
 
     const matchesType = selectedType === 'all' || tx.type === selectedType;
 
-    return matchesSearch && matchesWallet && matchesType;
+    const matchesCategory =
+      selectedCategory === 'all' || tx.category === selectedCategory;
+
+    // Date filtering
+    let matchesDate = true;
+    if (selectedDateFilter === 'today') {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      matchesDate = tx.date.startsWith(todayStr);
+    } else if (selectedDateFilter === 'last7days') {
+      const now = new Date();
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const txDate = new Date(tx.date);
+      matchesDate = txDate >= sevenDaysAgo;
+    } else if (selectedDateFilter === 'thisMonth') {
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const prefix = `${yyyy}-${mm}`;
+      matchesDate = tx.date.startsWith(prefix);
+    } else if (selectedDateFilter === 'lastMonth') {
+      const now = new Date();
+      const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const yyyy = lastMonth.getFullYear();
+      const mm = String(lastMonth.getMonth() + 1).padStart(2, '0');
+      const prefix = `${yyyy}-${mm}`;
+      matchesDate = tx.date.startsWith(prefix);
+    } else if (selectedDateFilter === 'custom') {
+      const txDateStr = tx.date.slice(0, 10);
+      if (customDateFrom && txDateStr < customDateFrom) matchesDate = false;
+      if (customDateTo && txDateStr > customDateTo) matchesDate = false;
+    }
+
+    return matchesSearch && matchesWallet && matchesType && matchesCategory && matchesDate;
   });
 
   // Reset to page 1 whenever filters or search query changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, selectedWallet, selectedType, rowsPerPage]);
+  }, [search, selectedWallet, selectedType, selectedCategory, selectedDateFilter, customDateFrom, customDateTo, rowsPerPage]);
 
   const totalItems = filtered.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
@@ -119,8 +188,77 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   const paginatedItems = filtered.slice(startIndex, endIndex);
 
   const handleExportCsv = () => {
-    window.open('/api/export', '_blank');
+    const params = new URLSearchParams();
+    if (selectedWallet !== 'all') params.set('walletId', selectedWallet);
+    if (selectedType !== 'all') params.set('type', selectedType);
+    if (selectedCategory !== 'all') params.set('category', selectedCategory);
+    if (search) params.set('search', search);
+
+    if (selectedDateFilter === 'today') {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      params.set('dateFrom', todayStr);
+      params.set('dateTo', todayStr);
+    } else if (selectedDateFilter === 'last7days') {
+      const now = new Date();
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      params.set('dateFrom', sevenDaysAgo.toISOString().slice(0, 10));
+      params.set('dateTo', now.toISOString().slice(0, 10));
+    } else if (selectedDateFilter === 'thisMonth') {
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const lastDay = new Date(yyyy, now.getMonth() + 1, 0).getDate();
+      params.set('dateFrom', `${yyyy}-${mm}-01`);
+      params.set('dateTo', `${yyyy}-${mm}-${lastDay}`);
+    } else if (selectedDateFilter === 'lastMonth') {
+      const now = new Date();
+      const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const yyyy = lastMonth.getFullYear();
+      const mm = String(lastMonth.getMonth() + 1).padStart(2, '0');
+      const lastDay = new Date(yyyy, lastMonth.getMonth() + 1, 0).getDate();
+      params.set('dateFrom', `${yyyy}-${mm}-01`);
+      params.set('dateTo', `${yyyy}-${mm}-${lastDay}`);
+    } else if (selectedDateFilter === 'custom') {
+      if (customDateFrom) params.set('dateFrom', customDateFrom);
+      if (customDateTo) params.set('dateTo', customDateTo);
+    }
+
+    const qs = params.toString();
+    window.open(`/api/export${qs ? `?${qs}` : ''}`, '_blank');
   };
+
+  const walletOptions = [
+    { value: 'all', label: t('transactions.filterWallet') || 'Semua Dompet' },
+    ...wallets.map((w) => ({ value: w.id, label: w.name })),
+  ];
+
+  const typeOptions = [
+    { value: 'all', label: t('transactions.filterType') || 'Semua Tipe' },
+    { value: 'INCOME', label: t('transactions.income') || 'Pemasukan' },
+    { value: 'EXPENSE', label: t('transactions.expense') || 'Pengeluaran' },
+    { value: 'TRANSFER', label: t('transactions.typeTransfer') || 'Transfer' },
+  ];
+
+  const categoryOptions = [
+    { value: 'all', label: t('transactions.filterCategory') || 'Semua Kategori' },
+    ...uniqueCategories.map((c) => ({ value: c, label: c })),
+  ];
+
+  const dateFilterOptions = [
+    { value: 'all', label: t('transactions.filterDate') || 'Semua Tanggal' },
+    { value: 'today', label: t('transactions.dateToday') || 'Hari Ini' },
+    { value: 'last7days', label: t('transactions.dateLast7Days') || '7 Hari Terakhir' },
+    { value: 'thisMonth', label: t('transactions.dateThisMonth') || 'Bulan Ini' },
+    { value: 'lastMonth', label: t('transactions.dateLastMonth') || 'Bulan Lalu' },
+    { value: 'custom', label: t('transactions.dateCustom') || 'Rentang Kustom...' },
+  ];
+
+  const rowsPerPageOptions = [
+    { value: 10, label: '10' },
+    { value: 25, label: '25' },
+    { value: 50, label: '50' },
+    { value: 100, label: '100' },
+  ];
 
   return (
     <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-xs sm:shadow-sm space-y-4">
@@ -155,54 +293,112 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
         </div>
       </div>
 
-      {/* Filter Toolbar: Responsive Stack on Mobile, Row on Tablet/Desktop */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 pt-1">
-        {/* Search */}
-        <div className="relative flex-1 w-full">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t('transactions.search')}
-            className="w-full pl-9 pr-3 py-2.5 rounded-xl text-xs sm:text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[42px]"
-          />
-        </div>
-
-        {/* Filters Group for Mobile/Tablet */}
-        <div className="grid grid-cols-2 sm:flex sm:items-center gap-2.5">
-          {/* Filter Wallet */}
-          <div className="relative inline-block w-full sm:w-[160px] md:w-[180px]">
-            <select
-              value={selectedWallet}
-              onChange={(e) => setSelectedWallet(e.target.value)}
-              className="appearance-none w-full pl-3 pr-9 py-2.5 rounded-xl text-xs sm:text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer truncate min-h-[42px]"
-            >
-              <option value="all">{t('transactions.filterWallet')}</option>
-              {wallets.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
+      {/* Filter Toolbar: Responsive Layout (Mobile, Tablet, Desktop) */}
+      <div className="space-y-2.5 pt-1">
+        {/* Main Grid: Desktop (12 cols) / Tablet (Search full + 4 cols) / Mobile (Search full + 2x2 cols) */}
+        <div className="flex flex-col lg:grid lg:grid-cols-12 gap-2.5 items-stretch">
+          {/* 1. Search */}
+          <div className="relative w-full lg:col-span-4">
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t('transactions.search') || 'Cari transaksi...'}
+              className="w-full pl-9 pr-3 h-10 rounded-xl text-xs sm:text-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0f1623] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+            />
           </div>
 
-          {/* Filter Type */}
-          <div className="relative inline-block w-full sm:w-[140px] md:w-[160px]">
-            <select
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
-              className="appearance-none w-full pl-3 pr-9 py-2.5 rounded-xl text-xs sm:text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer truncate min-h-[42px]"
-            >
-              <option value="all">{t('transactions.filterType')}</option>
-              <option value="INCOME">{t('transactions.income')}</option>
-              <option value="EXPENSE">{t('transactions.expense')}</option>
-              <option value="TRANSFER">{t('transactions.typeTransfer')}</option>
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
+          {/* 2. Four Dropdowns Container */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:contents gap-2 sm:gap-2.5">
+            {/* Wallet Filter */}
+            <div className="lg:col-span-2">
+              <CustomSelect
+                value={selectedWallet}
+                onChange={setSelectedWallet}
+                options={walletOptions}
+                size="md"
+                aria-label={t('transactions.filterWallet')}
+              />
+            </div>
+
+            {/* Type Filter */}
+            <div className="lg:col-span-2">
+              <CustomSelect
+                value={selectedType}
+                onChange={setSelectedType}
+                options={typeOptions}
+                size="md"
+                aria-label={t('transactions.filterType')}
+              />
+            </div>
+
+            {/* Category Filter */}
+            <div className="lg:col-span-2">
+              <CustomSelect
+                value={selectedCategory}
+                onChange={setSelectedCategory}
+                options={categoryOptions}
+                size="md"
+                aria-label={t('transactions.filterCategory')}
+              />
+            </div>
+
+            {/* Date Preset Filter */}
+            <div className="lg:col-span-2">
+              <CustomSelect
+                value={selectedDateFilter}
+                onChange={setSelectedDateFilter}
+                options={dateFilterOptions}
+                size="md"
+                aria-label={t('transactions.filterDate')}
+              />
+            </div>
           </div>
         </div>
+
+        {/* Sub-bar: Custom Date Range (when 'custom' is active) + Reset Button */}
+        {(selectedDateFilter === 'custom' || isFiltered) && (
+          <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
+            {/* Custom Date Pickers */}
+            {selectedDateFilter === 'custom' ? (
+              <div className="grid grid-cols-1 min-[380px]:grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-2.5 w-full sm:w-auto flex-1">
+                <div className="w-full sm:w-[170px]">
+                  <CustomDatePicker
+                    value={customDateFrom}
+                    onChange={setCustomDateFrom}
+                    placeholder={t('transactions.dateFrom') || 'Dari Tanggal'}
+                    maxDate={customDateTo || undefined}
+                    clearable
+                    size="md"
+                  />
+                </div>
+                <div className="w-full sm:w-[170px]">
+                  <CustomDatePicker
+                    value={customDateTo}
+                    onChange={setCustomDateTo}
+                    placeholder={t('transactions.dateTo') || 'Sampai Tanggal'}
+                    minDate={customDateFrom || undefined}
+                    clearable
+                    size="md"
+                  />
+                </div>
+              </div>
+            ) : <div />}
+
+            {/* Reset Filter Button */}
+            {isFiltered && (
+              <button
+                type="button"
+                onClick={handleResetFilter}
+                className="h-10 px-3 rounded-xl border border-gray-200 dark:border-gray-800 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:text-rose-600 dark:hover:text-rose-400 hover:border-rose-300 dark:hover:border-rose-900/50 bg-gray-50/50 dark:bg-gray-900/50 transition inline-flex items-center gap-1.5 cursor-pointer ml-auto active:scale-95"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>{t('transactions.resetFilter') || 'Reset Filter'}</span>
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 1. Mobile Card View (< 640px / sm) */}
@@ -493,18 +689,14 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
               <span className="text-xs sm:text-sm font-medium">
                 {t('transactions.rows') || (locale === 'id' ? 'Baris:' : 'Rows:')}
               </span>
-              <div className="relative">
-                <select
+              <div className="w-[72px]">
+                <CustomSelect
                   value={rowsPerPage}
-                  onChange={(e) => setRowsPerPage(Number(e.target.value))}
-                  className="appearance-none bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg pl-2.5 pr-7 py-1 text-xs font-semibold text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer h-8"
-                >
-                  <option value={10}>10</option>
-                  <option value={25}>25</option>
-                  <option value={50}>50</option>
-                  <option value={100}>100</option>
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                  onChange={(val) => setRowsPerPage(Number(val))}
+                  options={rowsPerPageOptions}
+                  size="sm"
+                  aria-label={t('transactions.rows')}
+                />
               </div>
             </div>
 
