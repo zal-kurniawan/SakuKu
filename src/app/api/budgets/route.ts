@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getActiveUser } from '@/lib/current-user';
-import { getMonthRange } from '@/lib/timezone';
+import { getMonthRange, getCustomDateRange, formatDateKey } from '@/lib/timezone';
 import { getBudgetsQuery } from '@/lib/dashboard-queries';
 
 export const dynamic = 'force-dynamic';
@@ -10,17 +10,7 @@ export const revalidate = 0;
 export async function GET(req: Request) {
   try {
     const user = await getActiveUser();
-    const { searchParams } = new URL(req.url);
-
-    const current = getMonthRange();
-    const month = searchParams.get('month')
-      ? parseInt(searchParams.get('month')!, 10)
-      : current.month;
-    const year = searchParams.get('year')
-      ? parseInt(searchParams.get('year')!, 10)
-      : current.year;
-
-    const result = await getBudgetsQuery(user.id, month, year);
+    const result = await getBudgetsQuery(user.id);
     return NextResponse.json(result);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -31,30 +21,66 @@ export async function POST(req: Request) {
   try {
     const user = await getActiveUser();
     const body = await req.json();
-    const { category, monthlyLimit, month, year } = body;
+    const { category, monthlyLimit, amount, startDate: rawStartDate, endDate: rawEndDate } = body;
 
+    const limitVal = parseFloat(monthlyLimit !== undefined ? monthlyLimit : amount);
+    if (!category || typeof category !== 'string' || !category.trim()) {
+      return NextResponse.json(
+        { error: user.language === 'en' ? 'Category is required.' : 'Kategori wajib dipilih.' },
+        { status: 400 }
+      );
+    }
+
+    if (isNaN(limitVal) || limitVal <= 0) {
+      return NextResponse.json(
+        { error: user.language === 'en' ? 'Budget limit must be greater than 0.' : 'Batas budget harus lebih dari 0.' },
+        { status: 400 }
+      );
+    }
+
+    // Default dates if not supplied (1st of current month to last of current month)
     const current = getMonthRange();
-    const targetMonth = month || current.month;
-    const targetYear = year || current.year;
+    const startDateStr = rawStartDate || formatDateKey(current.startOfMonth);
+    const endDateStr = rawEndDate || formatDateKey(current.endOfMonth);
 
-    const budget = await prisma.budgetLimit.upsert({
+    if (startDateStr > endDateStr) {
+      return NextResponse.json(
+        { error: user.language === 'en' ? 'Start date cannot be after end date.' : 'Tanggal mulai tidak boleh lebih besar dari tanggal akhir.' },
+        { status: 400 }
+      );
+    }
+
+    const { start: newStartDate, end: newEndDate } = getCustomDateRange(startDateStr, endDateStr);
+
+    // Anti-overlap check: existing.startDate <= newEndDate && existing.endDate >= newStartDate
+    const overlapping = await prisma.budgetLimit.findFirst({
       where: {
-        userId_category_month_year: {
-          userId: user.id,
-          category,
-          month: targetMonth,
-          year: targetYear,
-        },
-      },
-      update: {
-        monthlyLimit: parseFloat(monthlyLimit),
-      },
-      create: {
         userId: user.id,
-        category,
-        monthlyLimit: parseFloat(monthlyLimit),
-        month: targetMonth,
-        year: targetYear,
+        category: category.trim(),
+        startDate: { lte: newEndDate },
+        endDate: { gte: newStartDate },
+      },
+    });
+
+    if (overlapping) {
+      return NextResponse.json(
+        {
+          error:
+            user.language === 'en'
+              ? 'Date range overlaps with an existing budget target for this category.'
+              : 'Rentang tanggal bertabrakan dengan target budget yang sudah ada untuk kategori ini.',
+        },
+        { status: 400 }
+      );
+    }
+
+    const budget = await prisma.budgetLimit.create({
+      data: {
+        userId: user.id,
+        category: category.trim(),
+        monthlyLimit: limitVal,
+        startDate: newStartDate,
+        endDate: newEndDate,
       },
     });
 
@@ -68,35 +94,82 @@ export async function PUT(req: Request) {
   try {
     const user = await getActiveUser();
     const body = await req.json();
-    const { id, monthlyLimit, category } = body;
+    const { id, category, monthlyLimit, amount, startDate: rawStartDate, endDate: rawEndDate } = body;
 
-    if (!monthlyLimit || parseFloat(monthlyLimit) <= 0) {
-      return NextResponse.json({ error: 'Batas bulanan harus lebih dari 0' }, { status: 400 });
+    if (!id) {
+      return NextResponse.json(
+        { error: user.language === 'en' ? 'Budget ID is required.' : 'ID budget diperlukan.' },
+        { status: 400 }
+      );
     }
 
-    if (id) {
-      const updated = await prisma.budgetLimit.update({
-        where: { id, userId: user.id },
-        data: { monthlyLimit: parseFloat(monthlyLimit) },
-      });
-      return NextResponse.json(updated);
-    } else if (category) {
-      const { month, year } = getMonthRange();
-      const updated = await prisma.budgetLimit.update({
-        where: {
-          userId_category_month_year: {
-            userId: user.id,
-            category,
-            month,
-            year,
-          },
+    const existingBudget = await prisma.budgetLimit.findUnique({
+      where: { id },
+    });
+
+    if (!existingBudget || existingBudget.userId !== user.id) {
+      return NextResponse.json(
+        { error: user.language === 'en' ? 'Budget target not found.' : 'Target budget tidak ditemukan.' },
+        { status: 404 }
+      );
+    }
+
+    const targetCategory = (category || existingBudget.category).trim();
+    const limitVal = parseFloat(monthlyLimit !== undefined ? monthlyLimit : (amount !== undefined ? amount : existingBudget.monthlyLimit));
+
+    if (isNaN(limitVal) || limitVal <= 0) {
+      return NextResponse.json(
+        { error: user.language === 'en' ? 'Budget limit must be greater than 0.' : 'Batas budget harus lebih dari 0.' },
+        { status: 400 }
+      );
+    }
+
+    const startDateStr = rawStartDate || formatDateKey(existingBudget.startDate);
+    const endDateStr = rawEndDate || formatDateKey(existingBudget.endDate);
+
+    if (startDateStr > endDateStr) {
+      return NextResponse.json(
+        { error: user.language === 'en' ? 'Start date cannot be after end date.' : 'Tanggal mulai tidak boleh lebih besar dari tanggal akhir.' },
+        { status: 400 }
+      );
+    }
+
+    const { start: newStartDate, end: newEndDate } = getCustomDateRange(startDateStr, endDateStr);
+
+    // Anti-overlap check excluding current id
+    const overlapping = await prisma.budgetLimit.findFirst({
+      where: {
+        userId: user.id,
+        category: targetCategory,
+        NOT: { id },
+        startDate: { lte: newEndDate },
+        endDate: { gte: newStartDate },
+      },
+    });
+
+    if (overlapping) {
+      return NextResponse.json(
+        {
+          error:
+            user.language === 'en'
+              ? 'Date range overlaps with an existing budget target for this category.'
+              : 'Rentang tanggal bertabrakan dengan target budget yang sudah ada untuk kategori ini.',
         },
-        data: { monthlyLimit: parseFloat(monthlyLimit) },
-      });
-      return NextResponse.json(updated);
+        { status: 400 }
+      );
     }
 
-    return NextResponse.json({ error: 'ID atau kategori budget diperlukan' }, { status: 400 });
+    const updated = await prisma.budgetLimit.update({
+      where: { id, userId: user.id },
+      data: {
+        category: targetCategory,
+        monthlyLimit: limitVal,
+        startDate: newStartDate,
+        endDate: newEndDate,
+      },
+    });
+
+    return NextResponse.json(updated);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -116,7 +189,10 @@ export async function DELETE(req: Request) {
     }
 
     if (!id) {
-      return NextResponse.json({ error: 'ID budget diperlukan' }, { status: 400 });
+      return NextResponse.json(
+        { error: user.language === 'en' ? 'Budget ID is required.' : 'ID budget diperlukan.' },
+        { status: 400 }
+      );
     }
 
     await prisma.budgetLimit.delete({

@@ -451,10 +451,13 @@ export async function handleWhatsAppMessage(
   // 4. Check budget limits for touched expense categories
   let budgetAlerts = '';
   if (expenseCategoriesThisBatch.length > 0) {
-    const { startOfMonth, endOfMonth, year: currentYear, month: currentMonth } = getMonthRange();
-
+    const now = new Date();
     const budgets = await prisma.budgetLimit.findMany({
-      where: { userId: user.id, month: currentMonth, year: currentYear },
+      where: {
+        userId: user.id,
+        startDate: { lte: now },
+        endDate: { gte: now },
+      },
     });
 
     for (const b of budgets) {
@@ -468,7 +471,7 @@ export async function handleWhatsAppMessage(
             userId: user.id,
             category: b.category,
             type: 'EXPENSE',
-            date: { gte: startOfMonth, lte: endOfMonth },
+            date: { gte: b.startDate, lte: b.endDate },
           },
           _sum: { amount: true },
         });
@@ -478,8 +481,8 @@ export async function handleWhatsAppMessage(
 
         if (pct >= 100) {
           budgetAlerts += `\n🚨 *Overbudget (${b.category}):* ${pct}% (${formatCurrency(totalSpent)} / ${formatCurrency(b.monthlyLimit)})`;
-        } else if (pct >= 75) {
-          budgetAlerts += `\n⚠️ *Peringatan Budget (${b.category}):* Sudah ${pct}% batas bulanan.`;
+        } else if (pct >= 80) {
+          budgetAlerts += `\n⚠️ *Peringatan Budget (${b.category}):* Sudah ${pct}% batas anggaran.`;
         }
       }
     }

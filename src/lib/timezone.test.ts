@@ -94,4 +94,29 @@ const feb2026 = getMonthRange(2026, 2);
 assert.strictEqual(feb2026.endOfMonth.toISOString(), '2026-02-28T16:59:59.999Z'); // 28 days
 console.log('✓ Leap year February (2024 = 29 days, 2026 = 28 days) handled correctly (PASSED)');
 
+// 6. Test Custom Date Range & Budget Period Status
+import {
+  getCustomDateRange,
+  formatDateKey,
+  formatDateRangeDisplay,
+  getBudgetPeriodStatus,
+} from './timezone';
+
+const customRange = getCustomDateRange('2026-10-25', '2026-11-24');
+assert.strictEqual(customRange.start.toISOString(), '2026-10-24T17:00:00.000Z'); // 2026-10-25 00:00 WIB
+assert.strictEqual(customRange.end.toISOString(), '2026-11-24T16:59:59.999Z'); // 2026-11-24 23:59:59.999 WIB
+console.log('✓ Custom date range WIB boundaries verified (PASSED)');
+
+const formattedId = formatDateRangeDisplay('2026-10-25', '2026-11-24', 'id');
+assert.strictEqual(formattedId, '25 Okt – 24 Nov 2026');
+const formattedEn = formatDateRangeDisplay('2026-10-25', '2026-11-24', 'en');
+assert.strictEqual(formattedEn, 'Oct 25 – Nov 24, 2026');
+console.log('✓ Date range display formatting ID and EN verified (PASSED)');
+
+const formattedIdCrossYear = formatDateRangeDisplay('2026-12-25', '2027-01-24', 'id');
+assert.strictEqual(formattedIdCrossYear, '25 Des 2026 – 24 Jan 2027');
+const formattedEnCrossYear = formatDateRangeDisplay('2026-12-25', '2027-01-24', 'en');
+assert.strictEqual(formattedEnCrossYear, 'Dec 25, 2026 – Jan 24, 2027');
+console.log('✓ Cross-year date range formatting verified (PASSED)');
+
 console.log('\n🎉 ALL TIMEZONE & RESET ENGINE TESTS PASSED 100% SUCCESSFULLY!\n');

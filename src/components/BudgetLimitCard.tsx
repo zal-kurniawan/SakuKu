@@ -15,11 +15,19 @@ import {
   Pencil,
   Trash2,
   X,
+  Calendar,
+  Clock,
 } from 'lucide-react';
 import { CustomSelect } from './ui/CustomSelect';
+import { CustomDatePicker } from './ui/CustomDatePicker';
 import { CurrencyInput } from './ui/CurrencyInput';
 import { FormFieldError } from './ui/FormFieldError';
 import { getCategoryLabel } from '@/lib/categories';
+import {
+  getMonthRange,
+  formatDateKey,
+  formatDateRangeDisplay,
+} from '@/lib/timezone';
 
 export interface BudgetItem {
   id: string;
@@ -29,8 +37,12 @@ export interface BudgetItem {
   remaining: number;
   percentage: number;
   status: 'SAFE' | 'WARNING' | 'DANGER';
-  month: number;
-  year: number;
+  startDate: string; // YYYY-MM-DD
+  endDate: string;   // YYYY-MM-DD
+  periodStatus?: 'UPCOMING' | 'ACTIVE' | 'ENDS_TODAY' | 'ENDED';
+  daysLeft?: number;
+  month?: number;
+  year?: number;
 }
 
 interface BudgetLimitCardProps {
@@ -57,15 +69,29 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
   const { t, locale } = useTranslation();
   const confirm = useConfirm();
   const toast = useToast();
+
+  const getInitialDates = () => {
+    const current = getMonthRange();
+    return {
+      start: formatDateKey(current.startOfMonth),
+      end: formatDateKey(current.endOfMonth),
+    };
+  };
+
+  const initialDates = getInitialDates();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [category, setCategory] = useState(COMMON_CATEGORIES[0]);
   const [monthlyLimit, setMonthlyLimit] = useState('');
+  const [startDate, setStartDate] = useState(initialDates.start);
+  const [endDate, setEndDate] = useState(initialDates.end);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<{
     category?: string;
     monthlyLimit?: string;
+    startDate?: string;
+    endDate?: string;
   }>({});
 
   const handleCloseModal = () => {
@@ -73,6 +99,9 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
     setEditingId(null);
     setCategory(COMMON_CATEGORIES[0]);
     setMonthlyLimit('');
+    const fresh = getInitialDates();
+    setStartDate(fresh.start);
+    setEndDate(fresh.end);
     setError('');
     setFieldErrors({});
     setModalOpen(false);
@@ -88,6 +117,9 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
     setEditingId(null);
     setCategory(COMMON_CATEGORIES[0]);
     setMonthlyLimit('');
+    const fresh = getInitialDates();
+    setStartDate(fresh.start);
+    setEndDate(fresh.end);
     setError('');
     setFieldErrors({});
     setModalOpen(true);
@@ -97,15 +129,43 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
     setEditingId(b.id);
     setCategory(b.category);
     setMonthlyLimit(String(b.monthlyLimit));
+    setStartDate(b.startDate || initialDates.start);
+    setEndDate(b.endDate || initialDates.end);
     setError('');
     setFieldErrors({});
     setModalOpen(true);
   };
 
+  const handleStartDateChange = (val: string) => {
+    setStartDate(val);
+    if (fieldErrors.startDate) {
+      setFieldErrors((prev) => ({ ...prev, startDate: undefined }));
+    }
+    // Auto-adjust endDate if new startDate is after endDate
+    if (endDate && val > endDate) {
+      setEndDate(val);
+      if (fieldErrors.endDate) {
+        setFieldErrors((prev) => ({ ...prev, endDate: undefined }));
+      }
+    }
+  };
+
+  const handleEndDateChange = (val: string) => {
+    setEndDate(val);
+    if (fieldErrors.endDate) {
+      setFieldErrors((prev) => ({ ...prev, endDate: undefined }));
+    }
+  };
+
   const handleDeleteBudget = async (id: string, categoryName: string) => {
     const isConfirmed = await confirm({
       title: t('dialog.deleteBudgetTitle', 'Hapus Target Budget?'),
-      message: `${t('dialog.deleteBudgetDesc', locale === 'en' ? 'Remove the monthly budget limit for this category?' : 'Hapus batas anggaran bulanan untuk kategori ini?')} (${getCategoryLabel(categoryName, locale, t)})`,
+      message: `${t(
+        'dialog.deleteBudgetDesc',
+        locale === 'en'
+          ? 'Remove the budget limit for this category?'
+          : 'Hapus batas anggaran untuk kategori ini?'
+      )} (${getCategoryLabel(categoryName, locale, t)})`,
       confirmText: t('common.delete', 'Hapus'),
       cancelText: t('common.cancel', 'Batal'),
       variant: 'danger',
@@ -116,7 +176,10 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
     setLoading(true);
     try {
       const res = await fetch(`/api/budgets/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error(t('dialog.budgetDeleteFailed', 'Gagal menghapus target budget'));
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || t('dialog.budgetDeleteFailed', 'Gagal menghapus target budget'));
+      }
       toast.success(t('dialog.budgetDeleted', 'Target budget berhasil dihapus'));
       onRefresh();
     } catch (err: any) {
@@ -128,7 +191,12 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
 
   const handleSaveBudget = async (e: React.FormEvent) => {
     e.preventDefault();
-    const errors: { category?: string; monthlyLimit?: string } = {};
+    const errors: {
+      category?: string;
+      monthlyLimit?: string;
+      startDate?: string;
+      endDate?: string;
+    } = {};
 
     if (!category) {
       errors.category = t(
@@ -141,7 +209,30 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
     if (!monthlyLimit || isNaN(numLimit) || numLimit <= 0) {
       errors.monthlyLimit = t(
         'budgets.limitRequired',
-        locale === 'en' ? 'Budget limit must be greater than Rp 0.' : 'Batas budget harus lebih dari Rp 0.'
+        locale === 'en'
+          ? 'Budget limit must be greater than Rp 0.'
+          : 'Batas budget harus lebih dari Rp 0.'
+      );
+    }
+
+    if (!startDate) {
+      errors.startDate = t(
+        'budgets.startDateRequired',
+        locale === 'en' ? 'Start date is required.' : 'Tanggal mulai wajib diisi.'
+      );
+    }
+
+    if (!endDate) {
+      errors.endDate = t(
+        'budgets.endDateRequired',
+        locale === 'en' ? 'End date is required.' : 'Tanggal akhir wajib diisi.'
+      );
+    } else if (startDate && startDate > endDate) {
+      errors.endDate = t(
+        'budgets.invalidDateRange',
+        locale === 'en'
+          ? 'End date cannot be before start date.'
+          : 'Tanggal akhir tidak boleh sebelum tanggal mulai.'
       );
     }
 
@@ -161,41 +252,32 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
     setFieldErrors({});
 
     try {
-      if (editingId) {
-        // Update existing budget
-        const res = await fetch(`/api/budgets/${editingId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            monthlyLimit: parseFloat(monthlyLimit),
-          }),
-        });
+      const payload = {
+        category,
+        monthlyLimit: numLimit,
+        startDate,
+        endDate,
+      };
 
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.error || (locale === 'en' ? 'Failed to update budget limit.' : 'Gagal memperbarui target budget.'));
-        }
-      } else {
-        // Create or upsert budget
-        const res = await fetch('/api/budgets', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            category,
-            monthlyLimit: parseFloat(monthlyLimit),
-          }),
-        });
+      const res = await fetch(editingId ? `/api/budgets/${editingId}` : '/api/budgets', {
+        method: editingId ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.error || (locale === 'en' ? 'Failed to save budget limit.' : 'Gagal menyimpan target budget.'));
-        }
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(
+          data.error ||
+            (editingId
+              ? t('budgets.updateFailed', 'Gagal memperbarui target budget.')
+              : t('budgets.addFailed', 'Gagal menyimpan target budget.'))
+        );
       }
 
       const wasEditing = !!editingId;
-      setModalOpen(false);
-      setEditingId(null);
-      setMonthlyLimit('');
+      handleCloseModal();
+
       if (wasEditing) {
         toast.success(t('budgets.updateSuccess', 'Target budget berhasil diperbarui'));
       } else {
@@ -204,7 +286,12 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
       onRefresh();
     } catch (err: any) {
       setError(err.message);
-      toast.error(err.message || (editingId ? t('budgets.updateFailed', 'Gagal memperbarui target budget') : t('budgets.addFailed', 'Gagal menyimpan target budget')));
+      toast.error(
+        err.message ||
+          (editingId
+            ? t('budgets.updateFailed', 'Gagal memperbarui target budget')
+            : t('budgets.addFailed', 'Gagal menyimpan target budget'))
+      );
     } finally {
       setLoading(false);
     }
@@ -220,10 +307,13 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
           </div>
           <div>
             <h3 className="text-base font-bold text-gray-900 dark:text-white">
-              {t('budgets.title') || 'Target Batas Budget Bulanan'}
+              {t('budgets.title') || 'Target Batas Budget'}
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              {t('budgets.subtitle') || 'Pantau batas pengeluaran per kategori bulan berjalan'}
+              {t('budgets.subtitle') ||
+                (locale === 'en'
+                  ? 'Monitor spending limits per category by period'
+                  : 'Pantau batas pengeluaran per kategori sesuai periode')}
             </p>
           </div>
         </div>
@@ -241,7 +331,7 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
       <div className="space-y-4 pt-1">
         {budgets.map((b) => {
           const isDanger = b.percentage >= 100;
-          const isWarning = b.percentage >= 75 && b.percentage < 100;
+          const isWarning = b.percentage >= 80 && b.percentage < 100;
 
           const barColor = isDanger
             ? 'bg-rose-500'
@@ -255,11 +345,48 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
             ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400 border-amber-200 dark:border-amber-800'
             : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800';
 
+          const periodLabel = formatDateRangeDisplay(b.startDate, b.endDate, locale);
+
+          // Time period indicator badge styling
+          let periodStatusBadge = null;
+          if (b.periodStatus === 'ACTIVE') {
+            periodStatusBadge = (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                <Clock className="w-2.5 h-2.5" />
+                <span>
+                  {t('budgets.daysLeft', locale === 'en' ? `${b.daysLeft || 0} days left` : `Sisa ${b.daysLeft || 0} hari`)}
+                </span>
+              </span>
+            );
+          } else if (b.periodStatus === 'ENDS_TODAY') {
+            periodStatusBadge = (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                <Clock className="w-2.5 h-2.5" />
+                <span>{t('budgets.endsToday', locale === 'en' ? 'Ends today' : 'Hari terakhir')}</span>
+              </span>
+            );
+          } else if (b.periodStatus === 'UPCOMING') {
+            periodStatusBadge = (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                <Clock className="w-2.5 h-2.5" />
+                <span>{t('budgets.upcoming', locale === 'en' ? 'Upcoming' : 'Akan datang')}</span>
+              </span>
+            );
+          } else if (b.periodStatus === 'ENDED') {
+            periodStatusBadge = (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                <Clock className="w-2.5 h-2.5" />
+                <span>{t('budgets.ended', locale === 'en' ? 'Period ended' : 'Periode berakhir')}</span>
+              </span>
+            );
+          }
+
           return (
             <div
               key={b.id}
-              className="p-3.5 rounded-xl bg-gray-50 dark:bg-gray-900/60 border border-gray-100 dark:border-gray-800 space-y-2"
+              className="p-3.5 rounded-xl bg-gray-50 dark:bg-gray-900/60 border border-gray-100 dark:border-gray-800 space-y-2.5"
             >
+              {/* Row 1: Category Name, Status Badge, Percentage, Actions */}
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center space-x-1.5 flex-wrap gap-1">
                   <span className="font-bold text-gray-800 dark:text-gray-200">
@@ -276,7 +403,7 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
                     ) : isWarning ? (
                       <>
                         <AlertTriangle className="w-3 h-3 text-amber-500" />
-                        <span>{t('budgets.statusWarning') || 'Perhatian (>75%)'}</span>
+                        <span>{t('budgets.statusWarning') || 'Perhatian (>80%)'}</span>
                       </>
                     ) : (
                       <>
@@ -296,19 +423,30 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
                     <button
                       onClick={() => handleOpenEdit(b)}
                       title={t('common.edit') || 'Edit'}
-                      className="p-1 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition"
+                      aria-label={`${t('common.edit') || 'Edit'} ${b.category}`}
+                      className="p-1.5 rounded-lg text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition active:scale-95"
                     >
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => handleDeleteBudget(b.id, b.category)}
                       title={t('common.delete') || 'Hapus'}
-                      className="p-1 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition"
+                      aria-label={`${t('common.delete') || 'Hapus'} ${b.category}`}
+                      className="p-1.5 rounded-lg text-gray-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition active:scale-95"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
+              </div>
+
+              {/* Row 2: Date Period Badge & Time Status Indicator */}
+              <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-medium bg-gray-200/70 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                  <Calendar className="w-3 h-3 text-gray-400" />
+                  <span>{periodLabel}</span>
+                </span>
+                {periodStatusBadge}
               </div>
 
               {/* Progress bar track */}
@@ -328,7 +466,7 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
                   </strong>
                 </span>
                 <span>
-                  {t('budgets.limit') || 'Batas Maksimal'}:{' '}
+                  {t('budgets.limit') || 'Batas'}:{' '}
                   <strong className="text-gray-900 dark:text-white">
                     {formatCurrency(b.monthlyLimit, locale)}
                   </strong>
@@ -355,7 +493,7 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
             {t('budgets.empty') || 'Belum ada batas budget yang diatur.'}{' '}
             <button
               onClick={handleOpenAdd}
-              className="text-blue-600 hover:underline font-medium"
+              className="text-blue-600 hover:underline font-medium cursor-pointer"
             >
               {t('budgets.setNow') || 'Atur batas budget sekarang'}
             </button>
@@ -382,12 +520,12 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
                   <h3 className="text-base font-bold text-gray-900 dark:text-white truncate">
                     {editingId
                       ? t('budgets.editBudget') || 'Edit Target Budget'
-                      : t('budgets.addBudget') || 'Atur Budget Bulanan'}
+                      : t('budgets.addBudget') || 'Atur Target Budget'}
                   </h3>
                   <p className="text-[11px] text-gray-400 truncate">
                     {editingId
-                      ? t('budgets.editDesc') || 'Ubah nominal batas pengeluaran kategori'
-                      : t('budgets.addDesc') || 'Tentukan batas maksimal pengeluaran kategori'}
+                      ? t('budgets.editDesc') || 'Ubah batas atau periode pengeluaran kategori'
+                      : t('budgets.addDesc') || 'Tentukan batas pengeluaran kategori berdasarkan periode'}
                   </p>
                 </div>
               </div>
@@ -411,6 +549,7 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
               )}
 
               <form onSubmit={handleSaveBudget} id="budget-form" noValidate className="space-y-4">
+                {/* Field 1: Category */}
                 <div>
                   <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
                     {t('transactions.formCategory') || (locale === 'en' ? 'Category' : 'Kategori')} *
@@ -420,20 +559,30 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
                     value={category}
                     onChange={(val) => {
                       setCategory(val);
-                      if (fieldErrors.category) setFieldErrors((p) => ({ ...p, category: undefined }));
+                      if (fieldErrors.category) {
+                        setFieldErrors((p) => ({ ...p, category: undefined }));
+                      }
                     }}
                     hasError={Boolean(fieldErrors.category)}
-                    options={COMMON_CATEGORIES.map((c) => ({ value: c, label: getCategoryLabel(c, locale, t) }))}
-                    placeholder={t('transactions.formCategory', locale === 'en' ? 'Select Category' : 'Pilih Kategori')}
+                    options={COMMON_CATEGORIES.map((c) => ({
+                      value: c,
+                      label: getCategoryLabel(c, locale, t),
+                    }))}
+                    placeholder={t(
+                      'transactions.formCategory',
+                      locale === 'en' ? 'Select Category' : 'Pilih Kategori'
+                    )}
                     disabled={!!editingId}
+                    usePortal={true}
                     size="lg"
                   />
                   <FormFieldError message={fieldErrors.category} />
                 </div>
 
+                {/* Field 2: Limit (Nominal Rp) */}
                 <div>
                   <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                    {t('budgets.monthlyLimit') || 'Target Batas Bulanan (Rp)'} *
+                    {t('budgets.monthlyLimit') || (locale === 'en' ? 'Target Limit (Rp)' : 'Target Batas Nominal (Rp)')} *
                   </label>
                   <CurrencyInput
                     id="budget-monthlyLimit-input"
@@ -441,12 +590,50 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
                     hasError={Boolean(fieldErrors.monthlyLimit)}
                     onChange={(numericVal) => {
                       setMonthlyLimit(String(numericVal || ''));
-                      if (fieldErrors.monthlyLimit) setFieldErrors((p) => ({ ...p, monthlyLimit: undefined }));
+                      if (fieldErrors.monthlyLimit) {
+                        setFieldErrors((p) => ({ ...p, monthlyLimit: undefined }));
+                      }
                     }}
                     placeholder="0"
                     size="lg"
                   />
                   <FormFieldError message={fieldErrors.monthlyLimit} />
+                </div>
+
+                {/* Field 3: Date Range (Dari Tanggal & Sampai Tanggal) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                      {t('budgets.startDate') || (locale === 'en' ? 'Start Date' : 'Dari Tanggal')} *
+                    </label>
+                    <CustomDatePicker
+                      id="budget-startDate-input"
+                      value={startDate}
+                      onChange={handleStartDateChange}
+                      hasError={Boolean(fieldErrors.startDate)}
+                      placeholder={locale === 'en' ? 'Select Start Date' : 'Pilih Tanggal Mulai'}
+                      usePortal={true}
+                      size="lg"
+                    />
+                    <FormFieldError message={fieldErrors.startDate} />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                      {t('budgets.endDate') || (locale === 'en' ? 'End Date' : 'Sampai Tanggal')} *
+                    </label>
+                    <CustomDatePicker
+                      id="budget-endDate-input"
+                      value={endDate}
+                      onChange={handleEndDateChange}
+                      minDate={startDate}
+                      hasError={Boolean(fieldErrors.endDate)}
+                      placeholder={locale === 'en' ? 'Select End Date' : 'Pilih Tanggal Selesai'}
+                      usePortal={true}
+                      size="lg"
+                    />
+                    <FormFieldError message={fieldErrors.endDate} />
+                  </div>
                 </div>
               </form>
 
@@ -456,7 +643,7 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
                   <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     {t('budgets.activeTargets') || (locale === 'en' ? 'Active Targets List' : 'Daftar Target Aktif')} ({budgets.length})
                   </h4>
-                  <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1 sakuku-scrollbar">
                     {budgets.map((b) => (
                       <div
                         key={`modal-item-${b.id}`}
@@ -466,19 +653,21 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
                             : 'bg-gray-50/60 dark:bg-gray-900/40 border-gray-100 dark:border-gray-800'
                         }`}
                       >
-                        <div>
+                        <div className="space-y-0.5">
                           <div className="font-semibold text-gray-800 dark:text-gray-200">
                             {getCategoryLabel(b.category, locale, t)}
                           </div>
-                          <div className="text-[11px] text-gray-500 dark:text-gray-400">
-                            {formatCurrency(b.monthlyLimit, locale)}
+                          <div className="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                            <span>{formatCurrency(b.monthlyLimit, locale)}</span>
+                            <span>•</span>
+                            <span>{formatDateRangeDisplay(b.startDate, b.endDate, locale)}</span>
                           </div>
                         </div>
                         <div className="flex items-center space-x-1">
                           <button
                             type="button"
                             onClick={() => handleOpenEdit(b)}
-                            className="px-2 py-1 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 font-medium text-[11px] flex items-center gap-1"
+                            className="px-2 py-1 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 font-medium text-[11px] flex items-center gap-1 cursor-pointer"
                           >
                             <Pencil className="w-3 h-3" />
                             <span>{t('common.edit') || 'Edit'}</span>
@@ -486,7 +675,7 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
                           <button
                             type="button"
                             onClick={() => handleDeleteBudget(b.id, b.category)}
-                            className="px-2 py-1 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/50 font-medium text-[11px] flex items-center gap-1"
+                            className="px-2 py-1 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/50 font-medium text-[11px] flex items-center gap-1 cursor-pointer"
                           >
                             <Trash2 className="w-3 h-3" />
                             <span>{t('common.delete') || 'Hapus'}</span>
@@ -504,7 +693,8 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
               <button
                 type="button"
                 onClick={handleCloseModal}
-                className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition min-h-[42px]"
+                disabled={loading}
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition min-h-[42px] cursor-pointer"
               >
                 {t('common.cancel') || 'Batal'}
               </button>
@@ -512,7 +702,7 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
                 type="submit"
                 form="budget-form"
                 disabled={loading}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 active:scale-98 text-white shadow-sm transition min-h-[42px] flex items-center justify-center gap-1.5"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 active:scale-98 text-white shadow-sm transition min-h-[42px] flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
                 {loading ? t('common.loading') || 'Memuat...' : t('common.save') || 'Simpan'}
               </button>

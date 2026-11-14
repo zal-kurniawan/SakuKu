@@ -1,5 +1,12 @@
 import { prisma } from './prisma';
-import { getMonthRange, getYearRange, getTimezoneDateParts } from './timezone';
+import {
+  getMonthRange,
+  getYearRange,
+  getTimezoneDateParts,
+  getCustomDateRange,
+  formatDateKey,
+  getBudgetPeriodStatus,
+} from './timezone';
 
 export interface TransactionQueryOptions {
   walletId?: string | null;
@@ -284,56 +291,58 @@ export async function getWalletHistoryQuery(
 }
 
 /**
- * 5. Fetch Budgets Query
+ * 5. Fetch Budgets Query (Dynamic Date Range per Budget Limit)
  */
-export async function getBudgetsQuery(userId: string, month?: number, year?: number) {
-  const current = getMonthRange();
-  const targetMonth = month || current.month;
-  const targetYear = year || current.year;
-
-  const { startOfMonth, endOfMonth } = getMonthRange(targetYear, targetMonth);
-
-  // Fetch budget limits
+export async function getBudgetsQuery(userId: string) {
+  // Fetch budget limits for the user ordered by startDate descending
   const budgets = await prisma.budgetLimit.findMany({
-    where: { userId, month: targetMonth, year: targetYear },
+    where: { userId },
+    orderBy: [
+      { startDate: 'desc' },
+      { createdAt: 'desc' },
+    ],
   });
 
-  // Fetch actual expenses per category this month
-  const expenseGroups = await prisma.transaction.groupBy({
-    by: ['category'],
-    where: {
-      userId,
-      type: 'EXPENSE',
-      date: { gte: startOfMonth, lte: endOfMonth },
-    },
-    _sum: { amount: true },
-  });
+  // Calculate actual expenses dynamically per budget's individual startDate and endDate
+  const result = await Promise.all(
+    budgets.map(async (b) => {
+      const agg = await prisma.transaction.aggregate({
+        where: {
+          userId,
+          category: b.category,
+          type: 'EXPENSE',
+          date: { gte: b.startDate, lte: b.endDate },
+        },
+        _sum: { amount: true },
+      });
 
-  const expenseMap = new Map<string, number>();
-  expenseGroups.forEach((eg) => {
-    expenseMap.set(eg.category, eg._sum.amount || 0);
-  });
+      const spent = agg._sum.amount || 0;
+      const percentage = b.monthlyLimit > 0 ? (spent / b.monthlyLimit) * 100 : 0;
+      let status: 'SAFE' | 'WARNING' | 'DANGER' = 'SAFE';
+      if (percentage >= 100) status = 'DANGER';
+      else if (percentage >= 80) status = 'WARNING';
 
-  // Merge budgets with spent amount
-  const result = budgets.map((b) => {
-    const spent = expenseMap.get(b.category) || 0;
-    const percentage = b.monthlyLimit > 0 ? (spent / b.monthlyLimit) * 100 : 0;
-    let status: 'SAFE' | 'WARNING' | 'DANGER' = 'SAFE';
-    if (percentage >= 100) status = 'DANGER';
-    else if (percentage >= 75) status = 'WARNING';
+      const periodStatus = getBudgetPeriodStatus(b.startDate, b.endDate);
+      const startDateStr = formatDateKey(b.startDate);
+      const endDateStr = formatDateKey(b.endDate);
 
-    return {
-      id: b.id,
-      category: b.category,
-      monthlyLimit: b.monthlyLimit,
-      spent,
-      remaining: Math.max(0, b.monthlyLimit - spent),
-      percentage: Math.round(percentage),
-      status,
-      month: b.month,
-      year: b.year,
-    };
-  });
+      return {
+        id: b.id,
+        category: b.category,
+        monthlyLimit: b.monthlyLimit,
+        spent,
+        remaining: Math.max(0, b.monthlyLimit - spent),
+        percentage: Math.round(percentage),
+        status,
+        startDate: startDateStr,
+        endDate: endDateStr,
+        periodStatus: periodStatus.status,
+        daysLeft: periodStatus.daysLeft ?? 0,
+        month: b.month ?? undefined,
+        year: b.year ?? undefined,
+      };
+    })
+  );
 
   return result;
 }

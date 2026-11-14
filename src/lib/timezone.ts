@@ -137,3 +137,134 @@ export function getYearRange(
 
   return { startOfYear, endOfYear, year };
 }
+
+/**
+ * Returns the exact UTC Date boundaries for a custom date range in the target timezone (Asia/Jakarta / WIB by default).
+ * startDateStr and endDateStr must be in YYYY-MM-DD format.
+ */
+export function getCustomDateRange(
+  startDateStr: string,
+  endDateStr: string,
+  timeZone: string = APP_TIMEZONE
+): {
+  start: Date;
+  end: Date;
+  startDateKey: string;
+  endDateKey: string;
+} {
+  const offset = getTimezoneOffsetString(new Date(), timeZone);
+  const start = new Date(`${startDateStr}T00:00:00.000${offset}`);
+  const end = new Date(`${endDateStr}T23:59:59.999${offset}`);
+
+  return {
+    start,
+    end,
+    startDateKey: startDateStr,
+    endDateKey: endDateStr,
+  };
+}
+
+/**
+ * Converts a Date to YYYY-MM-DD string in the target application timezone.
+ */
+export function formatDateKey(date: Date, timeZone: string = APP_TIMEZONE): string {
+  const parts = getTimezoneDateParts(date, timeZone);
+  const yStr = String(parts.year);
+  const mStr = String(parts.month).padStart(2, '0');
+  const dStr = String(parts.day).padStart(2, '0');
+  return `${yStr}-${mStr}-${dStr}`;
+}
+
+/**
+ * Formats a date range into a localized human-readable string.
+ * Examples:
+ * ID: "25 Okt – 24 Nov 2026"
+ * EN: "Oct 25 – Nov 24, 2026"
+ */
+export function formatDateRangeDisplay(
+  startDate: Date | string,
+  endDate: Date | string,
+  locale: string = 'id',
+  timeZone: string = APP_TIMEZONE
+): string {
+  const d1 = typeof startDate === 'string' ? new Date(startDate.includes('T') ? startDate : `${startDate}T00:00:00.000+07:00`) : startDate;
+  const d2 = typeof endDate === 'string' ? new Date(endDate.includes('T') ? endDate : `${endDate}T23:59:59.999+07:00`) : endDate;
+
+  const p1 = getTimezoneDateParts(d1, timeZone);
+  const p2 = getTimezoneDateParts(d2, timeZone);
+
+  const monthNamesIdShort = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+    'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
+  ];
+  const monthNamesEnShort = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+  ];
+
+  const m1 = (locale === 'en' ? monthNamesEnShort : monthNamesIdShort)[p1.month - 1];
+  const m2 = (locale === 'en' ? monthNamesEnShort : monthNamesIdShort)[p2.month - 1];
+
+  if (p1.year === p2.year) {
+    if (locale === 'en') {
+      if (p1.month === p2.month && p1.day === p2.day) {
+        return `${m1} ${p1.day}, ${p1.year}`;
+      }
+      if (p1.month === p2.month) {
+        return `${m1} ${p1.day} – ${p2.day}, ${p1.year}`;
+      }
+      return `${m1} ${p1.day} – ${m2} ${p2.day}, ${p1.year}`;
+    } else {
+      if (p1.month === p2.month && p1.day === p2.day) {
+        return `${p1.day} ${m1} ${p1.year}`;
+      }
+      return `${p1.day} ${m1} – ${p2.day} ${m2} ${p1.year}`;
+    }
+  }
+
+  // Different years
+  if (locale === 'en') {
+    return `${m1} ${p1.day}, ${p1.year} – ${m2} ${p2.day}, ${p2.year}`;
+  }
+  return `${p1.day} ${m1} ${p1.year} – ${p2.day} ${m2} ${p2.year}`;
+}
+
+export type BudgetPeriodStatusType = 'UPCOMING' | 'ACTIVE' | 'ENDS_TODAY' | 'ENDED';
+
+export interface BudgetPeriodStatusResult {
+  status: BudgetPeriodStatusType;
+  daysLeft?: number;
+}
+
+/**
+ * Calculates whether a budget is upcoming, active (with days left), ending today, or ended.
+ */
+export function getBudgetPeriodStatus(
+  startDate: Date | string,
+  endDate: Date | string,
+  timeZone: string = APP_TIMEZONE
+): BudgetPeriodStatusResult {
+  const d1 = typeof startDate === 'string' ? new Date(startDate.includes('T') ? startDate : `${startDate}T00:00:00.000+07:00`) : startDate;
+  const d2 = typeof endDate === 'string' ? new Date(endDate.includes('T') ? endDate : `${endDate}T23:59:59.999+07:00`) : endDate;
+
+  const { startOfDay: todayStart, endOfDay: todayEnd } = getTodayRange(new Date(), timeZone);
+
+  if (d2 < todayStart) {
+    return { status: 'ENDED' };
+  }
+
+  if (d1 > todayEnd) {
+    return { status: 'UPCOMING' };
+  }
+
+  // Check if ending today
+  if (d2 >= todayStart && d2 <= todayEnd) {
+    return { status: 'ENDS_TODAY', daysLeft: 0 };
+  }
+
+  // Active with days remaining
+  const msRemaining = d2.getTime() - todayEnd.getTime();
+  const daysLeft = Math.max(1, Math.ceil(msRemaining / (1000 * 60 * 60 * 24)));
+
+  return { status: 'ACTIVE', daysLeft };
+}

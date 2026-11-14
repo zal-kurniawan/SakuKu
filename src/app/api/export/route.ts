@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getActiveUser } from '@/lib/current-user';
+import { getTimezoneOffsetString, APP_TIMEZONE } from '@/lib/timezone';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -10,12 +11,16 @@ export async function GET(req: Request) {
     const user = await getActiveUser();
     const { searchParams } = new URL(req.url);
 
+    const countOnly = searchParams.get('countOnly') === 'true';
     const walletId = searchParams.get('walletId');
     const type = searchParams.get('type');
     const category = searchParams.get('category');
     const search = searchParams.get('search');
     const dateFrom = searchParams.get('dateFrom');
     const dateTo = searchParams.get('dateTo');
+    const delimiterParam = searchParams.get('delimiter');
+
+    const delimiter = delimiterParam === 'semicolon' || delimiterParam === ';' ? ';' : ',';
 
     const whereClause: any = {
       userId: user.id,
@@ -35,19 +40,26 @@ export async function GET(req: Request) {
 
     if (dateFrom || dateTo) {
       whereClause.date = {};
+      const offset = getTimezoneOffsetString(new Date(), APP_TIMEZONE);
       if (dateFrom) {
-        whereClause.date.gte = new Date(`${dateFrom}T00:00:00.000Z`);
+        whereClause.date.gte = new Date(`${dateFrom}T00:00:00.000${offset}`);
       }
       if (dateTo) {
-        whereClause.date.lte = new Date(`${dateTo}T23:59:59.999Z`);
+        whereClause.date.lte = new Date(`${dateTo}T23:59:59.999${offset}`);
       }
     }
 
-    if (search) {
+    if (search && search.trim()) {
       whereClause.title = {
-        contains: search,
+        contains: search.trim(),
         mode: 'insensitive',
       };
+    }
+
+    // Fast return if only count is requested
+    if (countOnly) {
+      const count = await prisma.transaction.count({ where: whereClause });
+      return NextResponse.json({ count });
     }
 
     const transactions = await prisma.transaction.findMany({
@@ -88,17 +100,22 @@ export async function GET(req: Request) {
       escapeCsv(t.notes || ''),
     ]);
 
-    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join(
-      '\r\n'
-    );
+    // Prepend UTF-8 BOM (\uFEFF) for seamless Microsoft Excel & Google Sheets rendering
+    const csvContent =
+      '\uFEFF' +
+      [
+        headers.map(escapeCsv).join(delimiter),
+        ...rows.map((r) => r.join(delimiter)),
+      ].join('\r\n');
+
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const filename = `SakuKu_Transactions_${dateStr}.csv`;
 
     return new NextResponse(csvContent, {
       status: 200,
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': `attachment; filename="transactions_${new Date()
-          .toISOString()
-          .slice(0, 10)}.csv"`,
+        'Content-Disposition': `attachment; filename="${filename}"`,
       },
     });
   } catch (error: any) {

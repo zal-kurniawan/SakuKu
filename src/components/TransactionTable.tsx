@@ -31,6 +31,7 @@ import {
 import { CustomSelect } from './ui/CustomSelect';
 import { CustomDatePicker } from './ui/CustomDatePicker';
 import { WalletItem } from './WalletList';
+import { ExportCsvModal } from './ExportCsvModal';
 import { isExcelImportEnabled } from '@/lib/features';
 import { getCachedData, mutateCache } from '@/hooks/useSakuKuCache';
 import { getCategoryLabel } from '@/lib/categories';
@@ -91,6 +92,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   const [selectedDateFilter, setSelectedDateFilter] = useState('all');
   const [customDateFrom, setCustomDateFrom] = useState('');
   const [customDateTo, setCustomDateTo] = useState('');
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -323,44 +325,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   const paginatedItems = items;
 
   const handleExportCsv = () => {
-    const params = new URLSearchParams();
-    if (selectedWallet !== 'all') params.set('walletId', selectedWallet);
-    if (selectedType !== 'all') params.set('type', selectedType);
-    if (selectedCategory !== 'all') params.set('category', selectedCategory);
-    if (search) params.set('search', search);
-
-    if (selectedDateFilter === 'today') {
-      const todayStr = new Date().toISOString().slice(0, 10);
-      params.set('dateFrom', todayStr);
-      params.set('dateTo', todayStr);
-    } else if (selectedDateFilter === 'last7days') {
-      const now = new Date();
-      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      params.set('dateFrom', sevenDaysAgo.toISOString().slice(0, 10));
-      params.set('dateTo', now.toISOString().slice(0, 10));
-    } else if (selectedDateFilter === 'thisMonth') {
-      const now = new Date();
-      const yyyy = now.getFullYear();
-      const mm = String(now.getMonth() + 1).padStart(2, '0');
-      const lastDay = new Date(yyyy, now.getMonth() + 1, 0).getDate();
-      params.set('dateFrom', `${yyyy}-${mm}-01`);
-      params.set('dateTo', `${yyyy}-${mm}-${lastDay}`);
-    } else if (selectedDateFilter === 'lastMonth') {
-      const now = new Date();
-      const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const yyyy = lastMonth.getFullYear();
-      const mm = String(lastMonth.getMonth() + 1).padStart(2, '0');
-      const lastDay = new Date(yyyy, lastMonth.getMonth() + 1, 0).getDate();
-      params.set('dateFrom', `${yyyy}-${mm}-01`);
-      params.set('dateTo', `${yyyy}-${mm}-${lastDay}`);
-    } else if (selectedDateFilter === 'custom') {
-      if (customDateFrom) params.set('dateFrom', customDateFrom);
-      if (customDateTo) params.set('dateTo', customDateTo);
-    }
-
-    const qs = params.toString();
-    window.open(`/api/export${qs ? `?${qs}` : ''}`, '_blank');
-    toast.success(t('transactions.exportSuccess', 'Data transaksi berhasil diekspor'));
+    setIsExportModalOpen(true);
   };
 
   const walletOptions = [
@@ -999,6 +964,22 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
           </div>
         </div>
       )}
+
+      {/* Export CSV Modal */}
+      <ExportCsvModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        wallets={wallets}
+        currentFilters={{
+          walletId: selectedWallet,
+          type: selectedType,
+          category: selectedCategory,
+          search: search,
+          dateRangeFilter: selectedDateFilter,
+          customDateFrom,
+          customDateTo,
+        }}
+      />
     </div>
   );
 };
