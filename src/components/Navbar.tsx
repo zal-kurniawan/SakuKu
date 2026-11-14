@@ -69,7 +69,13 @@ export const Navbar: React.FC<NavbarProps> = ({
   });
 
   const iconControlClass =
-    'h-9 w-9 inline-flex items-center justify-center rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/70 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer shrink-0';
+    'h-8 w-8 sm:h-9 sm:w-9 inline-flex items-center justify-center rounded-lg sm:rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/70 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer shrink-0 active:scale-95';
+
+  const langControlClass =
+    'h-8 px-2 sm:h-9 sm:px-2.5 inline-flex items-center justify-center rounded-lg sm:rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/70 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer shrink-0 active:scale-95 text-xs font-bold tracking-wide uppercase';
+
+  const logoutControlClass =
+    'h-8 w-8 sm:h-9 sm:w-9 inline-flex items-center justify-center rounded-lg sm:rounded-xl text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-500/10 dark:hover:bg-red-500/10 transition-colors cursor-pointer shrink-0 active:scale-95';
 
   const { status: botStatus } = useBotStatus();
 
@@ -134,36 +140,39 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {/* Desktop & Tablet Navigation Controls (>= 768px / md:flex) */}
-          <div className="hidden md:flex items-center gap-2 lg:gap-2.5">
-            {/* Quick Add Transaction */}
-            <button
-              type="button"
-              onClick={onOpenAddTransaction}
-              className="inline-flex items-center gap-1.5 px-3 lg:px-4 py-2 rounded-xl text-xs lg:text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition active:scale-98 whitespace-nowrap shrink-0 min-h-[38px]"
-            >
-              <PlusCircle className="w-4 h-4 shrink-0" />
-              <span>{t('transactions.addTransaction')}</span>
-            </button>
+          {/* Right Navigation & Utility Controls */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {/* Desktop & Tablet Quick Actions (>= 768px / md:flex) */}
+            <div className="hidden md:flex items-center gap-2 lg:gap-2.5">
+              {/* Quick Add Transaction */}
+              <button
+                type="button"
+                onClick={onOpenAddTransaction}
+                className="inline-flex items-center gap-1.5 px-3 lg:px-4 py-2 rounded-xl text-xs lg:text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition active:scale-98 whitespace-nowrap shrink-0 min-h-[38px]"
+              >
+                <PlusCircle className="w-4 h-4 shrink-0" />
+                <span>{t('transactions.addTransaction')}</span>
+              </button>
 
-            {/* Quick Transfer */}
-            <button
-              type="button"
-              onClick={onOpenTransfer}
-              className="inline-flex items-center gap-1.5 px-3 lg:px-4 py-2 rounded-xl text-xs lg:text-sm font-semibold bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition active:scale-98 whitespace-nowrap shrink-0 min-h-[38px]"
-            >
-              <ArrowRightLeft className="w-3.5 h-3.5 shrink-0" />
-              <span>{t('wallets.transfer')}</span>
-            </button>
+              {/* Quick Transfer */}
+              <button
+                type="button"
+                onClick={onOpenTransfer}
+                className="inline-flex items-center gap-1.5 px-3 lg:px-4 py-2 rounded-xl text-xs lg:text-sm font-semibold bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition active:scale-98 whitespace-nowrap shrink-0 min-h-[38px]"
+              >
+                <ArrowRightLeft className="w-3.5 h-3.5 shrink-0" />
+                <span>{t('wallets.transfer')}</span>
+              </button>
+            </div>
 
-            {/* Unified Control Buttons: Guide, Language, Theme, Logout */}
-            <div className="flex items-center gap-1 pl-1">
+            {/* Unified Utility Controls (Single Source of Truth: Guide -> Lang -> Theme -> Logout) */}
+            <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
               {/* 1. Bot Guide */}
               <button
                 type="button"
                 onClick={onOpenGuide}
-                title={t('nav.botGuide')}
-                aria-label={t('nav.botGuide')}
+                title={t('nav.botGuide', locale === 'en' ? 'Bot Guide' : 'Panduan Bot')}
+                aria-label={t('nav.botGuide', locale === 'en' ? 'Bot Guide' : 'Panduan Bot')}
                 className={iconControlClass}
               >
                 <BookOpen className="w-4 h-4" />
@@ -173,9 +182,9 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={() => setLocale(locale === 'id' ? 'en' : 'id')}
-                title={t('nav.switchLanguage') || (locale === 'en' ? 'Switch Language' : 'Ganti Bahasa')}
-                aria-label={t('nav.switchLanguage') || (locale === 'en' ? 'Switch Language' : 'Ganti Bahasa')}
-                className={`${iconControlClass} text-xs font-bold tracking-wide uppercase`}
+                title={t('nav.switchLanguage', locale === 'en' ? 'Switch Language' : 'Ganti Bahasa')}
+                aria-label={t('nav.switchLanguage', locale === 'en' ? 'Switch Language' : 'Ganti Bahasa')}
+                className={langControlClass}
               >
                 <span>{locale}</span>
               </button>
@@ -184,8 +193,26 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={toggleTheme}
-                title={t('nav.toggleTheme', isDark ? (locale === 'en' ? 'Light Mode' : 'Mode Terang') : (locale === 'en' ? 'Dark Mode' : 'Mode Gelap'))}
-                aria-label={t('nav.toggleTheme', isDark ? (locale === 'en' ? 'Light Mode' : 'Mode Terang') : (locale === 'en' ? 'Dark Mode' : 'Mode Gelap'))}
+                title={t(
+                  'nav.toggleTheme',
+                  isDark
+                    ? locale === 'en'
+                      ? 'Light Mode'
+                      : 'Mode Terang'
+                    : locale === 'en'
+                    ? 'Dark Mode'
+                    : 'Mode Gelap'
+                )}
+                aria-label={t(
+                  'nav.toggleTheme',
+                  isDark
+                    ? locale === 'en'
+                      ? 'Light Mode'
+                      : 'Mode Terang'
+                    : locale === 'en'
+                    ? 'Dark Mode'
+                    : 'Mode Gelap'
+                )}
                 className={iconControlClass}
               >
                 {mounted ? (
@@ -205,66 +232,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onClick={handleLogout}
                 title={t('common.logout', locale === 'id' ? 'Keluar' : 'Sign Out')}
                 aria-label={t('common.logout', locale === 'id' ? 'Keluar' : 'Sign Out')}
-                className={`${iconControlClass} text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-500/10 dark:hover:bg-red-500/10`}
+                className={logoutControlClass}
               >
                 <LogOut className="w-4 h-4" />
               </button>
             </div>
-          </div>
-
-          {/* Mobile Right Controls: 4 Compact Buttons in 1 Row (< 768px) */}
-          <div className="flex md:hidden items-center gap-1">
-            {/* 1. Language Switcher */}
-            <button
-              type="button"
-              onClick={() => setLocale(locale === 'id' ? 'en' : 'id')}
-              title={t('nav.switchLanguage') || (locale === 'en' ? 'Switch Language' : 'Ganti Bahasa')}
-              aria-label={t('nav.switchLanguage') || (locale === 'en' ? 'Switch Language' : 'Ganti Bahasa')}
-              className="h-7 px-2 inline-flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/70 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer text-[11px] font-bold tracking-wide uppercase active:scale-95 shrink-0"
-            >
-              <span>{locale}</span>
-            </button>
-
-            {/* 2. Theme Switcher */}
-            <button
-              type="button"
-              onClick={toggleTheme}
-              title={t('nav.toggleTheme', isDark ? (locale === 'en' ? 'Light Mode' : 'Mode Terang') : (locale === 'en' ? 'Dark Mode' : 'Mode Gelap'))}
-              aria-label={t('nav.toggleTheme', isDark ? (locale === 'en' ? 'Light Mode' : 'Mode Terang') : (locale === 'en' ? 'Dark Mode' : 'Mode Gelap'))}
-              className="h-7 w-7 inline-flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/70 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer active:scale-95 shrink-0"
-            >
-              {mounted ? (
-                isDark ? (
-                  <Sun className="w-3.5 h-3.5 text-amber-400 transition-transform duration-300 ease-out hover:rotate-45" />
-                ) : (
-                  <Moon className="w-3.5 h-3.5 text-gray-700 dark:text-gray-300 transition-transform duration-300 ease-out hover:-rotate-12" />
-                )
-              ) : (
-                <div className="w-3.5 h-3.5" />
-              )}
-            </button>
-
-            {/* 3. Bot Guide Button */}
-            <button
-              type="button"
-              onClick={onOpenGuide}
-              title={t('nav.botGuide') || 'Panduan Bot'}
-              aria-label={t('nav.botGuide') || 'Panduan Bot'}
-              className="h-7 w-7 inline-flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-800 text-amber-500 hover:bg-amber-500/10 transition-colors cursor-pointer active:scale-95 shrink-0"
-            >
-              <BookOpen className="w-3.5 h-3.5" />
-            </button>
-
-            {/* 4. Logout Button */}
-            <button
-              type="button"
-              onClick={handleLogout}
-              title={t('common.logout', locale === 'id' ? 'Keluar' : 'Sign Out')}
-              aria-label={t('common.logout', locale === 'id' ? 'Keluar' : 'Sign Out')}
-              className="h-7 w-7 inline-flex items-center justify-center rounded-lg border border-red-200/60 dark:border-red-900/40 text-red-500 dark:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer active:scale-95 shrink-0"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-            </button>
           </div>
         </div>
       </header>
