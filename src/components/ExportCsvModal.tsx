@@ -252,23 +252,23 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({
   if (currentFilters.walletId && currentFilters.walletId !== 'all') {
     const w = wallets.find((item) => item.id === currentFilters.walletId);
     currentFilterChips.push({
-      label: `${t('transactions.filterWallet', 'Dompet')}: ${w?.name || currentFilters.walletId}`,
+      label: `${t('export.chipWallet', locale === 'en' ? 'Wallet' : 'Dompet')}: ${w?.name || currentFilters.walletId}`,
     });
   }
   if (currentFilters.type && currentFilters.type !== 'all') {
     const typeLabel =
       currentFilters.type === 'INCOME'
-        ? t('transactions.income', 'Pemasukan')
+        ? t('transactions.income', locale === 'en' ? 'Income' : 'Pemasukan')
         : currentFilters.type === 'EXPENSE'
-        ? t('transactions.expense', 'Pengeluaran')
+        ? t('transactions.expense', locale === 'en' ? 'Expense' : 'Pengeluaran')
         : t('transactions.transfer', 'Transfer');
     currentFilterChips.push({
-      label: `${t('transactions.filterType', 'Tipe')}: ${typeLabel}`,
+      label: `${t('export.chipType', locale === 'en' ? 'Type' : 'Tipe')}: ${typeLabel}`,
     });
   }
   if (currentFilters.category && currentFilters.category !== 'all') {
     currentFilterChips.push({
-      label: `${t('transactions.filterCategory', 'Kategori')}: ${getCategoryLabel(currentFilters.category, locale, t)}`,
+      label: `${t('export.chipCategory', locale === 'en' ? 'Category' : 'Kategori')}: ${getCategoryLabel(currentFilters.category, locale, t)}`,
     });
   }
   if (currentFilters.search && currentFilters.search.trim()) {
@@ -278,11 +278,11 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({
   }
   if (currentFilters.dateRangeFilter === 'this_month') {
     currentFilterChips.push({
-      label: t('transactions.thisMonth', 'Bulan Ini'),
+      label: t('transactions.thisMonth', locale === 'en' ? 'This Month' : 'Bulan Ini'),
     });
   } else if (currentFilters.dateRangeFilter === 'last_month') {
     currentFilterChips.push({
-      label: t('transactions.lastMonth', 'Bulan Lalu'),
+      label: t('transactions.lastMonth', locale === 'en' ? 'Last Month' : 'Bulan Lalu'),
     });
   } else if (currentFilters.dateRangeFilter === 'custom') {
     if (currentFilters.customDateFrom || currentFilters.customDateTo) {
@@ -311,13 +311,15 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({
             </div>
             <div className="min-w-0">
               <h3 className="text-base font-bold text-gray-900 dark:text-white truncate">
-                {t('export.title') || (locale === 'en' ? 'Export Transaction History (CSV)' : 'Export Riwayat Transaksi (CSV)')}
+                {t('export.title', locale === 'en' ? 'Export Transaction History (CSV)' : 'Export Riwayat Transaksi (CSV)')}
               </h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                {t('export.subtitle') ||
-                  (locale === 'en'
+                {t(
+                  'export.subtitle',
+                  locale === 'en'
                     ? 'Confirm data scope and period before downloading the file'
-                    : 'Konfirmasi cakupan data dan periode sebelum mengunduh berkas')}
+                    : 'Konfirmasi cakupan data dan periode sebelum mengunduh berkas'
+                )}
               </p>
             </div>
           </div>
@@ -325,7 +327,7 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({
             type="button"
             onClick={handleClose}
             disabled={isDownloading}
-            aria-label={t('common.close') || 'Tutup'}
+            aria-label={t('common.close', locale === 'en' ? 'Close' : 'Tutup')}
             className="h-8 w-8 inline-flex items-center justify-center rounded-lg shrink-0 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer disabled:opacity-50"
           >
             <X className="w-4 h-4" />
@@ -337,7 +339,7 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({
           {/* Section 1: Export Scope (2 Selectable Cards) */}
           <div className="space-y-2">
             <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              {t('export.scopeLabel') || (locale === 'en' ? 'Data Scope' : 'Cakupan Data')}
+              {t('export.scopeLabel', locale === 'en' ? 'Data Scope' : 'Cakupan Data')}
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
               {/* Option 1: Current Table Filter */}
@@ -353,13 +355,15 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <div className="text-xs font-bold">
-                      {t('export.scopeCurrent') || (locale === 'en' ? 'Current Table Filter' : 'Sesuai Filter Aktif')}
+                      {t('export.scopeCurrent', locale === 'en' ? 'Current Table Filter' : 'Sesuai Filter Aktif Tabel')}
                     </div>
                     <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
-                      {t('export.scopeCurrentDesc') ||
-                        (locale === 'en'
+                      {t(
+                        'export.scopeCurrentDesc',
+                        locale === 'en'
                           ? 'Follows filters currently active on the table'
-                          : 'Sesuai filter yang sedang aktif pada tabel')}
+                          : 'Sesuai filter yang sedang aktif pada tabel'
+                      )}
                     </div>
                   </div>
                   {scope === 'current_filter' && (
@@ -401,13 +405,15 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <div className="text-xs font-bold">
-                      {t('export.scopeCustom') || (locale === 'en' ? 'Custom Export' : 'Kustomisasi Ekspor')}
+                      {t('export.scopeCustom', locale === 'en' ? 'Custom Export' : 'Kustomisasi Ekspor')}
                     </div>
                     <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
-                      {t('export.scopeCustomDesc') ||
-                        (locale === 'en'
+                      {t(
+                        'export.scopeCustomDesc',
+                        locale === 'en'
                           ? 'Choose wallet, type, and dates specifically for this file'
-                          : 'Tentukan dompet, tipe, dan tanggal khusus untuk file ini')}
+                          : 'Tentukan dompet, tipe, dan tanggal khusus untuk file ini'
+                      )}
                     </div>
                   </div>
                   {scope === 'custom' && (
@@ -418,7 +424,7 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({
                 </div>
 
                 <div className="mt-2.5 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
-                  {t('export.customPanelHint') || (locale === 'en' ? 'Independent filters' : 'Filter mandiri')}
+                  {t('export.customPanelHint', locale === 'en' ? 'Independent filters' : 'Filter mandiri')}
                 </div>
               </button>
             </div>
@@ -430,7 +436,7 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                    {t('transactions.filterWallet', locale === 'en' ? 'Wallet' : 'Dompet / Rekening')}
+                    {t('export.walletLabel', locale === 'en' ? 'Wallet / Account' : 'Dompet / Rekening')}
                   </label>
                   <CustomSelect
                     value={customWallet}
@@ -438,7 +444,7 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({
                     options={[
                       {
                         value: 'all',
-                        label: t('transactions.filterWalletAll') || (locale === 'en' ? 'All Wallets' : 'Semua Dompet'),
+                        label: t('export.allWallets', locale === 'en' ? 'All Wallets' : 'Semua Dompet'),
                       },
                       ...wallets.map((w) => ({ value: w.id, label: w.name })),
                     ]}
@@ -449,7 +455,7 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({
 
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                    {t('transactions.filterType', locale === 'en' ? 'Transaction Type' : 'Tipe Transaksi')}
+                    {t('export.typeLabel', locale === 'en' ? 'Transaction Type' : 'Tipe Transaksi')}
                   </label>
                   <CustomSelect
                     value={customType}
@@ -457,19 +463,19 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({
                     options={[
                       {
                         value: 'all',
-                        label: t('transactions.filterTypeAll') || (locale === 'en' ? 'All Types' : 'Semua Tipe'),
+                        label: t('export.allTypes', locale === 'en' ? 'All Types' : 'Semua Tipe'),
                       },
                       {
                         value: 'INCOME',
-                        label: t('transactions.income') || (locale === 'en' ? 'Income' : 'Pemasukan'),
+                        label: t('transactions.income', locale === 'en' ? 'Income' : 'Pemasukan'),
                       },
                       {
                         value: 'EXPENSE',
-                        label: t('transactions.expense') || (locale === 'en' ? 'Expense' : 'Pengeluaran'),
+                        label: t('transactions.expense', locale === 'en' ? 'Expense' : 'Pengeluaran'),
                       },
                       {
                         value: 'TRANSFER',
-                        label: t('transactions.transfer') || 'Transfer',
+                        label: t('transactions.transfer', 'Transfer'),
                       },
                     ]}
                     usePortal={true}
@@ -487,7 +493,7 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({
                   <CustomDatePicker
                     value={customDateFrom}
                     onChange={handleStartDateChange}
-                    placeholder={locale === 'en' ? 'All dates' : 'Seluruh tanggal'}
+                    placeholder={t('export.allDates', locale === 'en' ? 'All dates' : 'Seluruh tanggal')}
                     clearable={true}
                     usePortal={true}
                     size="md"
@@ -502,7 +508,7 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({
                     value={customDateTo}
                     onChange={handleEndDateChange}
                     minDate={customDateFrom || undefined}
-                    placeholder={locale === 'en' ? 'All dates' : 'Seluruh tanggal'}
+                    placeholder={t('export.allDates', locale === 'en' ? 'All dates' : 'Seluruh tanggal')}
                     clearable={true}
                     usePortal={true}
                     size="md"
@@ -516,7 +522,7 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({
           {/* Section 3: CSV Delimiter Selection */}
           <div className="space-y-2">
             <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              {t('export.delimiterLabel') || (locale === 'en' ? 'CSV Delimiter (Separator)' : 'Format Pemisah Kolom CSV')}
+              {t('export.delimiterLabel', locale === 'en' ? 'CSV Delimiter (Separator)' : 'Format Pemisah Kolom CSV')}
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <button
@@ -530,10 +536,10 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({
               >
                 <div>
                   <div className="text-xs font-bold">
-                    {t('export.delimiterComma') || (locale === 'en' ? 'Comma (,)' : 'Koma (,)')}
+                    {t('export.delimiterComma', locale === 'en' ? 'Comma (,)' : 'Koma (,)')}
                   </div>
                   <div className="text-[10px] text-gray-500 dark:text-gray-400">
-                    {t('export.delimiterCommaSub') || (locale === 'en' ? 'Standard & Google Sheets' : 'Standar Umum & Google Sheets')}
+                    {t('export.delimiterCommaSub', locale === 'en' ? 'Standard & Google Sheets' : 'Standar Umum & Google Sheets')}
                   </div>
                 </div>
                 {delimiter === 'comma' && (
@@ -554,10 +560,13 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({
               >
                 <div>
                   <div className="text-xs font-bold">
-                    {t('export.delimiterSemicolon') || (locale === 'en' ? 'Semicolon (;)' : 'Titik Koma (;)')}
+                    {t('export.delimiterSemicolon', locale === 'en' ? 'Semicolon (;)' : 'Titik Koma (;)')}
                   </div>
                   <div className="text-[10px] text-gray-500 dark:text-gray-400">
-                    {t('export.delimiterSemicolonSub') || (locale === 'en' ? 'Microsoft Excel (Indonesian)' : 'Microsoft Excel (Regional ID)')}
+                    {t(
+                      'export.delimiterSemicolonSub',
+                      locale === 'en' ? 'Microsoft Excel (Indonesian Locale)' : 'Microsoft Excel (Regional Indonesia)'
+                    )}
                   </div>
                 </div>
                 {delimiter === 'semicolon' && (
@@ -573,14 +582,14 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({
           <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-gray-900/70 border border-gray-200 dark:border-gray-800 space-y-2">
             <div className="flex items-center justify-between text-xs">
               <span className="text-gray-500 dark:text-gray-400 font-medium">
-                {t('export.summaryCountLabel') || (locale === 'en' ? 'Total Data to Export:' : 'Total Data yang Akan Diekspor:')}
+                {t('export.summaryCountLabel', locale === 'en' ? 'Total Data to Export:' : 'Total Data yang Akan Diekspor:')}
               </span>
               <div className="font-bold flex items-center gap-1.5 text-gray-900 dark:text-white">
                 {isCounting ? (
                   <>
                     <Loader2 className="w-3 h-3 animate-spin text-emerald-500" />
                     <span className="text-gray-400 font-normal">
-                      {t('export.calculating') || (locale === 'en' ? 'Counting...' : 'Menghitung...')}
+                      {t('export.calculating', locale === 'en' ? 'Counting...' : 'Menghitung...')}
                     </span>
                   </>
                 ) : (
@@ -589,8 +598,11 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({
                       ? t(
                           'export.countReady',
                           locale === 'en'
-                            ? `${matchingCount.toLocaleString()} transactions ready to export`
-                            : `${matchingCount.toLocaleString('id-ID')} transaksi siap diekspor`
+                            ? '{count} transactions ready to export'
+                            : '{count} transaksi siap diekspor'
+                        ).replace(
+                          '{count}',
+                          matchingCount.toLocaleString(locale === 'en' ? 'en-US' : 'id-ID')
                         )
                       : '...'}
                   </span>
@@ -599,7 +611,7 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({
             </div>
 
             <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400 pt-1 border-t border-gray-200/60 dark:border-gray-800">
-              <span>{t('export.filename') || (locale === 'en' ? 'File name:' : 'Nama berkas:')}</span>
+              <span>{t('export.filename', locale === 'en' ? 'File name:' : 'Nama berkas:')}</span>
               <span className="font-mono text-gray-700 dark:text-gray-300 truncate max-w-[240px]">
                 {filenamePreview}
               </span>
@@ -610,10 +622,12 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({
               <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 text-xs border border-amber-200 dark:border-amber-800/60 mt-1">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>
-                  {t('export.noTransactionsMatch') ||
-                    (locale === 'en'
+                  {t(
+                    'export.noTransactionsMatch',
+                    locale === 'en'
                       ? 'No transactions match this filter.'
-                      : 'Tidak ada transaksi yang sesuai dengan filter ini.')}
+                      : 'Tidak ada transaksi yang sesuai dengan filter ini.'
+                  )}
                 </span>
               </div>
             )}
@@ -628,7 +642,7 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({
             disabled={isDownloading}
             className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition min-h-[44px] cursor-pointer"
           >
-            {t('common.cancel') || 'Batal'}
+            {t('common.cancel', locale === 'en' ? 'Cancel' : 'Batal')}
           </button>
           <button
             type="button"
@@ -639,12 +653,12 @@ export const ExportCsvModal: React.FC<ExportCsvModalProps> = ({
             {isDownloading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>{t('export.downloading') || (locale === 'en' ? 'Generating CSV...' : 'Membuat CSV...')}</span>
+                <span>{t('export.downloading', locale === 'en' ? 'Generating CSV...' : 'Membuat CSV...')}</span>
               </>
             ) : (
               <>
                 <Download className="w-4 h-4" />
-                <span>{t('export.downloadButton') || (locale === 'en' ? 'Download CSV' : 'Unduh CSV')}</span>
+                <span>{t('export.downloadButton', locale === 'en' ? 'Download CSV' : 'Unduh CSV')}</span>
               </>
             )}
           </button>
