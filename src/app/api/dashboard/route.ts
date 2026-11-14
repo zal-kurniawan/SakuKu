@@ -12,31 +12,16 @@ import {
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-function checkAuth(req: NextRequest): boolean {
-  const adminSecret = process.env.ADMIN_SECRET_KEY;
-  if (!adminSecret) return true; // If no secret configured, allow access
-
-  const headerSecret = req.headers.get('x-admin-secret');
-  const querySecret = req.nextUrl.searchParams.get('secret');
-  const cookieSecret = req.cookies.get('sakuku_session')?.value;
-
-  return (
-    headerSecret === adminSecret ||
-    querySecret === adminSecret ||
-    cookieSecret === adminSecret
-  );
-}
-
 export async function GET(req: NextRequest) {
-  if (!checkAuth(req)) {
-    return NextResponse.json(
-      { error: 'Unauthorized: Sesi tidak valid atau kunci admin salah' },
-      { status: 401 }
-    );
-  }
-
   try {
     const user = await getActiveUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized: Pengguna tidak ditemukan' },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = req.nextUrl;
 
     const yearParam = searchParams.get('year')
