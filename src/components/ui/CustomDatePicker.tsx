@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useId, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useId, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Calendar as CalendarIcon,
@@ -12,6 +12,9 @@ import {
   X,
 } from 'lucide-react';
 import { useTranslation } from '@/context/LanguageContext';
+
+const useIsomorphicLayoutEffect =
+  typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
 
 export interface CustomDatePickerProps {
   value: string; // ISO string 'YYYY-MM-DD'
@@ -27,6 +30,7 @@ export interface CustomDatePickerProps {
   id?: string;
   name?: string;
   'aria-label'?: string;
+  usePortal?: boolean;
 }
 
 const MONTHS_ID = [
@@ -79,6 +83,7 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   id,
   name,
   'aria-label': ariaLabel,
+  usePortal = true,
 }) => {
   const { locale, t } = useTranslation();
   const [mounted, setMounted] = useState(false);
@@ -86,6 +91,11 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   const [isMobile, setIsMobile] = useState(false);
   const [openUpward, setOpenUpward] = useState(false);
   const [alignRight, setAlignRight] = useState(false);
+  const [portalCoords, setPortalCoords] = useState<{
+    top: number;
+    left: number;
+    placement: 'bottom' | 'top';
+  } | null>(null);
 
   // Drill-up navigation mode: 'days' -> 'months' -> 'years'
   const [viewMode, setViewMode] = useState<'days' | 'months' | 'years'>('days');
@@ -127,31 +137,99 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Measure collision with viewport edges (vertical auto-flip & horizontal right alignment)
+  // Measure collision for inline mode (usePortal = false)
   useEffect(() => {
-    if (isOpen && triggerRef.current) {
+    if (isOpen && !usePortal && triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
       const viewportWidth = window.innerWidth;
       const spaceBelow = viewportHeight - rect.bottom;
       const spaceAbove = rect.top;
 
-      // Auto-flip upward if space below is < 320px and space above is greater
-      if (spaceBelow < 320 && spaceAbove > spaceBelow) {
+      // Auto-flip upward if space below is < 340px and space above is greater
+      if (spaceBelow < 340 && spaceAbove > spaceBelow) {
         setOpenUpward(true);
       } else {
         setOpenUpward(false);
       }
 
       // Check horizontal collision: calendar is 300px wide
-      // If rect.left + 300 > viewportWidth - 16 or trigger right is near right edge
-      if (rect.left + 300 > viewportWidth - 16 || (rect.right > viewportWidth / 2 && rect.left + 300 > viewportWidth - 24)) {
+      if (
+        rect.left + 300 > viewportWidth - 16 ||
+        (rect.right > viewportWidth / 2 && rect.left + 300 > viewportWidth - 24)
+      ) {
         setAlignRight(true);
       } else {
         setAlignRight(false);
       }
     }
-  }, [isOpen]);
+  }, [isOpen, usePortal]);
+
+  // Precise coordinates calculation for portal mode (usePortal = true on desktop)
+  const updatePortalCoords = useCallback(() => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+
+    // Auto-close if trigger has scrolled out of viewport or is hidden
+    if (
+      rect.bottom <= 0 ||
+      rect.top >= window.innerHeight ||
+      (rect.width === 0 && rect.height === 0)
+    ) {
+      setIsOpen(false);
+      return;
+    }
+
+    const popoverHeight = 340;
+    const popoverWidth = 300;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+
+    let placement: 'bottom' | 'top' = 'bottom';
+    let top = rect.bottom + 6;
+
+    // Flip to top if space below is insufficient (< 340px) and space above is larger
+    if (spaceBelow < 340 && spaceAbove > spaceBelow) {
+      placement = 'top';
+      top = rect.top - popoverHeight - 6;
+    }
+
+    // Viewport horizontal clamping
+    const left = Math.max(12, Math.min(rect.left, window.innerWidth - 312));
+
+    setPortalCoords({ top, left, placement });
+  }, []);
+
+  // Synchronously compute portal position before browser paint (anti-fly-in)
+  useIsomorphicLayoutEffect(() => {
+    if (isOpen && usePortal && !isMobile) {
+      updatePortalCoords();
+    } else if (!isOpen) {
+      setPortalCoords(null);
+    }
+  }, [isOpen, usePortal, isMobile, updatePortalCoords]);
+
+  // Real-time anchored scroll tracking with requestAnimationFrame (capture: true for modal scrolls)
+  useEffect(() => {
+    if (isOpen && usePortal && !isMobile) {
+      let rafId: number | null = null;
+      const handleScrollOrResize = () => {
+        if (rafId !== null) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(() => {
+          updatePortalCoords();
+        });
+      };
+
+      window.addEventListener('resize', handleScrollOrResize, { passive: true });
+      window.addEventListener('scroll', handleScrollOrResize, { capture: true, passive: true });
+
+      return () => {
+        if (rafId !== null) cancelAnimationFrame(rafId);
+        window.removeEventListener('resize', handleScrollOrResize);
+        window.removeEventListener('scroll', handleScrollOrResize, true);
+      };
+    }
+  }, [isOpen, usePortal, isMobile, updatePortalCoords]);
 
   // Reset viewMode to 'days' and sync year & month whenever calendar opens
   useEffect(() => {
@@ -173,8 +251,8 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
     const handleClickOutside = (e: MouseEvent | TouchEvent) => {
       const target = e.target as Node;
       if (
-        triggerRef.current &&
-        !triggerRef.current.contains(target) &&
+        containerRef.current &&
+        !containerRef.current.contains(target) &&
         popoverRef.current &&
         !popoverRef.current.contains(target)
       ) {
@@ -437,55 +515,79 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
             {/* Weekday Headers */}
             <div className="grid grid-cols-7 gap-1 text-center font-bold text-[11px] text-gray-400 dark:text-gray-500 mb-1.5">
               {daysOfWeek.map((day, i) => (
-                <div key={day} className={`py-1 ${i === 0 ? 'text-rose-500/80 dark:text-rose-400/80' : ''}`}>
+                <div key={day} className={i === 0 ? 'text-rose-500/80 dark:text-rose-400/80' : ''}>
                   {day}
                 </div>
               ))}
             </div>
 
-            {/* Day Cells Grid (7 cols) */}
-            <div className="grid grid-cols-7 gap-1 text-center">
-              {/* Previous Month Padding */}
+            {/* Days Grid */}
+            <div className="grid grid-cols-7 gap-1">
+              {/* Prev month days (padded) */}
               {Array.from({ length: firstDayOfWeek }).map((_, i) => {
                 const prevDay = daysInPrevMonth - firstDayOfWeek + i + 1;
                 return (
-                  <div
-                    key={`prev-${i}`}
-                    className="h-8 flex items-center justify-center text-xs text-gray-300 dark:text-gray-600 select-none pointer-events-none"
+                  <button
+                    key={`prev-${prevDay}`}
+                    type="button"
+                    onClick={() => {
+                      handlePrevMonth();
+                      handleSelectDay(prevDay);
+                    }}
+                    className="h-8 w-full flex items-center justify-center text-xs text-gray-300 dark:text-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer"
                   >
                     {prevDay}
-                  </div>
+                  </button>
                 );
               })}
 
-              {/* Current Month Days */}
+              {/* Current month days */}
               {Array.from({ length: daysInMonth }).map((_, i) => {
                 const day = i + 1;
-                const currentDayIso = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                const isSelected = value === currentDayIso;
-                const isToday = todayIso === currentDayIso;
+                const formattedMonth = String(viewMonth + 1).padStart(2, '0');
+                const formattedDay = String(day).padStart(2, '0');
+                const isoString = `${viewYear}-${formattedMonth}-${formattedDay}`;
 
-                const isDisabled =
-                  Boolean(minDate && currentDayIso < minDate) ||
-                  Boolean(maxDate && currentDayIso > maxDate);
+                const isSelected =
+                  selectedParts !== null &&
+                  selectedParts.year === viewYear &&
+                  selectedParts.month === viewMonth &&
+                  selectedParts.day === day;
+
+                const isToday =
+                  todayParts.year === viewYear &&
+                  todayParts.month === viewMonth &&
+                  todayParts.day === day;
+
+                const isSunday = (firstDayOfWeek + i) % 7 === 0;
+
+                const isDisabled = Boolean(
+                  (minDate && isoString < minDate) ||
+                  (maxDate && isoString > maxDate)
+                );
 
                 return (
                   <button
-                    key={`day-${day}`}
+                    key={`curr-${day}`}
                     type="button"
                     disabled={isDisabled}
                     onClick={() => handleSelectDay(day)}
-                    className={`h-8 w-8 mx-auto flex items-center justify-center text-xs font-medium rounded-lg transition-all ${
-                      isSelected
-                        ? 'bg-blue-600 text-white font-bold shadow-sm shadow-blue-500/30'
+                    className={`h-8 w-full flex items-center justify-center text-xs rounded-lg font-medium transition cursor-pointer relative ${
+                      isDisabled
+                        ? 'opacity-25 cursor-not-allowed text-gray-400'
+                        : isSelected
+                        ? 'bg-blue-600 text-white font-bold shadow-xs active:scale-95'
                         : isToday
-                        ? 'text-blue-600 dark:text-blue-400 font-bold ring-1 ring-blue-500/60 hover:bg-blue-50 dark:hover:bg-blue-950/40'
-                        : isDisabled
-                        ? 'opacity-25 pointer-events-none text-gray-400'
-                        : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-800 dark:text-gray-200 cursor-pointer active:scale-95'
+                        ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold hover:bg-blue-100 dark:hover:bg-blue-900/60'
+                        : isSunday
+                        ? 'text-rose-600 dark:text-rose-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
                     }`}
                   >
                     {day}
+                    {isToday && !isSelected && (
+                      <span className="absolute bottom-1 w-1 h-1 bg-blue-500 rounded-full" />
+                    )}
                   </button>
                 );
               })}
@@ -496,77 +598,70 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
         {/* LEVEL 2: MONTH VIEW (3x4 Grid) */}
         {viewMode === 'months' && (
           <div className="grid grid-cols-3 gap-2 py-1">
-            {shortMonths.map((mShort, idx) => {
-              const firstDay = `${viewYear}-${String(idx + 1).padStart(2, '0')}-01`;
-              const lastDay = `${viewYear}-${String(idx + 1).padStart(2, '0')}-${new Date(viewYear, idx + 1, 0).getDate()}`;
-              const isDisabled =
-                Boolean(minDate && lastDay < minDate) ||
-                Boolean(maxDate && firstDay > maxDate);
-
+            {months.map((monthName, idx) => {
               const isSelected =
-                Boolean(selectedParts && selectedParts.year === viewYear && selectedParts.month === idx);
-              const isCurrentMonth = todayParts.year === viewYear && todayParts.month === idx;
+                selectedParts !== null &&
+                selectedParts.year === viewYear &&
+                selectedParts.month === idx;
+
+              const isCurrentMonth =
+                todayParts.year === viewYear &&
+                todayParts.month === idx;
 
               return (
                 <button
-                  key={mShort}
+                  key={monthName}
                   type="button"
-                  disabled={isDisabled}
                   onClick={() => {
                     setViewMonth(idx);
                     setViewMode('days');
                   }}
-                  className={`h-10 rounded-xl text-xs sm:text-sm font-medium transition-all flex items-center justify-center cursor-pointer ${
+                  className={`py-2 px-1 text-xs sm:text-[13px] rounded-xl font-medium transition cursor-pointer text-center relative ${
                     isSelected
-                      ? 'bg-blue-600 text-white font-semibold shadow-sm shadow-blue-500/30'
+                      ? 'bg-blue-600 text-white font-bold shadow-xs'
                       : isCurrentMonth
-                      ? 'ring-1 ring-blue-500/50 text-blue-600 dark:text-blue-400 font-semibold hover:bg-blue-50 dark:hover:bg-blue-950/40'
-                      : isDisabled
-                      ? 'opacity-35 pointer-events-none text-gray-400'
-                      : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-95'
+                      ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold hover:bg-blue-100 dark:hover:bg-blue-900/60'
+                      : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
                 >
-                  {mShort}
+                  {shortMonths[idx]}
+                  {isCurrentMonth && !isSelected && (
+                    <span className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-blue-500 rounded-full" />
+                  )}
                 </button>
               );
             })}
           </div>
         )}
 
-        {/* LEVEL 3: YEAR VIEW (3x4 Grid, 12 years) */}
+        {/* LEVEL 3: YEAR VIEW (4x3 Grid, 12 years per page) */}
         {viewMode === 'years' && (
           <div className="grid grid-cols-3 gap-2 py-1">
             {Array.from({ length: 12 }).map((_, i) => {
               const yr = yearPageStart + i;
-              const firstDay = `${yr}-01-01`;
-              const lastDay = `${yr}-12-31`;
-              const isDisabled =
-                Boolean(minDate && lastDay < minDate) ||
-                Boolean(maxDate && firstDay > maxDate);
-
-              const isSelected = Boolean(selectedParts && selectedParts.year === yr);
+              const isSelected = selectedParts !== null && selectedParts.year === yr;
               const isCurrentYear = todayParts.year === yr;
 
               return (
                 <button
-                  key={yr}
+                  key={`yr-${yr}`}
                   type="button"
-                  disabled={isDisabled}
                   onClick={() => {
                     setViewYear(yr);
                     setViewMode('months');
                   }}
-                  className={`h-10 rounded-xl text-xs sm:text-sm font-medium transition-all flex items-center justify-center cursor-pointer ${
+                  className={`py-2 px-1 text-xs sm:text-[13px] rounded-xl font-medium transition cursor-pointer text-center relative ${
                     isSelected
-                      ? 'bg-blue-600 text-white font-semibold shadow-sm shadow-blue-500/30'
+                      ? 'bg-blue-600 text-white font-bold shadow-xs'
                       : isCurrentYear
-                      ? 'ring-1 ring-blue-500/50 text-blue-600 dark:text-blue-400 font-semibold hover:bg-blue-50 dark:hover:bg-blue-950/40'
-                      : isDisabled
-                      ? 'opacity-35 pointer-events-none text-gray-400'
-                      : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-95'
+                      ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold hover:bg-blue-100 dark:hover:bg-blue-900/60'
+                      : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
                 >
                   {yr}
+                  {isCurrentYear && !isSelected && (
+                    <span className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-blue-500 rounded-full" />
+                  )}
                 </button>
               );
             })}
@@ -574,30 +669,15 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
         )}
       </div>
 
-      {/* 3. Footer Controls */}
-      <div className="flex items-center justify-between pt-3 mt-2 border-t border-gray-100 dark:border-gray-800 text-xs">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleSelectToday}
-            className="px-2.5 py-1 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 font-semibold transition cursor-pointer"
-          >
-            {t('transactions.today') || (locale === 'id' ? 'Hari Ini' : 'Today')}
-          </button>
-
-          {clearable && value && (
-            <button
-              type="button"
-              onClick={() => {
-                onChange('');
-                setIsOpen(false);
-              }}
-              className="px-2.5 py-1 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-semibold transition cursor-pointer"
-            >
-              {locale === 'id' ? 'Hapus' : 'Clear'}
-            </button>
-          )}
-        </div>
+      {/* 3. Footer Quick Actions */}
+      <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-gray-100 dark:border-gray-800 text-xs">
+        <button
+          type="button"
+          onClick={handleSelectToday}
+          className="px-2.5 py-1 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 font-semibold transition cursor-pointer"
+        >
+          {t('transactions.today') || (locale === 'id' ? 'Hari Ini' : 'Today')}
+        </button>
 
         <button
           type="button"
@@ -656,12 +736,12 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
         ) : null}
       </button>
 
-      {/* Tablet & Desktop Popover: Anchored Absolute directly in container */}
-      {isOpen && !isMobile && (
+      {/* MODE B: Inline Mode (usePortal = false, specifically for Transaction History filters) */}
+      {isOpen && !usePortal && !isMobile && (
         <div
           ref={popoverRef}
           onClick={(e) => e.stopPropagation()}
-          className={`hidden sm:block absolute z-50 w-[300px] animate-in fade-in zoom-in-95 duration-150 ${
+          className={`hidden sm:block absolute z-40 w-[300px] animate-in fade-in zoom-in-95 duration-150 ${
             openUpward ? 'bottom-full mb-1.5 origin-bottom' : 'top-full mt-1.5 origin-top'
           } ${alignRight ? 'right-0' : 'left-0'}`}
         >
@@ -671,13 +751,36 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
         </div>
       )}
 
-      {/* Mobile Modal Dialog: Centered Backdrop Modal via createPortal */}
-      {mounted &&
-        isOpen &&
-        isMobile &&
+      {/* MODE A: Portal Mode (usePortal = true, default for all modals and components on Desktop & Tablet) */}
+      {isOpen && usePortal && !isMobile && mounted && portalCoords &&
         createPortal(
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs sm:hidden animate-in fade-in duration-150"
+            ref={popoverRef}
+            style={{
+              position: 'fixed',
+              top: portalCoords.top,
+              left: portalCoords.left,
+              zIndex: 100,
+            }}
+            className="pointer-events-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className={`w-[300px] rounded-2xl bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 shadow-2xl p-3.5 select-none text-gray-900 dark:text-gray-100 duration-150 ease-out animate-in fade-in zoom-in-95 ${
+                portalCoords.placement === 'top' ? 'origin-bottom' : 'origin-top'
+              }`}
+            >
+              {calendarBody}
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* Mobile View: Fixed Centered Backdrop Modal (applies to both modes on mobile < 640px) */}
+      {isOpen && isMobile && mounted &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs sm:hidden animate-in fade-in duration-150"
             onClick={() => setIsOpen(false)}
           >
             <div

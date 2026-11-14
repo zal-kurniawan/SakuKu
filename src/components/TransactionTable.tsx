@@ -446,6 +446,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
             isActive={selectedWallet !== 'all'}
             size="md"
             aria-label={t('transactions.filterWallet') || 'Semua Dompet'}
+            usePortal={false}
           />
 
           {/* 2. Type Filter */}
@@ -457,6 +458,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
             isActive={selectedType !== 'all'}
             size="md"
             aria-label={t('transactions.filterType') || 'Semua Tipe'}
+            usePortal={false}
           />
 
           {/* 3. Category Filter */}
@@ -468,6 +470,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
             isActive={selectedCategory !== 'all'}
             size="md"
             aria-label={t('transactions.filterCategory') || 'Semua Kategori'}
+            usePortal={false}
           />
 
           {/* 4. Date Preset Filter */}
@@ -479,6 +482,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
             isActive={selectedDateFilter !== 'all'}
             size="md"
             aria-label={t('transactions.filterDate') || 'Semua Tanggal'}
+            usePortal={false}
           />
         </div>
 
@@ -493,6 +497,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                 maxDate={customDateTo || undefined}
                 clearable
                 size="md"
+                usePortal={false}
               />
               <CustomDatePicker
                 value={customDateTo}
@@ -501,6 +506,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                 minDate={customDateFrom || undefined}
                 clearable
                 size="md"
+                usePortal={false}
               />
             </div>
           </div>
