@@ -232,8 +232,8 @@ export default function DashboardPage() {
         </div>
 
         {/* Transactions & Budget Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-          <div className="lg:col-span-2 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 items-start lg:items-stretch">
+          <div className="lg:col-span-2">
             <TransactionTable
               transactions={transactions}
               totalCount={totalTxCount}
@@ -244,7 +244,7 @@ export default function DashboardPage() {
             />
           </div>
 
-          <div className="space-y-6">
+          <div className="flex flex-col h-full">
             <BudgetLimitCard budgets={budgets} onRefresh={handleMutationSuccess} />
           </div>
         </div>

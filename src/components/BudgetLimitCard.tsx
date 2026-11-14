@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from '@/context/LanguageContext';
 import { useConfirm } from '@/context/ConfirmContext';
 import { useToast } from '@/context/ToastContext';
@@ -17,6 +17,8 @@ import {
   X,
   Calendar,
   Clock,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { CustomSelect } from './ui/CustomSelect';
 import { CustomDatePicker } from './ui/CustomDatePicker';
@@ -93,6 +95,28 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
     startDate?: string;
     endDate?: string;
   }>({});
+
+  // Pagination Configuration & Slicing
+  const BUDGETS_PER_PAGE = 3;
+  const [budgetPage, setBudgetPage] = useState(1);
+
+  const totalBudgets = budgets.length;
+  const totalPages = Math.max(1, Math.ceil(totalBudgets / BUDGETS_PER_PAGE));
+  const validCurrentPage = Math.min(Math.max(1, budgetPage), totalPages);
+
+  const startIndex = (validCurrentPage - 1) * BUDGETS_PER_PAGE;
+  const endIndex = Math.min(startIndex + BUDGETS_PER_PAGE, totalBudgets);
+  const paginatedBudgets = budgets.slice(startIndex, endIndex);
+
+  const isPrevDisabled = validCurrentPage <= 1;
+  const isNextDisabled = validCurrentPage >= totalPages;
+
+  // Auto-clamp page when items are deleted so user never sees an empty page
+  useEffect(() => {
+    if (budgetPage > totalPages) {
+      setBudgetPage(totalPages);
+    }
+  }, [totalPages, budgetPage]);
 
   const handleCloseModal = () => {
     if (loading) return;
@@ -282,6 +306,7 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
         toast.success(t('budgets.updateSuccess', 'Target budget berhasil diperbarui'));
       } else {
         toast.success(t('budgets.addSuccess', 'Target budget berhasil disimpan'));
+        setBudgetPage(1);
       }
       onRefresh();
     } catch (err: any) {
@@ -298,45 +323,47 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
   };
 
   return (
-    <div className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm">
-      {/* Header (2-Tier Stacked Layout) */}
-      <div>
-        {/* Blok Identitas Header (Ikon + Judul + Subjudul) */}
-        <div className="flex items-start gap-3.5">
-          <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5 flex items-center justify-center">
-            <Target className="w-5 h-5" />
+    <div className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm flex flex-col h-full justify-between">
+      {/* Top Section: Header, CTA, & Budget Item List */}
+      <div className="flex-1 flex flex-col">
+        {/* Header (2-Tier Stacked Layout) */}
+        <div>
+          {/* Blok Identitas Header (Ikon + Judul + Subjudul) */}
+          <div className="flex items-start gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5 flex items-center justify-center">
+              <Target className="w-5 h-5" />
+            </div>
+            <div className="min-w-0 flex-1 space-y-1">
+              <h3 className="text-base sm:text-[17px] font-bold leading-snug text-gray-900 dark:text-white">
+                {t('budgets.title', 'Target Batas Budget')}
+              </h3>
+              <p className="text-xs sm:text-[13px] leading-relaxed text-gray-500 dark:text-gray-400">
+                {t(
+                  'budgets.subtitle',
+                  locale === 'en'
+                    ? 'Monitor spending limits per category by period'
+                    : 'Pantau batas pengeluaran per kategori sesuai periode'
+                )}
+              </p>
+            </div>
           </div>
-          <div className="min-w-0 flex-1 space-y-1">
-            <h3 className="text-base sm:text-[17px] font-bold leading-snug text-gray-900 dark:text-white">
-              {t('budgets.title', 'Target Batas Budget')}
-            </h3>
-            <p className="text-xs sm:text-[13px] leading-relaxed text-gray-500 dark:text-gray-400">
-              {t(
-                'budgets.subtitle',
-                locale === 'en'
-                  ? 'Monitor spending limits per category by period'
-                  : 'Pantau batas pengeluaran per kategori sesuai periode'
-              )}
-            </p>
-          </div>
+
+          {/* Tombol Aksi CTA */}
+          <button
+            type="button"
+            onClick={handleOpenAdd}
+            className="mt-3.5 w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold inline-flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition active:scale-95 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>{t('budgets.addBudget', locale === 'en' ? 'Set Budget' : 'Atur Budget')}</span>
+          </button>
         </div>
 
-        {/* Tombol Aksi CTA */}
-        <button
-          type="button"
-          onClick={handleOpenAdd}
-          className="mt-3.5 w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold inline-flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition active:scale-95 cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>{t('budgets.addBudget', locale === 'en' ? 'Set Budget' : 'Atur Budget')}</span>
-        </button>
-      </div>
-
-      {/* Visual Separator & Budget List Container */}
-      <div className="mt-4 pt-4 sm:mt-5 sm:pt-5 border-t border-gray-100 dark:border-gray-800/80">
-        {/* Budget Item List */}
-        <div className="space-y-3.5">
-          {budgets.map((b) => {
+        {/* Visual Separator & Budget List Container */}
+        <div className="mt-4 pt-4 sm:mt-5 sm:pt-5 border-t border-gray-100 dark:border-gray-800/80 flex-1 flex flex-col">
+          {/* Budget Item List */}
+          <div className="space-y-3.5 flex-1">
+            {paginatedBudgets.map((b) => {
             const isDanger = b.percentage >= 100;
             const isWarning = b.percentage >= 80 && b.percentage < 100;
 
@@ -512,6 +539,68 @@ export const BudgetLimitCard: React.FC<BudgetLimitCardProps> = ({
           )}
         </div>
       </div>
+    </div>
+
+      {/* Bottom Section: Compact Pagination Footer (when totalPages > 1) */}
+      {totalPages > 1 && (
+        <div className="mt-auto pt-4 border-t border-gray-100 dark:border-gray-800/80 flex items-center justify-between gap-2">
+          {/* Sisi Kiri — Info Rentang Data */}
+          <span className="text-xs text-gray-500 dark:text-gray-400 tabular-nums whitespace-nowrap">
+            {t('budgets.rangeOf', locale === 'en' ? '{start}–{end} of {total}' : '{start}–{end} dari {total}')
+              .replace('{start}', String(startIndex + 1))
+              .replace('{end}', String(endIndex))
+              .replace('{total}', String(totalBudgets))}
+          </span>
+
+          {/* Sisi Kanan — Navigasi Halaman (< Hal 1 / 3 >) */}
+          <div className="inline-flex items-center gap-1.5 shrink-0">
+            {/* Tombol Sebelumnya (<) */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.currentTarget.blur();
+                setBudgetPage((p) => Math.max(1, p - 1));
+              }}
+              disabled={isPrevDisabled || loading}
+              title={t('budgets.prevPage', locale === 'en' ? 'Previous page' : 'Halaman sebelumnya')}
+              aria-label={t('budgets.prevPage', locale === 'en' ? 'Previous page' : 'Halaman sebelumnya')}
+              className={`w-8 h-8 rounded-lg inline-flex items-center justify-center transition-transform duration-150 ${
+                isPrevDisabled || loading
+                  ? 'bg-gray-100/60 dark:bg-[#0d131f]/60 text-gray-400 dark:text-gray-600 border border-gray-200/60 dark:border-gray-800/60 opacity-50 cursor-not-allowed pointer-events-none'
+                  : 'bg-white dark:bg-[#151e2e] text-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700/80 hover:bg-gray-50 dark:hover:bg-[#1c273b] shadow-2xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 active:scale-[0.97] cursor-pointer'
+              }`}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+
+            {/* Indikator Halaman (Hal 1 / 3) */}
+            <span className="px-2 text-xs font-medium text-gray-700 dark:text-gray-300 tabular-nums whitespace-nowrap">
+              {t('budgets.pageOf', locale === 'en' ? 'Page {current} / {total}' : 'Hal {current} / {total}')
+                .replace('{current}', String(validCurrentPage))
+                .replace('{total}', String(totalPages))}
+            </span>
+
+            {/* Tombol Berikutnya (>) */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.currentTarget.blur();
+                setBudgetPage((p) => Math.min(totalPages, p + 1));
+              }}
+              disabled={isNextDisabled || loading}
+              title={t('budgets.nextPage', locale === 'en' ? 'Next page' : 'Halaman berikutnya')}
+              aria-label={t('budgets.nextPage', locale === 'en' ? 'Next page' : 'Halaman berikutnya')}
+              className={`w-8 h-8 rounded-lg inline-flex items-center justify-center transition-transform duration-150 ${
+                isNextDisabled || loading
+                  ? 'bg-gray-100/60 dark:bg-[#0d131f]/60 text-gray-400 dark:text-gray-600 border border-gray-200/60 dark:border-gray-800/60 opacity-50 cursor-not-allowed pointer-events-none'
+                  : 'bg-white dark:bg-[#151e2e] text-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700/80 hover:bg-gray-50 dark:hover:bg-[#1c273b] shadow-2xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 active:scale-[0.97] cursor-pointer'
+              }`}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Modal Add / Edit Budget */}
       {modalOpen && (

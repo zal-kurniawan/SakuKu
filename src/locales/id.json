@@ -218,7 +218,11 @@
     "startDateRequired": "Tanggal mulai wajib diisi.",
     "endDateRequired": "Tanggal akhir wajib diisi.",
     "invalidDateRange": "Tanggal akhir tidak boleh sebelum tanggal mulai.",
-    "overlapError": "Rentang tanggal bertabrakan dengan target budget yang sudah ada untuk kategori ini."
+    "overlapError": "Rentang tanggal bertabrakan dengan target budget yang sudah ada untuk kategori ini.",
+    "rangeOf": "{start}–{end} dari {total}",
+    "pageOf": "Hal {current} / {total}",
+    "prevPage": "Halaman sebelumnya",
+    "nextPage": "Halaman berikutnya"
   },
   "charts": {
     "cashflowTitle": "Arus Kas Bulanan (Pemasukan vs Pengeluaran)",

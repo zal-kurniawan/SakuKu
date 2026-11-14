@@ -218,7 +218,11 @@
     "startDateRequired": "Start date is required.",
     "endDateRequired": "End date is required.",
     "invalidDateRange": "End date cannot be before start date.",
-    "overlapError": "Date range overlaps with an existing budget target for this category."
+    "overlapError": "Date range overlaps with an existing budget target for this category.",
+    "rangeOf": "{start}–{end} of {total}",
+    "pageOf": "Page {current} / {total}",
+    "prevPage": "Previous page",
+    "nextPage": "Next page"
   },
   "charts": {
     "cashflowTitle": "Monthly Cashflow (Income vs Expense)",
