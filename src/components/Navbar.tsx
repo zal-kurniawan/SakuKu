@@ -45,13 +45,17 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const handleLogout = async () => {
     const isConfirmed = await confirm({
-      title: t('dialog.logoutTitle') || 'Keluar dari SakuKu?',
-      message:
-        t('dialog.logoutDesc') ||
-        'Sesi masuk Anda akan diakhiri. Anda perlu memverifikasi kode OTP baru untuk masuk kembali.',
-      confirmText: t('common.logout') || 'Keluar',
-      cancelText: t('common.cancel') || 'Batal',
+      title: t('dialog.logoutTitle', locale === 'id' ? 'Keluar dari SakuKu?' : 'Sign out of SakuKu?'),
+      message: t(
+        'dialog.logoutDesc',
+        locale === 'id'
+          ? 'Sesi masuk Anda akan diakhiri. Anda perlu memverifikasi kode OTP baru untuk masuk kembali.'
+          : 'Your login session will be ended. You will need to verify a new OTP code to sign in again.'
+      ),
+      confirmText: t('dialog.logoutConfirm', locale === 'id' ? 'Keluar' : 'Sign Out'),
+      cancelText: t('common.cancel', locale === 'id' ? 'Batal' : 'Cancel'),
       variant: 'danger',
+      icon: 'logout',
     });
     if (!isConfirmed) return;
     try {
@@ -202,8 +206,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={handleLogout}
-                title={t('common.logout') || 'Keluar'}
-                aria-label={t('common.logout') || 'Keluar'}
+                title={t('common.logout', locale === 'id' ? 'Keluar' : 'Sign Out')}
+                aria-label={t('common.logout', locale === 'id' ? 'Keluar' : 'Sign Out')}
                 className={`${iconControlClass} text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-500/10 dark:hover:bg-red-500/10`}
               >
                 <LogOut className="w-4 h-4" />
@@ -256,8 +260,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               type="button"
               onClick={handleLogout}
-              title={t('common.logout') || 'Keluar'}
-              aria-label={t('common.logout') || 'Keluar'}
+              title={t('common.logout', locale === 'id' ? 'Keluar' : 'Sign Out')}
+              aria-label={t('common.logout', locale === 'id' ? 'Keluar' : 'Sign Out')}
               className="h-7 w-7 inline-flex items-center justify-center rounded-lg border border-red-200/60 dark:border-red-900/40 text-red-500 dark:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer active:scale-95 shrink-0"
             >
               <LogOut className="w-3.5 h-3.5" />

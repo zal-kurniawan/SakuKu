@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react';
-import { AlertTriangle, Trash2, Info, Loader2, X } from 'lucide-react';
+import { AlertTriangle, Trash2, Info, Loader2, X, LogOut } from 'lucide-react';
 import { useModalEscape } from '@/hooks/useModalEscape';
 
 export interface ConfirmOptions {
@@ -10,7 +10,7 @@ export interface ConfirmOptions {
   confirmText?: string;
   cancelText?: string;
   variant?: 'danger' | 'warning' | 'info';
-  icon?: 'trash' | 'alert' | 'info';
+  icon?: 'trash' | 'alert' | 'info' | 'logout';
   onConfirm?: () => Promise<void> | void;
 }
 
@@ -130,6 +130,8 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 >
                   {iconType === 'trash' ? (
                     <Trash2 className="w-5 h-5 sm:w-6 sm:h-6 text-rose-600 dark:text-rose-400" />
+                  ) : iconType === 'logout' ? (
+                    <LogOut className="w-5 h-5 sm:w-6 sm:h-6 text-rose-600 dark:text-rose-400" />
                   ) : iconType === 'alert' ? (
                     <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600 dark:text-amber-400" />
                   ) : (
@@ -183,9 +185,11 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
                     : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 shadow-blue-600/30 border border-blue-500'
                 }`}
               >
-                {isLoading && (
+                {isLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin text-white flex-shrink-0" />
-                )}
+                ) : iconType === 'logout' ? (
+                  <LogOut className="w-4 h-4 shrink-0 text-white" />
+                ) : null}
                 <span className="text-white font-bold tracking-wide select-none" style={{ color: '#ffffff' }}>
                   {options.confirmText || 'Konfirmasi'}
                 </span>
