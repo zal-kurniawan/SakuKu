@@ -6,7 +6,7 @@ export async function POST(req: Request) {
   try {
     const user = await getActiveUser();
     const body = await req.json();
-    const { fromWalletId, toWalletId, amount, notes } = body;
+    const { fromWalletId, toWalletId, amount, notes, date } = body;
 
     if (!fromWalletId || !toWalletId || !amount) {
       return NextResponse.json(
@@ -23,6 +23,16 @@ export async function POST(req: Request) {
     }
 
     const numAmount = Math.abs(parseFloat(amount));
+
+    let transactionDate = new Date();
+    if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      const now = new Date();
+      const timePart = now.toTimeString().slice(0, 8);
+      const parsed = new Date(`${date}T${timePart}+07:00`);
+      if (!Number.isNaN(parsed.getTime())) {
+        transactionDate = parsed;
+      }
+    }
 
     const fromWallet = await prisma.wallet.findFirst({
       where: { id: fromWalletId, userId: user.id },
@@ -48,7 +58,7 @@ export async function POST(req: Request) {
           category: 'Transfer Antar Dompet',
           notes,
           source: 'WEB',
-          date: new Date(),
+          date: transactionDate,
         },
       }),
       prisma.wallet.update({

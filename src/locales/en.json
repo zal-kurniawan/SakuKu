@@ -89,6 +89,7 @@
     "fromWallet": "Source Wallet",
     "toWallet": "Destination Wallet",
     "amount": "Transfer Amount (Rp)",
+    "date": "Transfer Date",
     "availableBalance": "Available balance",
     "notes": "Notes (Optional)",
     "notesPlaceholder": "e.g., Weekly e-wallet top-up, cash withdrawal",

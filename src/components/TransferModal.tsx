@@ -7,8 +7,17 @@ import { useModalEscape } from '@/hooks/useModalEscape';
 import { formatCurrency } from '@/lib/utils';
 import { X, ArrowRightLeft } from 'lucide-react';
 import { CustomSelect } from './ui/CustomSelect';
+import { CustomDatePicker } from './ui/CustomDatePicker';
 import { CurrencyInput } from './ui/CurrencyInput';
 import { WalletItem } from './WalletList';
+
+const getTodayLocalDate = () => {
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+};
 
 interface TransferModalProps {
   isOpen: boolean;
@@ -31,6 +40,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
   const [fromWalletId, setFromWalletId] = useState('');
   const [toWalletId, setToWalletId] = useState('');
   const [amount, setAmount] = useState('');
+  const [date, setDate] = useState<string>(getTodayLocalDate);
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -43,6 +53,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
       setToWalletId(to);
     }
     setAmount('');
+    setDate(getTodayLocalDate());
     setNotes('');
     setError('');
   }, [wallets, defaultFromWalletId, isOpen]);
@@ -83,6 +94,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
           fromWalletId,
           toWalletId,
           amount: numAmount,
+          date,
           notes,
         }),
       });
@@ -93,6 +105,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
       }
 
       toast.success(t('transfer.transferSuccess', 'Transfer saldo berhasil'));
+      setDate(getTodayLocalDate());
       onSuccess();
       onClose();
     } catch (err: any) {
@@ -202,6 +215,18 @@ export const TransferModal: React.FC<TransferModalProps> = ({
                   </span>
                 </p>
               )}
+            </div>
+
+            {/* Date */}
+            <div>
+              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                {t('transfer.date') || t('transactions.formDate') || 'Tanggal'}
+              </label>
+              <CustomDatePicker
+                value={date}
+                onChange={setDate}
+                size="lg"
+              />
             </div>
 
             {/* Notes */}

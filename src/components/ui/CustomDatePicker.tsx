@@ -13,6 +13,9 @@ import {
 } from 'lucide-react';
 import { useTranslation } from '@/context/LanguageContext';
 
+const useIsomorphicLayoutEffect =
+  typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
+
 export interface CustomDatePickerProps {
   value: string; // ISO string 'YYYY-MM-DD'
   onChange: (date: string) => void;
@@ -84,7 +87,13 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [popoverCoords, setPopoverCoords] = useState<{ top: number; left: number } | null>(null);
+
+  // Position state: null until measured to prevent initial (0,0) flash / fly-in
+  const [coords, setCoords] = useState<{
+    top: number;
+    left: number;
+    placement: 'bottom' | 'top';
+  } | null>(null);
 
   // Drill-up navigation mode: 'days' -> 'months' -> 'years'
   const [viewMode, setViewMode] = useState<'days' | 'months' | 'years'>('days');
@@ -100,7 +109,9 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
 
   // 12-year window start year (e.g. 2020 for 2026)
   const [yearPageStart, setYearPageStart] = useState<number>(() =>
-    Math.floor((isNaN(initialDate.getFullYear()) ? new Date().getFullYear() : initialDate.getFullYear()) / 10) * 10
+    Math.floor(
+      (isNaN(initialDate.getFullYear()) ? new Date().getFullYear() : initialDate.getFullYear()) / 10
+    ) * 10
   );
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -124,37 +135,55 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Calculate and update fixed popover coordinates for desktop
-  const updatePopoverCoords = useCallback(() => {
+  // Precise popover coordinates calculation
+  const updateCoords = useCallback(() => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
-    const popoverHeight = 350;
+    const popoverHeight = 340;
     const popoverWidth = 300;
 
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+
+    let placement: 'bottom' | 'top' = 'bottom';
     let top = rect.bottom + 6;
-    if (top + popoverHeight > window.innerHeight && rect.top - popoverHeight - 6 > 0) {
+
+    // Flip to top if space below is insufficient (< 330px) and space above is larger
+    if (spaceBelow < 330 && spaceAbove > spaceBelow) {
+      placement = 'top';
       top = rect.top - popoverHeight - 6;
     }
+
+    // Viewport boundary clamping
     top = Math.max(12, Math.min(window.innerHeight - popoverHeight - 12, top));
+    const left = Math.max(12, Math.min(rect.left, window.innerWidth - popoverWidth - 12));
 
-    let left = rect.left;
-    left = Math.max(12, Math.min(window.innerWidth - popoverWidth - 12, left));
-
-    setPopoverCoords({ top, left });
+    setCoords({ top, left, placement });
   }, []);
 
-  // Update popover coordinates when opening on desktop, and listen to resize/scroll
+  // Synchronously compute position before browser paint (anti-fly-in)
+  useIsomorphicLayoutEffect(() => {
+    if (isOpen && !isMobile) {
+      updateCoords();
+    } else if (!isOpen) {
+      setCoords(null);
+    }
+  }, [isOpen, isMobile, updateCoords]);
+
+  // Listen to resize and scroll (capture: true for scrolls inside modals)
   useEffect(() => {
     if (isOpen && !isMobile) {
-      updatePopoverCoords();
-      window.addEventListener('resize', updatePopoverCoords);
-      window.addEventListener('scroll', updatePopoverCoords, true);
+      const handleScrollOrResize = () => {
+        updateCoords();
+      };
+      window.addEventListener('resize', handleScrollOrResize);
+      window.addEventListener('scroll', handleScrollOrResize, true);
       return () => {
-        window.removeEventListener('resize', updatePopoverCoords);
-        window.removeEventListener('scroll', updatePopoverCoords, true);
+        window.removeEventListener('resize', handleScrollOrResize);
+        window.removeEventListener('scroll', handleScrollOrResize, true);
       };
     }
-  }, [isOpen, isMobile, updatePopoverCoords]);
+  }, [isOpen, isMobile, updateCoords]);
 
   // Reset viewMode to 'days' and sync year & month whenever calendar opens
   useEffect(() => {
@@ -174,11 +203,12 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
     if (!isOpen) return;
 
     const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node;
       if (
         triggerRef.current &&
-        !triggerRef.current.contains(e.target as Node) &&
+        !triggerRef.current.contains(target) &&
         popoverRef.current &&
-        !popoverRef.current.contains(e.target as Node)
+        !popoverRef.current.contains(target)
       ) {
         setIsOpen(false);
       }
@@ -425,13 +455,9 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
     );
   };
 
-  // Calendar Content
-  const calendarContent = (
-    <div
-      ref={popoverRef}
-      className="w-[280px] sm:w-[296px] select-none text-gray-900 dark:text-gray-100"
-      onClick={(e) => e.stopPropagation()}
-    >
+  // Calendar Body (shared by Desktop popover & Mobile modal)
+  const calendarBody = (
+    <div className="w-full">
       {/* 1. Header Navigation */}
       {renderHeader()}
 
@@ -670,29 +696,40 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
             {isMobile ? (
               /* Mobile View: Fixed Centered Backdrop Modal */
               <div
-                className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+                className="fixed inset-0 z-[80] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
                 onClick={() => setIsOpen(false)}
               >
                 <div
-                  className="w-full max-w-[320px] rounded-2xl bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 shadow-2xl p-4 animate-in zoom-in-95 duration-150"
+                  ref={popoverRef}
+                  className="w-full max-w-[320px] rounded-2xl bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 shadow-2xl p-4 select-none text-gray-900 dark:text-gray-100 animate-in zoom-in-95 duration-150"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {calendarContent}
+                  {calendarBody}
                 </div>
               </div>
             ) : (
-              /* Desktop View: Fixed Popover near trigger with boundary collision safety */
-              <div
-                style={{
-                  position: 'fixed',
-                  top: popoverCoords ? popoverCoords.top : 0,
-                  left: popoverCoords ? popoverCoords.left : 0,
-                  zIndex: 70,
-                }}
-                className="rounded-2xl bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 shadow-2xl p-3.5 animate-in fade-in zoom-in-95 duration-150"
-              >
-                {calendarContent}
-              </div>
+              /* Desktop View: Anti-Fly-In Fixed Popover anchored precisely to field */
+              coords && (
+                <div
+                  ref={popoverRef}
+                  style={{
+                    position: 'fixed',
+                    top: coords.top,
+                    left: coords.left,
+                    zIndex: 80,
+                  }}
+                  className="pointer-events-auto"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div
+                    className={`w-[300px] rounded-2xl bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 shadow-2xl p-3.5 select-none text-gray-900 dark:text-gray-100 duration-150 ease-out animate-in fade-in zoom-in-95 ${
+                      coords.placement === 'top' ? 'origin-bottom' : 'origin-top'
+                    }`}
+                  >
+                    {calendarBody}
+                  </div>
+                </div>
+              )
             )}
           </>,
           document.body

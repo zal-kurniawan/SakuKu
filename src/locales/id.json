@@ -89,6 +89,7 @@
     "fromWallet": "Dompet Asal",
     "toWallet": "Dompet Tujuan",
     "amount": "Nominal Transfer (Rp)",
+    "date": "Tanggal Transfer",
     "availableBalance": "Saldo tersedia",
     "notes": "Catatan (Opsional)",
     "notesPlaceholder": "Contoh: Top up e-wallet, tarik tunai",
